@@ -1,0 +1,179 @@
+# The Buena Redesign Framework
+
+A design philosophy reverse-engineered from Din Bisevac's own words, then translated into concrete moves for Buena's product, brand, and operating surfaces.
+
+---
+
+## Founder Snapshot
+
+Din publicly identifies as an "(ex-)designer," hires the Design Lead to "work directly with me," and frames design as scope-without-walls: "design is at the core of everything we do. From storyboarding our office experience to how we run board meetings, and everything in between." That sentence is the most important quote in this whole document. Any redesign work that interprets "design" as just product UI will under-shoot what he expects.
+
+He celebrates taste-makers (Index Ventures' website, Capital.xyz's micro-interactions, Steve Jobs' delivery, Vincent Van Duysen, Virgil Abloh) and is allergic to corporate jibberish, mediocrity-by-compromise, and consensus design. The redesign job, in his frame, is to take property management — an industry he literally traced back to "1754 BC" — and make it feel 1-of-1, magical, and unmistakably Buena across every customer touchpoint.
+
+---
+
+## The Six Principles
+
+### 1. Design is the operating system, not a department
+
+**Founder evidence**
+
+> "I'm hiring Buena's next Design Lead. You'll work directly with me, lead our product design efforts, and shape Buena's identity. You have the chance to influence the company like no one else, as design is at the core of everything we do. From storyboarding our office experience to how we run board meetings, and everything in between." — Mar 14
+
+> "Design team is cooking 🔥" — Dec 20
+
+> "New home for Buena :)" — Apr 15 (announcing the new HQ as a design statement)
+
+> "At Buena, we studied our industry all the way back to 1754 BC and turned what we found into a multi-story exhibition in our offices." — Mar 13
+
+**What it means.** Design surface area at Buena is everything a customer, candidate, investor, tenant, owner, or employee perceives — the app, yes, but also the office, the offer letter, the board memo, the merch, the lobby art, the website launch timing.
+
+**How to apply at Buena.**
+- Treat the next redesign cycle as a *system* redesign, not a screens redesign. Scope: product UI + tenant-facing emails + owner statements + onboarding kit + careers page + investor deck + office signage + merch.
+- Run a "Design Council" review with Din present — the pattern he already uses for board meetings and offsites — and put non-product surfaces (a lease cover page, a rent-due reminder SMS) on the same agenda as the in-app inbox.
+- Every PRD ships with a "non-product surfaces" section: when this feature ships, what changes in the email, the help center, the salesperson's pitch, the office wall?
+
+---
+
+### 2. Compress the painful into the magical
+
+**Founder evidence**
+
+> "Where files come to die. All the data from these files are stored structurally in the Buena app. Yet, Germany's stupid regulations require us to store paper files from our customers physically for 10(!) years. Insanity." — Aug 5
+
+> "At Buena, we're getting rid of all the stupid paperwork property managers have to deal with. These ~40 boxes resemble only ~300 units. Insane." — Jul 17
+
+> "Today I tested how much time a landlord needs to sign a contract with @homeht_. The answer? 1 minute 🤯" — Sep 21
+
+> "Jackie has been working really hard on Buena Accounting for months & the release of the feature led to our property managers saving ~30h per week(!) 🤯" — Feb 2
+
+**What it means.** Din's design taste is benchmarked against pain compression. He gets emotional about workflows that go from "40 boxes of paper" or "30 hours" to a single minute or zero touches. The redesign target isn't "cleaner screen" — it's "the moment a customer says 🤯".
+
+**How to apply at Buena.**
+- Maintain a public **Magic Moment Backlog**: a list of the 20 most painful workflows in property management (eviction notices, owner reporting, contractor payouts, deposit settlements, meter readings, AGM voting, vacancy listings) with a target compression ratio for each (e.g., "8 hours → 90 seconds").
+- Every redesign brief opens with a single number: the painful baseline (time, clicks, emails, boxes) and the post-redesign target.
+- Ship a quarterly "🤯 demo" — three-minute video showing one painful task before vs. after. This is the format Din already uses on Twitter and will instinctively share.
+
+---
+
+### 3. Make it 1 of 1 — opinionated by default
+
+**Founder evidence**
+
+> "Our product is 1 of 1." — Jul 23
+
+> "Dino is an n-of-1 founder…" — Apr 21
+
+> "Ambitious, non-consensus, hard working. Three traits that every Project Europe founder I interviewed had in common." — Jul 29
+
+> "Fabian and his team are singular." — Sep 10
+
+> "To build a mediocre product, make a lot of compromises." — Jul 4
+
+**What it means.** Din has explicitly published the formula for mediocrity (compromise) and the formula for greatness (non-consensus, singular, 1-of-1). Generic SaaS patterns — three-pane settings menus, default Material Design components, stock empty states — read as compromises in his frame.
+
+**How to apply at Buena.**
+- Refuse to look like a generic vertical SaaS. Replace at least one "default" UI pattern per release cycle with something custom and unmistakably Buena: e.g., the table view for units, the inbox triage flow, the contract preview, the empty state for a new owner.
+- Adopt a written **"opinion per screen"** rule: each major screen has one opinionated stance documented (e.g., "We don't show all-time graphs because they bias against new owners"). If a designer can't write the opinion, the screen isn't done.
+- Kill the phrase "industry standard" in design reviews. Replace with "what's the Buena answer?"
+
+---
+
+### 4. Sweat the micro-details — they are the brand proof
+
+**Founder evidence**
+
+> "I love how the 'Terms' and 'Privacy' links on @capitalxyz's website pop-up when you scroll to the bottom of the page 😍" — Oct 5
+
+> "Index' website today is beautiful. Celebrating a founder like this says a lot. It shows that everyone at the firm genuinely lives their philosophy." — Aug 1
+
+> "All-nighters are fun. 30 minutes before the news broke on our recent round, we published our new website. Team's exhausted, but smiling and happy." — undated (round announcement)
+
+> "Forming taste" — Feb 20
+
+> "Did @dennismuellr & team just drop the best executed seed product launch ever?" — Jan 24
+
+**What it means.** Din's tweets reward execution craft, not just concept. A footer micro-interaction can earn a 27-like public love letter. He notices and remembers. He's also explicit that he is *forming taste* — meaning he expects his design org to keep shipping new evidence.
+
+**How to apply at Buena.**
+- Keep a **"Delight Log"**: a shared file where every team member adds one micro-detail per week (toast wording, hover state, loading skeleton, easter egg, sound, micro-animation). Ship at least three per release.
+- Build a "polish week" into every quarterly cycle — five days where roadmap is frozen and the only allowed work is detail upgrades. Demo internally at the end.
+- Tie redesigns to public moments. Din publishes a website at the same hour as the round announcement; we should plan launches the same way: brand surface, product surface, and storytelling surface ship together, not in sequence.
+
+---
+
+### 5. Speak human — kill the corporate voice
+
+**Founder evidence**
+
+> "I really miss how Steve communicated. It never felt scripted. What is this corporate jibberish? How is anyone supposed to feel inspired by this?" — Jul 31
+
+> "Q: How locked in is the team at Buena? A: Yes" — Apr 11
+
+> "Q: How committed is the team at Buena? @karlvili: Look at my arm" — Mar 26
+
+> "Tenants starting to refer to our buildings & apartments with our brand name always makes me proud (+ they love our homes too)" — Jan 22
+
+**What it means.** Buena's brand voice — already visible in Din's own posts — is direct, dry, sometimes funny, never corporate. Tenants adopting "Buena" as the noun they use for their home is the proof point: brand has crossed into vocabulary. The redesign needs to extend this voice into every word in the product.
+
+**How to apply at Buena.**
+- **Voice audit** every customer-facing string: error messages, button labels, empty states, transactional emails, SMS, owner statements, lease addenda. Re-write anything that sounds like it could appear in any other PM SaaS.
+- Default voice rules: short sentences, no "kindly", no "please be advised", no passive-corporate constructions, no "An unexpected error occurred". Replace with: "We couldn't reach the bank. Try again, or ping us."
+- Tenant + owner emails get the same care as a Twitter post Din would publish. If he wouldn't post it, we don't send it.
+
+---
+
+### 6. Industry depth, then leap — earn the right to redesign
+
+**Founder evidence**
+
+> "At Buena, we studied our industry all the way back to 1754 BC and turned what we found into a multi-story exhibition in our offices. Seeing how property management has been an enabler of cities, progress, and capitalism across centuries is what drives us every day." — Mar 13
+
+> "We did this by becoming a property manager. Fast, reliable & an expert in all the things our customers shouldn't have to be." — Jul 23
+
+> "Buena is expanding into banking. Reimagining how properties, homeowners & tenants bank in the future." — Mar 24
+
+> "Driven by intuition, informed by data." — Jul 11
+
+> "Build a beta to generate alpha" — Oct 30
+
+**What it means.** Din respects industry depth. Buena became a property manager itself before redesigning the software for property managers — that's the move he's proud of. Redesign proposals that ignore the operator reality (or worse, propose a "clean" UI that breaks accounting compliance) will not survive him.
+
+**How to apply at Buena.**
+- Every redesign brief must include a **History section**: how is this workflow done in 1925, 1985, 2015, today? What are the legal and operational constraints we cannot remove? What can we remove? This is the multi-story exhibition translated into a doc.
+- Pair every designer with an internal property manager for a week before they touch a redesign. They should be able to do the job before they redesign it.
+- Frame public redesigns as *reimagining*, not *prettifying* — Din's word for the banking expansion is "reimagining." Lift it.
+
+---
+
+## The Buena Redesign Checklist
+
+Use this as a green-light gate for any major redesign before it goes to Din.
+
+1. **System scope.** Have we touched the non-product surfaces (email, statements, office, careers, deck, merch) connected to this change? Yes / No.
+2. **Painful baseline.** Have we written down the current pain as a single number, and the target compression? Yes / No.
+3. **Opinion per screen.** Can we state the one opinion driving each major screen in one sentence? Yes / No.
+4. **Micro-detail count.** How many polish-grade details (animation, copy, empty state, sound, hover) ship in this release? Target: 5+.
+5. **Voice pass.** Has every string been read aloud and de-corporatised? Yes / No.
+6. **History pass.** Have we written the 100-year-arc memo for this workflow? Yes / No.
+7. **Magic moment demo.** Do we have a 60–180s before/after video ready for launch? Yes / No.
+8. **Launch synchronisation.** Are product, brand, website, and storytelling surfaces shipping the same hour? Yes / No.
+
+A redesign that scores 8/8 is the kind Din retweets. Anything below 6/8 is a compromise — and we already know how he feels about those.
+
+---
+
+## Where to Apply It First (suggested order)
+
+1. **Owner Statement.** Highest-frequency, lowest-design-attention surface in the industry. A redesigned monthly statement that an owner *enjoys* opening is a category-defining artifact, and it's mailed/emailed to thousands every month — so brand reach is enormous.
+2. **Tenant Portal Onboarding.** This is where "tenants refer to their apartment by our brand name" actually happens or doesn't. First 5 minutes set the tone for the multi-year tenancy.
+3. **Property Manager Inbox / Triage.** This is the daily operator screen. If we save 30h/week here the way Buena Accounting did, we get another 🤯 tweet — and a generational moat.
+4. **Buena Banking Onboarding.** New product, blank canvas, perfect place to set the new design system in motion before legacy surfaces drag it down.
+5. **Buena.com + Careers.** External brand surface. The Index and round-launch tweets prove Din measures the company partly by the website. Ship in the same window as a major product moment.
+6. **The Document Layer.** Leases, addenda, notices, owner agreements. Today they are the most paper-y, "files come to die" part of the experience. Make them feel like Buena objects, not legal cruft.
+
+---
+
+## A Note on the Framework's Limits
+
+This framework is reconstructed from a public-tweet corpus, which biases toward what Din chooses to broadcast. Two things it cannot fully capture: (a) the trade-offs he actually makes in private when compliance, accounting accuracy, or operator throughput conflict with design ambition, and (b) the parts of his taste he hasn't yet posted about. Treat the framework as the *direction of his gravity* — not a closed specification. Pressure-test any large bet directly with him before committing the team.
