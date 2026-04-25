@@ -114,6 +114,28 @@ new_block: |
 
 ---
 
+## 💰 Payment status
+
+- **WEG-Konto balance**: ~76.220 € (as of 2024-01-02)
+  *Source: `bank/kontoauszug_2024_2025.csv` · confidence 0.9*
+- **Last full rent collection**: 2024-01
+- **Hausgeld arrears**: none known as of last bank export
+- **Rücklage**: DE12 1203 0000 0098 7654 32 (balance not in current export)
+
+---
+
+## 📅 Events
+
+> [!info] [[ETV-2024-04]] — Eigentümerversammlung (past)
+> 33 Einladungen versandt 2024-04-09 bis 2024-04-19. Meeting date to be extracted from PDF.
+> *Source: `briefe/2024-04/20240409_etv_einladung_LTR-0001.pdf` · confidence 0.9*
+
+> [!info] [[ETV-2024-06-Protokoll]] — Eigentümerversammlung (past, 2024-06-01)
+> Protokoll vorhanden. Beschlüsse siehe Assembly decisions.
+> *Source: `briefe/2024-06/20240601_etv_protokoll_LTR-0037.pdf` · confidence 0.95*
+
+---
+
 ## 📜 Assembly decisions (ETV)
 
 - ETV 2024-06 Protokoll → [[ETV-2024-06-Protokoll]]
@@ -152,9 +174,25 @@ new_block: |
 
 ---
 
+## 🔧 Service provider contracts
+
+- [[DL-001]] Hausmeister Mueller GmbH — **650 €/Monat** · Slawomir Sölzer
+- [[DL-002]] Aufzug Schindler & Co. — **185 €/Monat** · Paul-Heinz Köhler
+- [[DL-004]] Reinigungsservice Kowalski — **420 €/Monat** · Malte Becker
+- [[DL-005]] Gaertnerei Gruener Daumen — **180 €/Monat** · Ekkehart Wende
+- [[DL-003]] Heiztechnik Berlin — on-call **78 €/h** · Olga Holsten
+- [[DL-007]] Allianz — Gebäudeversicherung · Rolf Schönland
+- [[DL-008]] Vattenfall — Strom Allgemein
+- [[DL-009]] GASAG — Gas
+- [[DL-010]] Berliner Wasserbetriebe — Wasser/Abwasser
+- [[DL-011]] BSR Berliner Stadtreinigung — Müllentsorgung
+*Source: `stammdaten/stammdaten.json` · confidence 1.0*
+
+---
+
 ## 🔗 Connected pages
 
 - [[HUB-001]] (Verwalter)
-- [[DL-001]] (Hausmeister)
+- [[DL-001]] (Hausmeister) · [[DL-002]] (Aufzug) · [[DL-004]] (Reinigung)
 - [[ETV-2024-06-Protokoll]]
 - Beirat: [[EIG-001]] · [[EIG-003]] · [[EIG-004]]
