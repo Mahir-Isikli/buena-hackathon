@@ -166,12 +166,12 @@
             }
           },
           {
-            "id": "7c16021746844aa3",
+            "id": "acefd6079a3ebf3c",
             "type": "leaf",
             "state": {
               "type": "buena-sidebar",
               "state": {},
-              "icon": "building-2",
+              "icon": "inbox",
               "title": "Buena"
             }
           }
@@ -180,7 +180,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 395.5
+    "width": 577.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -194,7 +194,7 @@
       "buena:Buena: open pending queue": false
     }
   },
-  "active": "7c16021746844aa3",
+  "active": "acefd6079a3ebf3c",
   "lastOpenFiles": [
     "Welcome.md",
     "WEG-Immanuelkirchstrasse-26.md"

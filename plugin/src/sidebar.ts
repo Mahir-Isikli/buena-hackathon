@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
+import { ItemView, WorkspaceLeaf } from "obsidian";
 import type BuenaPlugin from "../main";
 
 export const BUENA_SIDEBAR_VIEW_TYPE = "buena-sidebar";
@@ -81,7 +81,7 @@ export class BuenaSidebarView extends ItemView {
   }
 
   getIcon(): string {
-    return "building-2";
+    return "inbox";
   }
 
   async onOpen() {
@@ -97,12 +97,9 @@ export class BuenaSidebarView extends ItemView {
     root.empty();
     root.addClass("buena-sidebar");
 
-    // Header
+    // Header (no icon, just typography)
     const header = root.createDiv({ cls: "buena-sidebar-header" });
-    const titleRow = header.createDiv({ cls: "buena-sidebar-title-row" });
-    const titleIcon = titleRow.createSpan({ cls: "buena-sidebar-title-icon" });
-    setIcon(titleIcon, "building-2");
-    titleRow.createEl("h3", { text: "Buena", cls: "buena-sidebar-title" });
+    header.createEl("div", { text: "BUENA", cls: "buena-sidebar-wordmark" });
     header.createEl("div", {
       text: this.plugin.settings.propertyId,
       cls: "buena-sidebar-subtitle",

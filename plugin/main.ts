@@ -31,7 +31,7 @@ export default class BuenaPlugin extends Plugin {
     registerProvenanceProcessor(this);
 
     // Ribbon icon to open the sidebar
-    this.addRibbonIcon("building-2", "Buena: open pending queue", async () => {
+    this.addRibbonIcon("landmark", "Buena: open pending queue", async () => {
       await this.activateSidebar();
     });
 
@@ -58,9 +58,14 @@ export default class BuenaPlugin extends Plugin {
     // Settings tab
     this.addSettingTab(new BuenaSettingTab(this.app, this));
 
-    // Auto-open sidebar on load
-    this.app.workspace.onLayoutReady(async () => {
-      await this.activateSidebar();
+    // Dedupe any stale Buena leaves left over from previous reloads.
+    // Obsidian restores workspace state, then hot-reload may add another
+    // leaf, leaving the user with multiple identical tabs. Keep one.
+    this.app.workspace.onLayoutReady(() => {
+      const leaves = this.app.workspace.getLeavesOfType(BUENA_SIDEBAR_VIEW_TYPE);
+      for (let i = 1; i < leaves.length; i++) {
+        leaves[i].detach();
+      }
     });
   }
 
