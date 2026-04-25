@@ -1,12 +1,20 @@
 /* Buena Context Engine plugin styles
  *
- * Brand palette pulled from buena.com:
- *   --buena-black:   #000
- *   --buena-white:   #fff
- *   --buena-beige:   #CDBDA3  (warm sand, primary accent)
- *   --buena-gray:    #D6D3D1
- *   --buena-sage:    #D6DBD5  (faint background tint)
- *   --buena-cream:   #F5F1EA  (light surface, derived)
+ * Brand palette — resolved from buena.com production CSS (April 2026)
+ *
+ *   --buena-bg:          #ffffff   document canvas
+ *   --buena-surface:     #fafaf9   elevated panels (stone-50)
+ *   --buena-border:      #f5f5f4   dividers (stone-100)
+ *   --buena-text:        #1c1917   primary text (stone-900)
+ *   --buena-text-muted:  #a6a09b   helper / labels (stone-400)
+ *   --buena-brand:       #398957   CTA green
+ *   --buena-warm:        #fdc700   pending / mid-conf (yellow-400)
+ *   --buena-green:       #00c950   confirmed / high-conf (green-500)
+ *   --buena-red:         #fb2c36   urgent / flagged (red-500)
+ *
+ *   chip-high:  #b9f8cf / #016630  (green-200 bg / green-800 text)
+ *   chip-mid:   #fdc700 / #1c1917  (yellow-400 bg / stone-900 text)
+ *   chip-human: #e7e5e4 / #57534d  (stone-200 bg / stone-600 text)
  */
 
 .buena-sidebar,
@@ -14,15 +22,23 @@
 .buena-status,
 .buena-prov-pill,
 .buena-changed-pill {
-  --buena-black: #000;
-  --buena-white: #fff;
-  --buena-beige: #CDBDA3;
-  --buena-beige-soft: #E5DCC9;
-  --buena-gray: #D6D3D1;
-  --buena-sage: #D6DBD5;
-  --buena-cream: #F5F1EA;
-  --buena-ink-muted: #4A4744;
-  --buena-ink-faint: #8A8580;
+  --buena-bg:         #ffffff;
+  --buena-surface:    #fafaf9;
+  --buena-border:     #f5f5f4;
+  --buena-text:       #1c1917;
+  --buena-text-muted: #a6a09b;
+  --buena-brand:      #398957;
+  --buena-brand-dark: #2d7047;
+  --buena-warm:       #fdc700;
+  --buena-green:      #00c950;
+  --buena-red:        #fb2c36;
+
+  --chip-high-bg:     #b9f8cf;
+  --chip-high-text:   #016630;
+  --chip-mid-bg:      #fdc700;
+  --chip-mid-text:    #1c1917;
+  --chip-human-bg:    #e7e5e4;
+  --chip-human-text:  #57534d;
 }
 
 /* ============================================================
@@ -31,23 +47,23 @@
 .buena-sidebar {
   padding: 0;
   font-size: var(--font-ui-small);
-  color: var(--buena-black);
-  background: var(--buena-cream);
+  color: var(--buena-text);
+  background: var(--buena-surface);
   height: 100%;
 }
 
 .buena-sidebar-header {
   padding: 22px 18px 18px;
-  background: var(--buena-black);
-  color: var(--buena-white);
-  border-bottom: 1px solid var(--buena-black);
+  background: var(--buena-text);
+  color: var(--buena-bg);
+  border-bottom: 1px solid var(--buena-text);
 }
 
 .buena-sidebar-wordmark {
   display: flex;
   align-items: baseline;
   gap: 4px;
-  color: var(--buena-white);
+  color: var(--buena-bg);
   font-family: var(--font-text);
 }
 
@@ -56,19 +72,19 @@
   font-weight: 300;
   letter-spacing: -0.02em;
   font-style: italic;
-  color: var(--buena-white);
+  color: var(--buena-bg);
 }
 
 .buena-wordmark-dot {
   font-size: 1.6em;
-  color: var(--buena-beige);
+  color: var(--buena-brand);
   font-weight: 700;
   line-height: 1;
 }
 
 .buena-sidebar-tagline {
   margin-top: 2px;
-  color: var(--buena-gray);
+  color: var(--buena-text-muted);
   font-size: 0.75em;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -79,7 +95,7 @@
   margin-top: 14px;
   padding-top: 10px;
   border-top: 1px solid #2a2a2a;
-  color: var(--buena-beige);
+  color: var(--buena-brand);
   font-size: 0.72em;
   font-family: var(--font-monospace);
   letter-spacing: 0.12em;
@@ -87,7 +103,7 @@
 
 .buena-section {
   padding: 16px 18px;
-  border-bottom: 1px solid var(--buena-gray);
+  border-bottom: 1px solid var(--buena-border);
 }
 
 .buena-section:last-child {
@@ -104,33 +120,39 @@
 .buena-section h4 {
   margin: 0;
   font-size: 0.72em;
-  color: var(--buena-ink-muted);
+  color: var(--buena-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-weight: 600;
 }
 
 .buena-badge {
-  background: var(--buena-black);
-  color: var(--buena-beige);
+  background: var(--buena-text);
+  color: var(--buena-bg);
   font-size: 0.7em;
   padding: 2px 8px;
-  border-radius: 0;
+  border-radius: 4px;
   font-weight: 600;
   font-family: var(--font-monospace);
 }
 
+/* pending badge gets warm accent */
+.buena-badge-pending {
+  background: var(--buena-warm);
+  color: var(--buena-text);
+}
+
 .buena-empty {
-  color: var(--buena-ink-faint);
+  color: var(--buena-text-muted);
   font-style: italic;
   padding: 8px 0;
 }
 
-/* Cards */
+/* ── Cards ── */
 .buena-card {
-  background: var(--buena-white);
-  border: 1px solid var(--buena-gray);
-  border-radius: 0;
+  background: var(--buena-bg);
+  border: 1px solid var(--buena-border);
+  border-radius: 6px;
   padding: 12px 14px;
   margin-bottom: 10px;
 }
@@ -153,11 +175,11 @@
 }
 
 .buena-unit-pill {
-  background: var(--buena-black);
-  color: var(--buena-beige);
+  background: var(--buena-text);
+  color: var(--buena-bg);
   font-size: 0.7em;
   padding: 2px 8px;
-  border-radius: 0;
+  border-radius: 4px;
   font-weight: 600;
   font-family: var(--font-monospace);
   letter-spacing: 0.06em;
@@ -167,16 +189,17 @@
 }
 
 .buena-card-pending {
-  border-left: 3px solid var(--buena-black);
-  background: var(--buena-white);
+  border-left: 3px solid var(--buena-warm);
+  background: var(--buena-bg);
 }
 
 .buena-card-history {
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--buena-gray);
+  border-bottom: 1px solid var(--buena-border);
   padding: 10px 0;
   margin-bottom: 0;
+  border-radius: 0;
 }
 
 .buena-card-history:last-child {
@@ -186,21 +209,21 @@
 .buena-card-section {
   font-weight: 600;
   font-size: 0.78em;
-  color: var(--buena-ink-muted);
+  color: var(--buena-text-muted);
   margin-bottom: 6px;
   font-family: var(--font-monospace);
   letter-spacing: 0.02em;
 }
 
 .buena-card-old {
-  color: var(--buena-ink-faint);
+  color: var(--buena-text-muted);
   text-decoration: line-through;
   font-size: 0.88em;
   margin-bottom: 4px;
 }
 
 .buena-card-new {
-  color: var(--buena-black);
+  color: var(--buena-text);
   margin-bottom: 10px;
   line-height: 1.45;
 }
@@ -214,39 +237,41 @@
 }
 
 .buena-meta-pill {
-  background: var(--buena-cream);
-  border: 1px solid var(--buena-gray);
-  border-radius: 0;
+  background: var(--buena-surface);
+  border: 1px solid var(--buena-border);
+  border-radius: 4px;
   padding: 2px 7px;
   font-size: 0.7em;
-  color: var(--buena-ink-muted);
+  color: var(--buena-text-muted);
   font-family: var(--font-monospace);
   letter-spacing: 0.02em;
 }
 
 .buena-meta-source {
-  color: var(--buena-ink-faint);
+  color: var(--buena-text-muted);
   font-size: 0.72em;
   font-family: var(--font-monospace);
   word-break: break-all;
 }
 
+/* decision state pills */
 .buena-decision-auto {
-  color: var(--buena-black);
-  background: var(--buena-beige);
-  border-color: var(--buena-beige);
+  color: var(--buena-text);
+  background: var(--buena-warm);
+  border-color: var(--buena-warm);
 }
 .buena-decision-approved {
-  color: var(--buena-white);
-  background: var(--buena-black);
-  border-color: var(--buena-black);
+  color: var(--chip-high-text);
+  background: var(--chip-high-bg);
+  border-color: var(--chip-high-bg);
 }
 .buena-decision-rejected {
-  color: var(--buena-ink-faint);
-  background: var(--buena-gray);
-  border-color: var(--buena-gray);
+  color: var(--chip-human-text);
+  background: var(--chip-human-bg);
+  border-color: var(--chip-human-bg);
 }
 
+/* ── Action buttons ── */
 .buena-card-actions,
 .buena-pending-actions {
   display: flex;
@@ -254,40 +279,54 @@
 }
 
 .buena-btn {
-  background: var(--buena-white);
-  border: 1px solid var(--buena-black);
-  border-radius: 0;
+  background: var(--buena-bg);
+  border: 1px solid var(--buena-border);
+  border-radius: 6px;
   padding: 5px 12px;
   font-size: 0.82em;
   cursor: pointer;
-  color: var(--buena-black);
+  color: var(--buena-text);
   font-family: inherit;
   letter-spacing: 0.02em;
+  transition: background 0.12s, color 0.12s;
 }
 
 .buena-btn:hover {
-  background: var(--buena-cream);
+  background: var(--buena-surface);
 }
 
 .buena-btn-primary {
-  background: var(--buena-black);
-  color: var(--buena-white);
-  border-color: var(--buena-black);
+  background: var(--buena-brand);
+  color: #ffffff;
+  border-color: var(--buena-brand);
 }
 
 .buena-btn-primary:hover {
-  background: var(--buena-ink-muted);
-  color: var(--buena-beige);
+  background: var(--buena-brand-dark);
+  border-color: var(--buena-brand-dark);
+  color: #ffffff;
+}
+
+.buena-btn-reject {
+  background: var(--buena-bg);
+  border-color: var(--buena-border);
+  color: var(--buena-text-muted);
+}
+
+.buena-btn-reject:hover {
+  background: #fff1f2;
+  border-color: var(--buena-red);
+  color: var(--buena-red);
 }
 
 /* ============================================================
-   INLINE PENDING CALLOUT (rendered from buena-pending codeblock)
+   INLINE PENDING CALLOUT
    ============================================================ */
 .buena-pending-card {
-  background: var(--buena-cream);
-  border: 1px solid var(--buena-black);
-  border-left: 4px solid var(--buena-black);
-  border-radius: 0;
+  background: var(--buena-surface);
+  border: 1px solid var(--buena-border);
+  border-left: 4px solid var(--buena-warm);
+  border-radius: 6px;
   padding: 14px 16px;
   margin: 14px 0;
   font-family: var(--font-text);
@@ -299,13 +338,13 @@
   gap: 10px;
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--buena-gray);
+  border-bottom: 1px solid var(--buena-border);
 }
 
 .buena-pending-label {
-  background: var(--buena-black);
-  color: var(--buena-beige);
-  border-radius: 0;
+  background: var(--buena-warm);
+  color: var(--buena-text);
+  border-radius: 4px;
   padding: 3px 9px;
   font-size: 0.7em;
   font-weight: 600;
@@ -315,7 +354,7 @@
 }
 
 .buena-pending-section {
-  color: var(--buena-ink-muted);
+  color: var(--buena-text-muted);
   font-family: var(--font-monospace);
   font-size: 0.82em;
   letter-spacing: 0.02em;
@@ -326,13 +365,13 @@
 }
 
 .buena-pending-old {
-  color: var(--buena-ink-faint);
+  color: var(--buena-text-muted);
   text-decoration: line-through;
   margin-bottom: 4px;
 }
 
 .buena-pending-new {
-  color: var(--buena-black);
+  color: var(--buena-text);
   font-weight: 500;
 }
 
@@ -345,76 +384,83 @@
 
 .buena-pending-approved {
   opacity: 0.55;
-  border-color: var(--buena-beige);
-  border-left-color: var(--buena-beige);
+  border-left-color: var(--buena-green);
 }
 
 .buena-pending-rejected {
   opacity: 0.45;
-  border-color: var(--buena-gray);
-  border-left-color: var(--buena-gray);
+  border-left-color: var(--buena-border);
 }
 
 /* ============================================================
-   PROVENANCE PILL  ({prov: src | conf: 0.91 | actor: ...})
+   PROVENANCE PILL
    ============================================================ */
 .buena-prov-pill {
   display: inline-block;
-  background: var(--buena-beige-soft);
-  color: var(--buena-ink-muted);
+  background: var(--chip-high-bg);
+  color: var(--chip-high-text);
   font-size: 0.68em;
-  padding: 1px 6px;
-  border-radius: 0;
+  padding: 1px 7px;
+  border-radius: 99px;
   margin: 0 3px;
   cursor: help;
   font-family: var(--font-monospace);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
   vertical-align: middle;
-  border: 1px solid var(--buena-beige);
+  border: none;
+  transition: opacity 0.12s;
 }
 
 .buena-prov-pill:hover {
-  background: var(--buena-black);
-  color: var(--buena-beige);
-  border-color: var(--buena-black);
+  opacity: 0.75;
+}
+
+.buena-prov-pill-mid {
+  background: var(--chip-mid-bg);
+  color: var(--chip-mid-text);
+}
+
+.buena-prov-pill-human {
+  background: var(--chip-human-bg);
+  color: var(--chip-human-text);
 }
 
 /* ============================================================
-   CHANGED PILL  ({changed: 2026-04-25 | from: ... | actor: ...})
-   Visible inline marker on every patched fact.
+   CHANGED PILL
    ============================================================ */
 .buena-changed-pill {
   display: inline-block;
-  background: var(--buena-black);
-  color: var(--buena-beige);
+  background: var(--buena-warm);
+  color: var(--buena-text);
   font-size: 0.65em;
-  padding: 1px 6px;
-  border-radius: 0;
+  padding: 1px 7px;
+  border-radius: 99px;
   margin: 0 4px;
   cursor: help;
   font-family: var(--font-monospace);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.06em;
   vertical-align: middle;
-  border: 1px solid var(--buena-black);
   font-weight: 600;
+  transition: opacity 0.12s;
 }
 
 .buena-changed-pill::before {
   content: "Δ ";
-  color: var(--buena-beige);
-  margin-right: 2px;
 }
 
 .buena-changed-pill:hover {
-  background: var(--buena-beige);
-  color: var(--buena-black);
-  border-color: var(--buena-black);
+  opacity: 0.75;
 }
 
-.buena-changed-pill:hover::before {
-  color: var(--buena-black);
+/* patch flash animation */
+@keyframes buena-patch-flash {
+  0%   { background: rgba(253, 199, 0, 0.40); }
+  60%  { background: rgba(253, 199, 0, 0.12); }
+  100% { background: transparent; }
+}
+.buena-patched {
+  animation: buena-patch-flash 2.2s ease-out forwards;
+  border-radius: 3px;
 }
 
 /* ============================================================
@@ -425,7 +471,7 @@
   align-items: center;
   gap: 6px;
   padding: 0 6px;
-  border-left: 1px solid var(--buena-gray);
+  border-left: 1px solid var(--buena-border);
   height: 100%;
 }
 
@@ -437,13 +483,12 @@
 }
 
 .buena-status-dot-on {
-  background: var(--buena-beige);
-  border: 1px solid var(--buena-black);
+  background: var(--buena-green);
 }
 
 .buena-status-dot-off {
   background: transparent;
-  border: 1px solid var(--buena-ink-faint);
+  border: 1px solid var(--buena-text-muted);
 }
 
 .buena-status-icon {
@@ -456,10 +501,12 @@
   font-size: 0.85em;
   font-family: var(--font-monospace);
   letter-spacing: 0.02em;
+  color: var(--buena-brand);
+  font-weight: 600;
 }
 
 .buena-status-meta {
-  color: var(--buena-ink-faint);
+  color: var(--buena-text-muted);
   font-size: 0.8em;
   font-family: var(--font-monospace);
 }
@@ -470,15 +517,16 @@
 .buena-popover {
   position: fixed;
   z-index: 9999;
-  background: var(--buena-white, #fff);
-  color: var(--buena-black, #000);
-  border: 1px solid var(--buena-black, #000);
-  border-left: 4px solid var(--buena-beige, #CDBDA3);
+  background: var(--buena-bg);
+  color: var(--buena-text);
+  border: 1px solid var(--buena-border);
+  border-left: 4px solid var(--buena-brand);
   padding: 12px 14px;
   font-size: 0.85em;
   max-width: 360px;
   min-width: 240px;
-  box-shadow: 4px 4px 0 var(--buena-beige, #CDBDA3);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  border-radius: 6px;
   font-family: var(--font-text);
   line-height: 1.45;
   pointer-events: none;
@@ -489,7 +537,7 @@
   grid-template-columns: 80px 1fr;
   gap: 10px;
   padding: 4px 0;
-  border-bottom: 1px solid var(--buena-cream, #F5F1EA);
+  border-bottom: 1px solid var(--buena-surface);
 }
 
 .buena-popover-row:last-child {
@@ -500,14 +548,14 @@
   font-size: 0.78em;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--buena-ink-faint, #8A8580);
+  color: var(--buena-text-muted);
   font-family: var(--font-monospace);
   font-weight: 600;
   padding-top: 1px;
 }
 
 .buena-popover-value {
-  color: var(--buena-black, #000);
+  color: var(--buena-text);
   word-break: break-word;
 }
 
