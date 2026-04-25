@@ -299,9 +299,9 @@ export class BuenaSidebarView extends ItemView {
     if (this.pending.length > 0) {
       const subhead = pendingSection.createDiv({ cls: "buena-subhead" });
       const count = this.pending.length;
-      const noun = count === 1 ? "new update" : "new updates";
+      const noun = count === 1 ? "update" : "updates";
       subhead.createSpan({
-        text: `${count} ${noun}. Extracted in real time.`,
+        text: `${count} pending ${noun}`,
         cls: "buena-subhead-text",
       });
       const filters = subhead.createDiv({ cls: "buena-filter-chips" });

@@ -76,20 +76,14 @@ export class BuenaStatusBar {
     dot.toggleClass("buena-statusbar-dot-on", this.connected);
     dot.toggleClass("buena-statusbar-dot-off", !this.connected);
     left.createSpan({
-      text: this.connected ? "Real time." : "Offline.",
+      text: this.connected ? "Connected" : "Offline",
       cls: "buena-statusbar-label",
     });
 
     const right = el.createDiv({ cls: "buena-statusbar-cluster buena-statusbar-summary" });
 
-    if (this.streakDays > 0) {
-      const streak = right.createSpan({ cls: "buena-statusbar-streak" });
-      streak.createSpan({ text: "🔥", cls: "buena-statusbar-emoji" });
-      streak.createSpan({ text: `${this.streakDays}d`, cls: "buena-statusbar-num" });
-    }
-
     right.createSpan({
-      text: `${this.pendingCount} Queue`,
+      text: `${this.pendingCount} pending`,
       cls: "buena-statusbar-meta buena-statusbar-queue-text",
     });
   }
