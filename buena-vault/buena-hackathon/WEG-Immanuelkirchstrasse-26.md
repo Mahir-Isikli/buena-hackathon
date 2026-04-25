@@ -60,19 +60,324 @@ tags:
 
 ## 🏘️ Units
 
-> [!note] 52 units in total. Tribal-knowledge notes per unit go below. ERP data (tenant, rent, layout) resolved at render time via the plugin.
+> [!info] **52 units** across 3 buildings. Click any unit to expand.
+> Tribal-knowledge notes per unit live inline. ERP data (tenant, owner, layout) is resolved at render time.
 
-### EH-001
-- **Location:** HAUS-12 · WE 01 · 1. OG links
-- **Size:** 103 m² · 4 Zimmer · MEA 241
-- **Status:** ✅ no open issues
+### 🏢 HAUS-12 (Hausnr. 12, 18 units)
 
-### EH-002
-- **Location:** HAUS-12 · WE 02 · 1. OG mitte
-- **Size:** 49 m² · 1.5 Zimmer · MEA 114
-- **Status:** ✅ no open issues
+> [!note]- 🏠 EH-001 · WE 01 · 1. OG links
+> **Type:** Wohnung · **103 m²** · 4 Zimmer · MEA 241
+> **Owner:** Osman Jacob (EIG-017)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
 
-*… 50 more units to render once the plugin reads `einheiten.csv`.*
+> [!note]- 🏠 EH-002 · WE 02 · 1. OG mitte
+> **Type:** Wohnung · **49 m²** · 1.5 Zimmer · MEA 114
+> **Owner:** Horst Vollbrecht (EIG-009)
+> **Tenant:** Marliese Hermann (MIE-009)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-003 · WE 03 · 1. OG rechts
+> **Type:** Wohnung · **62 m²** · 2 Zimmer · MEA 144
+> **Owner:** Hiltrud Speer (EIG-025)
+> **Tenant:** Ferenc Stahr (MIE-008)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-004 · WE 04 · 2. OG links
+> **Type:** Wohnung · **60 m²** · 2 Zimmer · MEA 139
+> **Owner:** Harro Bloch (EIG-034)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-005 · WE 05 · 2. OG mitte
+> **Type:** Wohnung · **110 m²** · 4 Zimmer · MEA 255
+> **Owner:** Kunigunda Ditschlerin (EIG-012)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-006 · WE 06 · 2. OG rechts
+> **Type:** Wohnung · **51 m²** · 1.5 Zimmer · MEA 118
+> **Owner:** Markus Fliegner (EIG-035)
+> **Tenant:** Kamil Trub (MIE-026)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-007 · WE 07 · 3. OG links
+> **Type:** Wohnung · **45 m²** · 1.5 Zimmer · MEA 104
+> **Owner:** Josefine Nohlmans (EIG-005)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-008 · WE 08 · 3. OG mitte
+> **Type:** Wohnung · **48 m²** · 1.5 Zimmer · MEA 111
+> **Owner:** Xenia Conradi (EIG-033)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-009 · WE 09 · 3. OG rechts
+> **Type:** Wohnung · **67 m²** · 2 Zimmer · MEA 156
+> **Owner:** Hulda Eckbauer (EIG-014)
+> **Tenant:** Anette Vogt (MIE-024)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-010 · WE 10 · 4. OG links
+> **Type:** Wohnung · **92 m²** · 3.5 Zimmer · MEA 214
+> **Owner:** Wolfgang Hettner (EIG-016)
+> **Tenant:** Kiara Mcintyre (MIE-013)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-011 · WE 11 · 4. OG mitte
+> **Type:** Wohnung · **95 m²** · 3.5 Zimmer · MEA 221
+> **Owner:** Kranz Vermoegensverwaltung (EIG-015)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-012 · WE 12 · 4. OG rechts
+> **Type:** Wohnung · **110 m²** · 4 Zimmer · MEA 255
+> **Owner:** Dunja Schacht (EIG-008)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-013 · WE 13 · 5. OG links
+> **Type:** Wohnung · **84 m²** · 3 Zimmer · MEA 195
+> **Owner:** Willfried Harloff (EIG-024)
+> **Tenant:** Steffi Riehl (MIE-005)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-014 · WE 14 · 5. OG mitte
+> **Type:** Wohnung · **85 m²** · 3 Zimmer · MEA 197
+> **Owner:** Ingolf Röhricht (EIG-027)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-015 · WE 15 · 5. OG rechts
+> **Type:** Wohnung · **115 m²** · 4.5 Zimmer · MEA 267
+> **Owner:** Erdal Beckmann (EIG-004)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-016 · WE 16 · 5. OG links
+> **Type:** Wohnung · **108 m²** · 4 Zimmer · MEA 251
+> **Owner:** Dominic Jacobs (EIG-013)
+> **Tenant:** Peggy Hein (MIE-011)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-017 · WE 17 · 5. OG rechts
+> **Type:** Wohnung · **72 m²** · 2.5 Zimmer · MEA 167
+> **Owner:** Kranz Vermoegensverwaltung (EIG-015)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🚗 EH-018 · TG 18 · Tiefgarage
+> **Type:** Tiefgarage · **12 m²** · 0 Zimmer · MEA 23
+> **Owner:** Irmingard Margraf (EIG-018)
+> **Status:** ✅ no open issues
+
+### 🏢 HAUS-14 (Hausnr. 14, 20 units)
+
+> [!note]- 🏠 EH-019 · WE 19 · 1. OG links
+> **Type:** Wohnung · **64 m²** · 2 Zimmer · MEA 149
+> **Owner:** Hulda Eckbauer (EIG-014)
+> **Tenant:** Jasmin Trub (MIE-025)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-020 · WE 20 · 1. OG mitte
+> **Type:** Wohnung · **46 m²** · 1.5 Zimmer · MEA 107
+> **Owner:** Silja Henschel (EIG-026)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-021 · WE 21 · 1. OG rechts
+> **Type:** Wohnung · **82 m²** · 3 Zimmer · MEA 190
+> **Owner:** Dörthe Hövel (EIG-031)
+> **Tenant:** Edelgard Wulf (MIE-002)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-022 · WE 22 · 2. OG links
+> **Type:** Wohnung · **75 m²** · 2.5 Zimmer · MEA 174
+> **Owner:** Oswald Gröttner (EIG-028)
+> **Tenant:** Alwine Sager (MIE-012)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-023 · WE 23 · 2. OG mitte
+> **Type:** Wohnung · **96 m²** · 3.5 Zimmer · MEA 223
+> **Owner:** Dominic Jacobs (EIG-013)
+> **Tenant:** David Jenkins (MIE-007)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-024 · WE 24 · 2. OG rechts
+> **Type:** Wohnung · **115 m²** · 4.5 Zimmer · MEA 267
+> **Owner:** Josefine Nohlmans (EIG-005)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-025 · WE 25 · 3. OG links
+> **Type:** Wohnung · **109 m²** · 4 Zimmer · MEA 253
+> **Owner:** Arnulf Heintze (EIG-003)
+> **Tenant:** Julius Nette (MIE-001)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-026 · WE 26 · 3. OG mitte
+> **Type:** Wohnung · **93 m²** · 3.5 Zimmer · MEA 216
+> **Owner:** Winfried Ullmann (EIG-006)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-027 · WE 27 · 3. OG rechts
+> **Type:** Wohnung · **82 m²** · 3 Zimmer · MEA 190
+> **Owner:** Winfried Ullmann (EIG-006)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-028 · WE 28 · 4. OG links
+> **Type:** Wohnung · **96 m²** · 3.5 Zimmer · MEA 223
+> **Owner:** Dunja Schacht (EIG-008)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-029 · WE 29 · 4. OG mitte
+> **Type:** Wohnung · **120 m²** · 4.5 Zimmer · MEA 279
+> **Owner:** Tom Hartmann (EIG-022)
+> **Tenant:** Edeltraud Renner (MIE-017)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-030 · WE 30 · 4. OG rechts
+> **Type:** Wohnung · **95 m²** · 3.5 Zimmer · MEA 221
+> **Owner:** Osman Jacob (EIG-017)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-031 · WE 31 · 5. OG links
+> **Type:** Wohnung · **103 m²** · 4 Zimmer · MEA 239
+> **Owner:** Caroline Bohlander (EIG-011)
+> **Tenant:** Carsten Austermühle (MIE-022)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-032 · WE 32 · 5. OG mitte
+> **Type:** Wohnung · **48 m²** · 1.5 Zimmer · MEA 111
+> **Owner:** Marcus Dowerg (EIG-001)
+> **Tenant:** Magrit Mitschke (MIE-016)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-033 · WE 33 · 5. OG rechts
+> **Type:** Wohnung · **119 m²** · 4.5 Zimmer · MEA 276
+> **Owner:** Gertraud Holsten (EIG-002)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-034 · WE 34 · 5. OG links
+> **Type:** Wohnung · **118 m²** · 4.5 Zimmer · MEA 274
+> **Owner:** Wolfgang Hettner (EIG-016)
+> **Tenant:** Hanna Schweitzer (MIE-015)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-035 · WE 35 · 5. OG links
+> **Type:** Wohnung · **85 m²** · 3 Zimmer · MEA 197
+> **Owner:** Caroline Bohlander (EIG-011)
+> **Tenant:** Louise Ladeck (MIE-018)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-036 · WE 36 · 5. OG rechts
+> **Type:** Wohnung · **107 m²** · 4 Zimmer · MEA 248
+> **Owner:** Kunigunda Ditschlerin (EIG-012)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏬 EH-037 · GE 37 · EG Ladenlokal
+> **Type:** Gewerbe · **142 m²** · 0 Zimmer · MEA 348
+> **Owner:** Marcus Dowerg (EIG-001)
+> **Tenant:** Björn Weinhage (MIE-023)
+> **Status:** ✅ no open issues
+
+> [!note]- 🚗 EH-038 · TG 38 · Tiefgarage
+> **Type:** Tiefgarage · **12 m²** · 0 Zimmer · MEA 23
+> **Owner:** Horst Vollbrecht (EIG-009)
+> **Status:** ✅ no open issues
+
+### 🏢 HAUS-16 (Hausnr. 16, 14 units)
+
+> [!note]- 🏠 EH-039 · WE 39 · 1. OG links
+> **Type:** Wohnung · **64 m²** · 2 Zimmer · MEA 149
+> **Owner:** Dörte Kraus (EIG-021)
+> **Tenant:** Wilma Roht (MIE-014)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-040 · WE 40 · 1. OG mitte
+> **Type:** Wohnung · **73 m²** · 2.5 Zimmer · MEA 169
+> **Owner:** Gottlob Hahn (EIG-023)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-041 · WE 41 · 1. OG rechts
+> **Type:** Wohnung · **106 m²** · 4 Zimmer · MEA 246
+> **Owner:** Sükrü Aumann (EIG-029)
+> **Tenant:** Galina Wohlgemut (MIE-021)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-042 · WE 42 · 2. OG links
+> **Type:** Wohnung · **103 m²** · 4 Zimmer · MEA 239
+> **Owner:** Mina Textor (EIG-019)
+> **Tenant:** Anika Zimmer (MIE-020)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-043 · WE 43 · 2. OG mitte
+> **Type:** Wohnung · **94 m²** · 3.5 Zimmer · MEA 218
+> **Owner:** Erdal Beckmann (EIG-004)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-044 · WE 44 · 2. OG rechts
+> **Type:** Wohnung · **95 m²** · 3.5 Zimmer · MEA 221
+> **Owner:** Anni Wagenknecht (EIG-007)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-045 · WE 45 · 3. OG links
+> **Type:** Wohnung · **66 m²** · 2 Zimmer · MEA 153
+> **Owner:** Ronald Kelley (EIG-020)
+> **Tenant:** Chantal Täsche (MIE-006)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-046 · WE 46 · 3. OG mitte
+> **Type:** Wohnung · **85 m²** · 3 Zimmer · MEA 197
+> **Owner:** Dorothe Wulf (EIG-030)
+> **Tenant:** Ewa Thies (MIE-010)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-047 · WE 47 · 3. OG rechts
+> **Type:** Wohnung · **110 m²** · 4 Zimmer · MEA 255
+> **Owner:** Gertraud Holsten (EIG-002)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-048 · WE 48 · 4. OG links
+> **Type:** Wohnung · **64 m²** · 2 Zimmer · MEA 149
+> **Owner:** Anni Wagenknecht (EIG-007)
+> **Tenant:** _vacant or owner-occupied_
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-049 · WE 49 · 4. OG mitte
+> **Type:** Wohnung · **115 m²** · 4.5 Zimmer · MEA 267
+> **Owner:** Arnulf Heintze (EIG-003)
+> **Tenant:** Joanna Schäfer (MIE-003)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-050 · WE 50 · 4. OG rechts
+> **Type:** Wohnung · **59 m²** · 2 Zimmer · MEA 137
+> **Owner:** Ingbert Nerger (EIG-010)
+> **Tenant:** Jörgen Seidel (MIE-019)
+> **Status:** ✅ no open issues
+
+> [!note]- 🏠 EH-051 · WE 51 · 4. OG rechts
+> **Type:** Wohnung · **85 m²** · 3 Zimmer · MEA 197
+> **Owner:** Jo Reuter (EIG-032)
+> **Tenant:** Horst-Günter Zänker (MIE-004)
+> **Status:** ✅ no open issues
+
+> [!note]- 🚗 EH-052 · TG 52 · Tiefgarage
+> **Type:** Tiefgarage · **12 m²** · 0 Zimmer · MEA 23
+> **Owner:** Ingbert Nerger (EIG-010)
+> **Status:** ✅ no open issues
+
 
 ---
 
