@@ -24,7 +24,7 @@ Do not propose, suggest, or fall back to Flash, 2.5 Pro, 2.0, or any other model
 | **Team** | Mahir (AI/product), Anwar (automation), Yasin (design) |
 | **Surface** | Obsidian plugin (primary), tiny web page for bulk import only. No iOS, no live web app, no Durable Objects, no Yjs. |
 | **Demo property** | WEG Immanuelkirchstraße 26, 10405 Berlin (the dataset Buena gave us) |
-| **Build priority** | 1. Edit flow in Obsidian (inline approve/reject, hover history, sidebar queue, status bar). 2. Bulk import (drag-and-drop archive). 3. Email-driven incremental updates. |
+| **Build priority** | 1. Edit flow in Obsidian (sidebar review queue, hover history, status bar, clean property briefing). 2. Bulk import (drag-and-drop archive). 3. Email-driven incremental updates. |
 | **Storyline** | Homeowner onboarding: a homeowner forwards their old property manager's archive, the engine produces a clean Obsidian vault per property, then keeps it surgically up to date as new emails arrive. |
 
 ---
@@ -304,7 +304,7 @@ The edit flow is the priority. The plugin is what the jury sees in the Loom. Bui
 - **Sidebar pane (right)**: custom `ItemView` registered via `registerView('buena-sidebar', ...)`. Two stacked sections: **Pending queue** (callout-style cards with approve / reject / edit) and **Property history** (reverse-chrono accepted changes, click to scroll the editor to the section).
 - **Status bar (bottom)**: connection state, pending count badge, "Last patch Xm ago", animated pulse when a patch lands. One `addStatusBarItem()` call.
 - **Hover popover**: custom `HoverPopover` triggered on any line carrying a `<!-- prov: ... -->` marker. Shows last 3 entries from `history/` for that section: old / new / source / actor / decision / timestamp. Click source to jump to the file in `attachments/`.
-- **Inline pending callout**: pending patches render as `> [!warning] Pending patch` blocks above the affected section. A markdown post-processor replaces a `buena-pending` code-block with a rich approve / reject / edit card (same pattern as the claudian plugin's inline approval UI).
+- **Pending review surface**: pending patches live in the right sidebar queue, not in the markdown body. The markdown should stay readable as a clean property briefing while the sidebar owns review actions.
 - **New-content highlight**: patches added since last open get a soft yellow background for 24h, then fade. Implemented as a markdown post-processor reading `history/` timestamps.
 
 ### Plugin component plan (hackathon-tight)
@@ -313,7 +313,7 @@ The edit flow is the priority. The plugin is what the jury sees in the Loom. Bui
 |---|---|---|
 | `BuenaPlugin` | `Plugin` | entry point, settings (R2 endpoint, bearer token, property ID) |
 | `BuenaSidebarView` | `ItemView` | right-leaf pane with pending queue + history |
-| `inlinePatchProcessor` | `registerMarkdownCodeBlockProcessor('buena-pending', ...)` | renders approve/reject card |
+| `sync layer` | `pullPropertySnapshotOnce()` + `fetchPending()` | keeps markdown mirrored from remote and loads the queue into the sidebar |
 | `provenanceProcessor` | `registerMarkdownPostProcessor()` | scans for `<!-- prov: ... -->` and attaches hover handler |
 | `BuenaHoverPopover` | `HoverPopover` | renders last 3 history entries |
 | `BuenaStatusBar` | `addStatusBarItem()` | connection + pending count |
@@ -415,12 +415,27 @@ Order matters: edit flow ships first, then ingestion. The plugin is the demo.
 - [x] New-content highlight (24h soft-yellow) via inline changed markers + recent-content styling (`plugin/src/popover.ts`, `styles.css`)
 - [x] Human-edit detection: editor changes mark sections in local + remote state.json (`plugin/src/human-edits.ts`, worker `POST /vaults/:id/human-edit`)
 
-#### Current plugin decisions (Sunday morning)
-- Keep `## 🪑 Beirat notes` for now. It is a manual-only notes section and is not removed in this pass.
-- `## 🚪 Units` should render as a clean table, not as hover-heavy chips. Keep hover minimal there. Per-building collapse / expand exists now.
+#### Current plugin decisions (Sunday late)
+- The current canonical split is: **left side = property briefing**, **right side = workflow UI**. Do not put the pending queue back into markdown unless the user explicitly wants that.
+- Remote `property.md` for `LIE-001` was updated on Sunday night to the simplified structure. Treat the remote worker snapshot as canonical. If Obsidian shows the old rich layout again, check remote first and then run a full plugin sync.
+- Keep `## Beirat notes` for now. It is a manual-only notes section and is not removed in this pass.
+- The property markdown should use this simplified section order: `Summary`, `Open issues`, `Side agreements`, `Assembly decisions`, `Beirat notes`, then lightweight reference tables for buildings, owners, service providers, finances, and the unit index.
+- `Unit index` should render as a clean table, not as hover-heavy chips. Keep hover minimal there. Per-building collapse / expand exists now.
 - Change history lives in the plugin tab, not in markdown. Rejections require a reason and stay visible there.
-- Local property markdown should mirror remote `property.md` + `state.json`, then append only the current remote pending queue. Do not preserve stale local pending blocks.
-- Pending cards should show scope explicitly: `EH-XXX`, `HAUS-XX`, or `DL-XXX`, not pretend everything is a unit issue.
+- Local property markdown should mirror remote `property.md` + `state.json` only. The pending queue lives in the sidebar and should not be appended into markdown.
+- The sidebar queue should fetch pending patches from the worker and show scope explicitly: `EH-XXX`, `HAUS-XX`, or `DL-XXX`, not pretend everything is a unit issue.
+- The markdown should keep tribal knowledge plus lightweight references. It should not act like a second ERP. Structured master data remains canonical elsewhere.
+- The presentation angle is: the left side is pleasant and human-readable, but still plain enough underneath for agents to use. The right side can be richer and more obviously product-like.
+- Sidebar UI source of truth is now `ui-mockups/interactive-redesign-v19.html`, implemented primarily through the bottom `SIDEBAR V19 OVERRIDES` block in `plugin/styles.css`.
+- If a future agent needs to change sidebar visuals, start with:
+  - `plugin/styles.css` for visuals
+  - `plugin/src/sidebar.ts` for header, tabs, queue cards, and history table structure
+  - `plugin/src/statusbar.ts` for the footer bar
+- Current history table simplification:
+  - `When` is inline inside the section cell, not a separate column
+  - decision is simplified, approved = check only, rejected = x only, auto = icon + `auto`
+  - no separate mode column
+- Keep the sidebar surface white or only very slightly off-white. Do not reintroduce the older full-panel cream styling.
 - Per-property `@kontext.haus` email routing is part of the current path. Worker now resolves subaddress first, then deterministic sender/recipient email lookup from the committed ERP seed. Safe unit hinting applies only when the match collapses to exactly one unit.
 - Speech-to-text for rejection reasons is explicitly deferred for now.
 - Bulk import stays in scope. Do not drop the public drag-and-drop page yet.
@@ -438,7 +453,7 @@ Order matters: edit flow ships first, then ingestion. The plugin is the demo.
 
 ### Phase 3b, Plugin polish (hours 16 to 18)
 - [x] Provenance jump: raw `r2://buena-raw/...` sources can be pulled into the vault and opened from the provenance pill (`plugin/src/provenance-open.ts`)
-- [x] Multi-unit collapse/expand under `## Units` (simple per-building toggle in reading view)
+- [x] Multi-unit collapse/expand under `## Unit index` (simple per-building toggle in reading view)
 - [x] Animated patch pulse in status bar (`markPatchReceived`)
 - [x] Cloudflare setup playbook drafted (`docs/cloudflare-setup.md`), parked until extractor + edit flow stable
 
@@ -467,42 +482,67 @@ Order matters: edit flow ships first, then ingestion. The plugin is the demo.
 
 ---
 
-## Demo plan, the 2-min Loom
+## Demo plan, the 2-min Loom — locked
 
-Storyline: **homeowner onboarding**.
+**Headline beat: "The Human Always Wins."** Real Gmail, real DNS, real Cloudflare Email Routing, real Worker, real vault. Nothing simulated. The bootstrap is already done, the demo opens on a populated vault and shows it staying alive in real time.
 
-### 0:00 to 0:15, the hook
-> *"A homeowner just bought into a Berlin WEG. Their old property manager handed over an archive: thousands of emails, scanned letters, contracts, bank statements, master data exports. Today, untangling that takes weeks. Watch this."*
+Storyboard reference: `~/nanobanana-images/nb_20260426_002026_4k.png` (the four-stage poster).
 
-Screen: a chaotic folder with mixed file types from `partner-files/`.
+### 0:00 to 0:15, the gap
+> *"A Berlin property manager gets hundreds of emails a week. Each one: read, decide which property, which unit, which owner, open the right file, type the update, file the original. Five to fifteen minutes per email. Watch this."*
 
-### 0:15 to 0:50, the bulk bootstrap
-Drag the archive zip onto the bulk-import page. On screen:
-- Files stream through the Cloudflare Worker
-- Gemini extracts entities from PDFs
-- Gemini routes each item to a property + section
-- Identity resolver joins sender email against stammdaten to assign IDs
-- One Obsidian vault file emerges for `WEG Immanuelkirchstraße 26`
-- Cut to Obsidian: graph view explodes with property, owners, tenants, service providers
+Screen: a populated Obsidian vault for `WEG Immanuelkirchstraße 26`. Sidebar empty. Status bar idle.
 
-### 0:50 to 1:30, the surgical update
-Replay `incremental/day-01`. Three new items land:
-- An email from the Heizungs-Versorger about a maintenance appointment
-- An invoice PDF from the Hausmeister
-- An email contradicting an existing fact (triggers the review queue)
+### 0:15 to 0:45, live email one (auto-apply)
+From the phone, on stage, send a freehand email to `property+LIE-001@kontext.haus`:
+- **Subject**: `WE 14 Warmwasser defekt`
+- **Body**: `In WE 14 ist seit Freitag das Warmwasser ausgefallen. Mieter mindert ab heute 10 Prozent.`
 
-Show in Obsidian:
-- First two: surgical patches, only the affected lines change, soft-yellow highlight
-- Third: pending callout appears, hover shows source email, click "Approve" → patch lands
-- A pre-edited human note nearby is untouched
+Within ~10 seconds in Obsidian:
+- Status bar pulses
+- Sidebar card appears, scoped to `EH-014`
+- Auto-applied line lands under `## Open issues`, soft-yellow highlight
+- Hover the provenance pill, the actual email body shows
 
-### 1:30 to 1:50, the speed
-Run days 02 through 05 in fast-forward. Vault keeps updating. No re-processing of the base archive on any new email.
+Narration: *"Subaddress routing picks the property. Deterministic ERP join picks the unit. Empty section plus new fact, auto-applied with provenance."*
 
-### 1:50 to 2:00, the close
-> *"Buena's onboarding pain solved in 24 hours, native to their Obsidian workflow. Built with Gemini for extraction and routing, Tavily for enrichment, and a deterministic ERP join for identity. Every fact in the vault traces back to its source. Humans always have the final word."*
+### 0:45 to 1:20, live email two (the kill shot, "human always wins")
+Second email from the phone, same address:
+- **Subject**: `Korrektur`
+- **Body**: `Korrektur: Heizung defekt, nicht Warmwasser. Ab 1. Mai.`
 
-End on the Obsidian graph view + sidebar history pane.
+This time the engine **does not** auto-apply. It detects the contradiction:
+- Sidebar pending card with amber border
+- Side-by-side diff: old `Warmwasser…` strikethrough, new `Heizung defekt seit 1. Mai…`
+- Approve button. Click. Line updates, history pane logs old → new with both source emails.
+
+Narration: *"Existing fact plus contradicting fact equals human review. Precision over recall. The engine never overwrites without permission."*
+
+### 1:20 to 1:45, the Beirat beat (humans are sacred)
+Before recording, manually type a note in `## Beirat notes` in Obsidian. On camera, send an email that would touch that section. It routes to pending, not auto-applied.
+
+Narration: *"Human-edited sections get a marker. The patcher detects it before writing. Buena's stated philosophy is AI enhances, doesn't replace. This is what that looks like in code."*
+
+### 1:45 to 1:55, the multi-tenant reveal
+One more email, this time `property+LIE-002@kontext.haus`. Different vault opens. Same flow. *"Every property gets its own address. Every email knows where it belongs."*
+
+### 1:55 to 2:00, the close
+> *"CLAUDE.md, but for a building. Self-updating. Surgical. Traceable. Built with Gemini 3.1 Pro, Cloudflare Email Routing, and Tavily. Humans always have the final word."*
+
+End on the sidebar history pane showing the full chain of decisions.
+
+### Pre-flight checklist (record day)
+- [ ] Send one throwaway email 5 minutes before recording to warm Gmail → Cloudflare delivery path
+- [ ] Pre-stage Beirat notes manual edit
+- [ ] Confirm `LIE-002` vault exists for the multi-tenant beat (or cut that beat if not)
+- [ ] `gog` CLI authed, phone Gmail logged in (belt and suspenders, either path)
+- [ ] Worker tail running in a side terminal so we can show real logs if delivery is slow
+- [ ] Property markdown clean, no leftover pending cards from earlier tests
+
+### Risk notes
+- Gmail → Cloudflare delivery is usually 2-15s but can spike to 30s+. If it stalls during the live shot, narrate it: *"this is real DNS, real spam filtering, real queue."* That's a feature, not a bug.
+- If Gemini routing is slow, the auto-apply takes longer. Don't fake it. Wait it out, narrate the queue.
+- Don't demo the bootstrap. It's already done. Opening on a populated vault is stronger than opening on chaos.
 
 ---
 
@@ -592,6 +632,47 @@ buena-hackathon/
 
 ---
 
+## Design principles (lifted from the Buena redesign framework)
+
+Anwar's `buena-design-framework` doc on `origin/Anou4r-patch-2` reverse-engineers Din Bisevac's design taste. Three rules from that doc apply directly to what we're shipping. Treat them as gates, not aspirations.
+
+### 1. Opinion per section
+
+Every section in `property.md` carries one opinionated stance, written down. If we can't state the opinion in one sentence, the section isn't done and probably shouldn't exist. Current opinions:
+
+- **Summary**: the homeowner's 30-second briefing. One paragraph, no lists. If it needs bullets, it belongs in another section.
+- **Open issues**: only items that have a person, a unit/building/provider, and an unresolved state. Closed issues move to history, never linger here.
+- **Side agreements**: human-authored exceptions to the standard lease or HOA rules. Never auto-extracted without human review, because misclassifying these is the worst possible failure.
+- **Assembly decisions**: pointers to ETV protocols, not the protocols themselves. The protocol PDF is the source of truth, this section is the index.
+- **Beirat notes**: manual-only. The engine never writes here. This is the PM's freehand space and protecting it is the whole point of the human-edit detector.
+- **Unit index**: a flat reference table, one row per EH-XXX. ERP-owned facts only. Tribal knowledge for a unit lives in the unit's own subsection elsewhere, not in this table.
+
+If we add a new section, we add a new bullet here first.
+
+### 2. Painful baseline, target compression
+
+Every demo claim leads with a single number. The Loom and the README hero use the same one. Locked baselines:
+
+- **Homeowner archive intake**: 3 weeks of paralegal-style untangling → 4 minutes of drag-and-drop and review.
+- **Single email update**: 5 to 15 minutes of "which file does this go in" → under 10 seconds, surgical patch with provenance.
+- **Identity resolution on inbound email**: 100% manual today → 93.7% deterministic, the remainder routed to a human queue (verified against the stammdaten join).
+
+If a number isn't in this list, we don't claim it on stage.
+
+### 3. Voice audit
+
+Everything a human reads, in the plugin, in the Worker, in the bulk-import page, in the README, sounds like a person wrote it. No corporate filler, no "An unexpected error occurred", no "Please be advised". Rules:
+
+- **Errors name the cause and the next action.** "We couldn't reach Gemini. Retrying in 5s, or click Retry." Not "An unexpected error occurred."
+- **Pending callouts say what's pending and why we paused.** "This contradicts the existing rent figure (1,240 EUR vs. 1,180 EUR). Approve to overwrite, reject to keep the current value."
+- **Status bar is one short clause.** "Synced 12s ago", "3 pending", "Reconnecting…". Not "Connection status: established".
+- **Rejection reasons are the user's words, never templated.** Free text in, stored as-is.
+- **No "kindly", no "please be advised", no passive-corporate constructions, no em dashes** anywhere in user-facing text.
+
+Before the Loom, do one read-aloud pass over every visible string. Anything that sounds like SaaS boilerplate gets rewritten.
+
+---
+
 ## Anti-patterns to avoid
 
 - **Don't regenerate the whole .md.** Surgical patches only.
@@ -669,7 +750,7 @@ Expected outcome: the attachment content is extracted through the stored-documen
 - `GET /vaults/LIE-001/pending` for queued review items
 - `GET /vaults/LIE-001/history` for `auto` vs `approved` vs `rejected`
 - `GET /vaults/LIE-001/property.md` for actual rendered markdown changes
-- In Obsidian, use the plugin sync button, which now does a full mirror sync: remote `property.md` + `state.json`, then current remote pending queue only
+- In Obsidian, use the plugin sync button, which now does a full mirror sync of remote `property.md` + `state.json`, then refreshes the sidebar queue from the current remote pending list
 
 #### Important note
 When verifying scope behavior, remember that not every fact should have a unit. Valid scopes are unit (`EH-XXX`), building (`HAUS-XX`), and provider (`DL-XXX`). The pending UI should show the correct scope pill instead of implying everything is a unit issue.
