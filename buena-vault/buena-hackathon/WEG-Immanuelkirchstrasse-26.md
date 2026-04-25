@@ -398,7 +398,7 @@ tags:
 
 | Role | Provider | Cost |
 | --- | --- | --- |
-| Hausmeister | [[Hausmeister Mueller GmbH]] | 650 €/Monat |
+| Hausmeister | [[Hausmeister Mueller GmbH]] | 720 €/Monat {changed: 2026-04-25 \| from: 650 €/Monat \| actor: gemini-2.5-pro \| src: briefe/2026-04-10/BRIEF-00781.pdf} |
 | Aufzugswartung | [[Aufzug Schindler & Co. GmbH]] | 185 €/Monat |
 | Heizungswartung | [[Heiztechnik Berlin GmbH]] | 78 €/Std. |
 | Treppenhausreinigung | [[Reinigungsservice Kowalski]] | 420 €/Monat |
@@ -419,7 +419,7 @@ tags:
 
 > [!todo] Wasser-Jahresabrechnung 2025
 > Verbrauch **76.809 m³**, Saldo **5.784 €** (Berliner Wasserbetriebe, 01.01.2026). Auf WEG-Konto buchen.
-> *Source: `emails/2026-01/EMAIL-06549.eml` · confidence 0.92*
+> *Source: `emails/2026-01/EMAIL-06549.eml` · confidence 0.92* {prov: emails/2026-01/EMAIL-06549.eml | conf: 0.92 | actor: gemini-flash}
 
 ---
 

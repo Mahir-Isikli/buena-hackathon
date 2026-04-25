@@ -1,110 +1,163 @@
-/* Buena Context Engine plugin styles */
+/* Buena Context Engine plugin styles
+ *
+ * Brand palette pulled from buena.com:
+ *   --buena-black:   #000
+ *   --buena-white:   #fff
+ *   --buena-beige:   #CDBDA3  (warm sand, primary accent)
+ *   --buena-gray:    #D6D3D1
+ *   --buena-sage:    #D6DBD5  (faint background tint)
+ *   --buena-cream:   #F5F1EA  (light surface, derived)
+ */
 
-/* Sidebar */
+.buena-sidebar,
+.buena-pending-card,
+.buena-status,
+.buena-prov-pill,
+.buena-changed-pill {
+  --buena-black: #000;
+  --buena-white: #fff;
+  --buena-beige: #CDBDA3;
+  --buena-beige-soft: #E5DCC9;
+  --buena-gray: #D6D3D1;
+  --buena-sage: #D6DBD5;
+  --buena-cream: #F5F1EA;
+  --buena-ink-muted: #4A4744;
+  --buena-ink-faint: #8A8580;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
 .buena-sidebar {
-  padding: 12px;
+  padding: 0;
   font-size: var(--font-ui-small);
+  color: var(--buena-black);
+  background: var(--buena-cream);
+  height: 100%;
 }
 
 .buena-sidebar-header {
-  margin-bottom: 16px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--background-modifier-border);
+  padding: 20px 18px 16px;
+  background: var(--buena-black);
+  color: var(--buena-white);
+  border-bottom: 1px solid var(--buena-black);
 }
 
 .buena-sidebar-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .buena-sidebar-title-icon {
   display: inline-flex;
   align-items: center;
-  color: var(--text-accent);
+  color: var(--buena-beige);
 }
 
 .buena-sidebar-title {
   margin: 0;
-  font-size: 1.1em;
+  font-size: 1.05em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--buena-white);
 }
 
 .buena-sidebar-subtitle {
-  margin-top: 2px;
-  color: var(--text-muted);
-  font-size: 0.85em;
+  margin-top: 4px;
+  color: var(--buena-beige);
+  font-size: 0.78em;
   font-family: var(--font-monospace);
+  letter-spacing: 0.04em;
 }
 
 .buena-section {
-  margin-bottom: 20px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--buena-gray);
+}
+
+.buena-section:last-child {
+  border-bottom: none;
 }
 
 .buena-section-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .buena-section h4 {
   margin: 0;
-  font-size: 0.9em;
-  color: var(--text-muted);
+  font-size: 0.72em;
+  color: var(--buena-ink-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.buena-badge {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  font-size: 0.75em;
-  padding: 1px 6px;
-  border-radius: 8px;
+  letter-spacing: 0.12em;
   font-weight: 600;
 }
 
+.buena-badge {
+  background: var(--buena-black);
+  color: var(--buena-beige);
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 0;
+  font-weight: 600;
+  font-family: var(--font-monospace);
+}
+
 .buena-empty {
-  color: var(--text-muted);
+  color: var(--buena-ink-faint);
   font-style: italic;
   padding: 8px 0;
 }
 
+/* Cards */
 .buena-card {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 8px;
+  background: var(--buena-white);
+  border: 1px solid var(--buena-gray);
+  border-radius: 0;
+  padding: 12px 14px;
+  margin-bottom: 10px;
 }
 
 .buena-card-pending {
-  border-left: 3px solid var(--color-yellow);
+  border-left: 3px solid var(--buena-black);
+  background: var(--buena-white);
 }
 
 .buena-card-history {
-  border-left: 3px solid var(--background-modifier-border);
-  opacity: 0.85;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--buena-gray);
+  padding: 10px 0;
+  margin-bottom: 0;
+}
+
+.buena-card-history:last-child {
+  border-bottom: none;
 }
 
 .buena-card-section {
   font-weight: 600;
-  font-size: 0.85em;
-  color: var(--text-muted);
-  margin-bottom: 4px;
+  font-size: 0.78em;
+  color: var(--buena-ink-muted);
+  margin-bottom: 6px;
+  font-family: var(--font-monospace);
+  letter-spacing: 0.02em;
 }
 
 .buena-card-old {
-  color: var(--text-faint);
+  color: var(--buena-ink-faint);
   text-decoration: line-through;
-  font-size: 0.85em;
-  margin-bottom: 2px;
+  font-size: 0.88em;
+  margin-bottom: 4px;
 }
 
 .buena-card-new {
-  color: var(--text-normal);
-  margin-bottom: 8px;
-  line-height: 1.4;
+  color: var(--buena-black);
+  margin-bottom: 10px;
+  line-height: 1.45;
 }
 
 .buena-card-meta {
@@ -112,34 +165,41 @@
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .buena-meta-pill {
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 0.75em;
-  color: var(--text-muted);
+  background: var(--buena-cream);
+  border: 1px solid var(--buena-gray);
+  border-radius: 0;
+  padding: 2px 7px;
+  font-size: 0.7em;
+  color: var(--buena-ink-muted);
   font-family: var(--font-monospace);
+  letter-spacing: 0.02em;
 }
 
 .buena-meta-source {
-  color: var(--text-faint);
-  font-size: 0.75em;
+  color: var(--buena-ink-faint);
+  font-size: 0.72em;
   font-family: var(--font-monospace);
   word-break: break-all;
 }
 
 .buena-decision-auto {
-  color: var(--color-green);
+  color: var(--buena-black);
+  background: var(--buena-beige);
+  border-color: var(--buena-beige);
 }
 .buena-decision-approved {
-  color: var(--color-blue);
+  color: var(--buena-white);
+  background: var(--buena-black);
+  border-color: var(--buena-black);
 }
 .buena-decision-rejected {
-  color: var(--color-red);
+  color: var(--buena-ink-faint);
+  background: var(--buena-gray);
+  border-color: var(--buena-gray);
 }
 
 .buena-card-actions,
@@ -149,159 +209,212 @@
 }
 
 .buena-btn {
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  padding: 4px 10px;
-  font-size: 0.85em;
+  background: var(--buena-white);
+  border: 1px solid var(--buena-black);
+  border-radius: 0;
+  padding: 5px 12px;
+  font-size: 0.82em;
   cursor: pointer;
-  color: var(--text-normal);
+  color: var(--buena-black);
+  font-family: inherit;
+  letter-spacing: 0.02em;
 }
 
 .buena-btn:hover {
-  background: var(--background-modifier-hover);
+  background: var(--buena-cream);
 }
 
 .buena-btn-primary {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  border-color: var(--interactive-accent);
+  background: var(--buena-black);
+  color: var(--buena-white);
+  border-color: var(--buena-black);
 }
 
 .buena-btn-primary:hover {
-  background: var(--interactive-accent-hover);
+  background: var(--buena-ink-muted);
+  color: var(--buena-beige);
 }
 
-/* Inline pending callout (rendered from buena-pending codeblock) */
+/* ============================================================
+   INLINE PENDING CALLOUT (rendered from buena-pending codeblock)
+   ============================================================ */
 .buena-pending-card {
-  background: var(--background-secondary);
-  border: 1px solid var(--color-yellow);
-  border-left: 4px solid var(--color-yellow);
-  border-radius: 6px;
-  padding: 12px;
-  margin: 12px 0;
+  background: var(--buena-cream);
+  border: 1px solid var(--buena-black);
+  border-left: 4px solid var(--buena-black);
+  border-radius: 0;
+  padding: 14px 16px;
+  margin: 14px 0;
+  font-family: var(--font-text);
 }
 
 .buena-pending-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--buena-gray);
 }
 
 .buena-pending-label {
-  background: var(--color-yellow);
-  color: var(--text-on-accent);
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 0.75em;
+  background: var(--buena-black);
+  color: var(--buena-beige);
+  border-radius: 0;
+  padding: 3px 9px;
+  font-size: 0.7em;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
+  font-family: var(--font-monospace);
 }
 
 .buena-pending-section {
-  color: var(--text-muted);
+  color: var(--buena-ink-muted);
   font-family: var(--font-monospace);
-  font-size: 0.85em;
+  font-size: 0.82em;
+  letter-spacing: 0.02em;
 }
 
 .buena-pending-body {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .buena-pending-old {
-  color: var(--text-faint);
+  color: var(--buena-ink-faint);
   text-decoration: line-through;
   margin-bottom: 4px;
 }
 
 .buena-pending-new {
-  color: var(--text-normal);
+  color: var(--buena-black);
+  font-weight: 500;
 }
 
 .buena-pending-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .buena-pending-approved {
-  opacity: 0.5;
-  border-color: var(--color-green);
+  opacity: 0.55;
+  border-color: var(--buena-beige);
+  border-left-color: var(--buena-beige);
 }
 
 .buena-pending-rejected {
-  opacity: 0.5;
-  border-color: var(--color-red);
+  opacity: 0.45;
+  border-color: var(--buena-gray);
+  border-left-color: var(--buena-gray);
 }
 
-/* Provenance pill */
+/* ============================================================
+   PROVENANCE PILL  ({prov: src | conf: 0.91 | actor: ...})
+   ============================================================ */
 .buena-prov-pill {
   display: inline-block;
-  background: var(--background-modifier-border);
-  color: var(--text-muted);
-  font-size: 0.7em;
-  padding: 1px 5px;
-  border-radius: 3px;
+  background: var(--buena-beige-soft);
+  color: var(--buena-ink-muted);
+  font-size: 0.68em;
+  padding: 1px 6px;
+  border-radius: 0;
   margin: 0 3px;
   cursor: help;
   font-family: var(--font-monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   vertical-align: middle;
+  border: 1px solid var(--buena-beige);
 }
 
 .buena-prov-pill:hover {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
+  background: var(--buena-black);
+  color: var(--buena-beige);
+  border-color: var(--buena-black);
 }
 
-/* Status bar */
+/* ============================================================
+   CHANGED PILL  ({changed: 2026-04-25 | from: ... | actor: ...})
+   Visible inline marker on every patched fact.
+   ============================================================ */
+.buena-changed-pill {
+  display: inline-block;
+  background: var(--buena-black);
+  color: var(--buena-beige);
+  font-size: 0.65em;
+  padding: 1px 6px;
+  border-radius: 0;
+  margin: 0 4px;
+  cursor: help;
+  font-family: var(--font-monospace);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  border: 1px solid var(--buena-black);
+  font-weight: 600;
+}
+
+.buena-changed-pill::before {
+  content: "Δ ";
+  color: var(--buena-beige);
+  margin-right: 2px;
+}
+
+.buena-changed-pill:hover {
+  background: var(--buena-beige);
+  color: var(--buena-black);
+  border-color: var(--buena-black);
+}
+
+.buena-changed-pill:hover::before {
+  color: var(--buena-black);
+}
+
+/* ============================================================
+   STATUS BAR
+   ============================================================ */
 .buena-status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 0 6px;
+  border-left: 1px solid var(--buena-gray);
+  height: 100%;
 }
 
 .buena-status-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   display: inline-block;
 }
 
 .buena-status-dot-on {
-  background: var(--color-green);
-  box-shadow: 0 0 6px var(--color-green);
+  background: var(--buena-beige);
+  border: 1px solid var(--buena-black);
 }
 
 .buena-status-dot-off {
-  background: var(--background-modifier-border);
+  background: transparent;
+  border: 1px solid var(--buena-ink-faint);
 }
 
 .buena-status-icon {
   display: inline-flex;
   align-items: center;
-  opacity: 0.7;
+  opacity: 0.65;
 }
 
 .buena-status-text {
-  font-size: 0.9em;
+  font-size: 0.85em;
+  font-family: var(--font-monospace);
+  letter-spacing: 0.02em;
 }
 
 .buena-status-meta {
-  color: var(--text-muted);
-  font-size: 0.85em;
-}
-
-@keyframes buena-pulse {
-  0% { background: transparent; }
-  40% { background: var(--interactive-accent); color: var(--text-on-accent); }
-  100% { background: transparent; }
-}
-
-.buena-status-pulse {
-  animation: buena-pulse 1.2s ease-out;
-  border-radius: 4px;
-  padding: 0 4px;
+  color: var(--buena-ink-faint);
+  font-size: 0.8em;
+  font-family: var(--font-monospace);
 }

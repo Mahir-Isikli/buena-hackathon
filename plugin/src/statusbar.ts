@@ -5,7 +5,7 @@ export class BuenaStatusBar {
   private plugin: BuenaPlugin;
   private el: HTMLElement | null = null;
   private pendingCount = 2; // matches MOCK_PENDING in sidebar
-  private connected = false;
+  private connected = true; // mock: SSE not wired yet, show "on" state for demo
   private lastPatchAt: number | null = null;
   private tickInterval: number | null = null;
 
@@ -42,8 +42,6 @@ export class BuenaStatusBar {
 
   markPatchReceived() {
     this.lastPatchAt = Date.now();
-    this.el?.addClass("buena-status-pulse");
-    window.setTimeout(() => this.el?.removeClass("buena-status-pulse"), 1200);
     this.render();
   }
 
