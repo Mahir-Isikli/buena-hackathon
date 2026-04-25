@@ -45,8 +45,18 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
       if (spec.section) {
         header.createSpan({ text: spec.section, cls: "buena-pending-section" });
       }
-      if (spec.unit) {
-        header.createSpan({ text: spec.unit, cls: "buena-unit-pill" });
+      const scope = deriveScope(spec);
+      if (scope) {
+        header.createSpan({
+          text: scope.label,
+          cls: `buena-scope-pill buena-scope-pill-${scope.kind}`,
+        });
+        const scopeRow = card.createDiv({ cls: "buena-scope-row" });
+        scopeRow.createSpan({ text: "Scope", cls: "buena-scope-row-label" });
+        scopeRow.createSpan({
+          text: scope.label,
+          cls: `buena-scope-row-value buena-scope-row-value-${scope.kind}`,
+        });
       }
 
       const body = card.createDiv({ cls: "buena-pending-body" });
@@ -129,10 +139,18 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
         }
         const filePath = ctx.sourcePath;
         try {
+          const approvedAt = new Date().toISOString();
+          const annotatedBlock = annotateApprovedBlock(
+            spec.new_block,
+            approvedAt,
+            spec.actor ?? "unknown",
+            spec.source,
+            spec.confidence
+          );
           const insertedAt = await applyPatchToVault(plugin.app, filePath, {
             id: spec.id,
             target_heading: spec.target_heading,
-            new_block: spec.new_block,
+            new_block: annotatedBlock,
           });
           if (insertedAt === null) {
             new Notice(
@@ -163,7 +181,7 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
             actor: spec.actor ?? "unknown",
             originalBlock: {
               target_heading: spec.target_heading,
-              new_block: spec.new_block,
+              new_block: annotatedBlock,
               confidence: spec.confidence,
               snippet: spec.snippet,
             },
@@ -284,9 +302,34 @@ async function commitReject(
       plugin.settings,
       spec.id,
       "rejected",
-      spec.actor ?? "human"
+      spec.actor ?? "human",
+      reason
     ).catch((err) => console.warn("[Buena] postDecision failed", err));
   }
+}
+
+function annotateApprovedBlock(
+  block: string,
+  approvedAt: string,
+  actor: string,
+  source?: string,
+  confidence?: number
+): string {
+  const prov = source
+    ? ` {prov: ${source}${typeof confidence === "number" ? ` | conf: ${confidence}` : ""} | actor: ${actor}}`
+    : "";
+  const changed = ` {changed: ${approvedAt} | actor: ${actor}${source ? ` | src: ${source}` : ""}}`;
+  return `${block}${prov}${changed}`;
+}
+
+function deriveScope(spec: PendingPatchSpec): { kind: "unit" | "building" | "provider"; label: string } | null {
+  if (spec.unit) return { kind: "unit", label: spec.unit };
+  const hay = [spec.new, spec.snippet, spec.new_block].filter(Boolean).join(" \n ");
+  const building = /\b(HAUS-\d+)\b/i.exec(hay);
+  if (building) return { kind: "building", label: building[1].toUpperCase() };
+  const provider = /\b(DL-\d+)\b/i.exec(hay);
+  if (provider) return { kind: "provider", label: provider[1].toUpperCase() };
+  return null;
 }
 
 function shortSource(s: string): string {

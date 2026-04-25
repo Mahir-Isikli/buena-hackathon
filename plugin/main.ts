@@ -3,6 +3,9 @@ import { BuenaSidebarView, BUENA_SIDEBAR_VIEW_TYPE } from "./src/sidebar";
 import { registerInlinePatchProcessor } from "./src/inline-patch";
 import { registerProvenanceProcessor } from "./src/popover";
 import { registerErpReferenceProcessors } from "./src/erp-references";
+import { registerPropertyHeaderProcessor } from "./src/property-header";
+import { registerHumanEditTracking } from "./src/human-edits";
+import { registerUnitsCollapseProcessor } from "./src/units-collapse";
 import { initErpStore, watchErpFile } from "./src/erp";
 import { BuenaStatusBar } from "./src/statusbar";
 import { BuenaSettingTab, DEFAULT_SETTINGS, BuenaSettings } from "./src/settings";
@@ -10,6 +13,7 @@ import { connectEvents, EventClient, RemotePendingPatch } from "./src/api";
 import {
   appendPatchToFile,
   pullPendingOnce,
+  pullPropertySnapshotOnce,
   resolvePropertyFile,
   stripPatchFromFile,
 } from "./src/sync";
@@ -52,6 +56,15 @@ export default class BuenaPlugin extends Plugin {
     // Rich ERP reference rendering: inline `@ID` chips and ```buena-erp``` cards
     registerErpReferenceProcessors(this);
 
+    // Property header pills (copy inbox address, etc.)
+    registerPropertyHeaderProcessor(this);
+
+    // Collapse / expand affordance for per-building unit tables.
+    registerUnitsCollapseProcessor(this);
+
+    // Human edit tracking -> local state.json + worker marker.
+    registerHumanEditTracking(this);
+
     // Ribbon icon to open the sidebar
     this.addRibbonIcon("landmark", "Buena: open pending queue", async () => {
       await this.activateSidebar();
@@ -77,14 +90,15 @@ export default class BuenaPlugin extends Plugin {
       },
     });
 
-    // Manual pull from worker (works without SSE)
+    // Manual full sync from worker: property.md + state.json + current pending queue.
     this.addCommand({
       id: "buena-pull-pending",
-      name: "Pull pending from worker",
+      name: "Full sync from worker",
       callback: async () => {
         try {
+          await pullPropertySnapshotOnce(this);
           const { added, total } = await pullPendingOnce(this);
-          new Notice(`[Buena] pulled ${total} patches, added ${added}`);
+          new Notice(`[Buena] synced property + state, then pulled ${total} pending (${added} added)`);
         } catch (err) {
           console.error("[Buena] pull failed", err);
           new Notice(`[Buena] pull failed: ${err}`);
@@ -102,13 +116,22 @@ export default class BuenaPlugin extends Plugin {
     // Settings tab
     this.addSettingTab(new BuenaSettingTab(this.app, this));
 
-    // Dedupe any stale Buena leaves and start live sync once layout is ready.
+    // Dedupe any stale Buena leaves, pull the latest property snapshot, then start live sync.
     this.app.workspace.onLayoutReady(() => {
       const leaves = this.app.workspace.getLeavesOfType(BUENA_SIDEBAR_VIEW_TYPE);
       for (let i = 1; i < leaves.length; i++) {
         leaves[i].detach();
       }
-      this.startLiveSync();
+      void (async () => {
+        try {
+          await pullPropertySnapshotOnce(this);
+          await pullPendingOnce(this);
+        } catch (err) {
+          console.warn("[Buena] initial pull failed", err);
+        } finally {
+          this.startLiveSync();
+        }
+      })();
     });
   }
 

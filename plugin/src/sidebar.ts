@@ -23,7 +23,7 @@ import {
   reverseHistoryEntry,
   stripPendingBlockById,
 } from "./vault-patch";
-import { postDecision } from "./api";
+import { fetchHistory, postDecision } from "./api";
 import { pullPendingOnce } from "./sync";
 
 export const BUENA_SIDEBAR_VIEW_TYPE = "buena-sidebar";
@@ -106,9 +106,20 @@ export class BuenaSidebarView extends ItemView {
       this.currentFile = null;
     }
     this.pending = await this.scanPending(this.currentFile);
-    this.history = this.currentFile
-      ? await loadHistory(this.plugin, this.currentFile.path)
-      : [];
+    if (this.currentFile) {
+      const local = await loadHistory(this.plugin, this.currentFile.path);
+      let remote = [] as Awaited<ReturnType<typeof fetchHistory>>;
+      if (this.plugin.settings.workerUrl) {
+        try {
+          remote = await fetchHistory(this.plugin.settings);
+        } catch (err) {
+          console.warn("[Buena] remote history fetch failed", err);
+        }
+      }
+      this.history = mergeHistory(local, remote);
+    } else {
+      this.history = [];
+    }
     this.plugin.statusBar.setPendingCount(this.pending.length);
     this.plugin.statusBar.setStreak(computeStreak(this.history));
     this.plugin.statusBar.setVelocity(computeVelocity(this.history));
@@ -169,8 +180,10 @@ export class BuenaSidebarView extends ItemView {
     syncBtn.onclick = async () => {
       syncBtn.addClass("buena-syncing");
       try {
+        const { pullPropertySnapshotOnce } = await import("./sync");
+        await pullPropertySnapshotOnce(this.plugin);
         const r = await pullPendingOnce(this.plugin);
-        new Notice(`[Buena] synced: +${r.added} added (${r.total} total)`);
+        new Notice(`[Buena] full sync: property + state, then ${r.total} pending (${r.added} added)`);
         await this.refresh();
       } catch (err) {
         console.error("[Buena] sync failed", err);
@@ -352,6 +365,7 @@ export class BuenaSidebarView extends ItemView {
     this.renderHistoryHeader(headRow, "unit", "Unit");
     headRow.createEl("th", { text: "What", cls: "buena-th" });
     this.renderHistoryHeader(headRow, "decision", "Decision");
+    headRow.createEl("th", { text: "Mode", cls: "buena-th" });
     headRow.createEl("th", { text: "", cls: "buena-th buena-th-actions" });
 
     const tbody = table.createEl("tbody");
@@ -470,27 +484,32 @@ export class BuenaSidebarView extends ItemView {
     );
     pill.createSpan({ text: h.decision });
 
+    // Mode
+    const modeTd = tr.createEl("td", { cls: "buena-td buena-td-mode" });
+    const mode = h.decision === "auto" ? "Auto" : "Manual";
+    modeTd.createSpan({
+      text: mode,
+      cls: `buena-mode-pill buena-mode-${mode.toLowerCase()}`,
+    });
+
     // Actions (hover-only)
     const actionsTd = tr.createEl("td", { cls: "buena-td buena-td-actions" });
-    const reverseBtn = actionsTd.createEl("button", {
-      cls: "buena-row-reverse",
-      attr: { "aria-label": "Reverse and re-queue this change" },
-    });
-    setIcon(reverseBtn, "undo-2");
-    reverseBtn.title = "Reverse: strip from .md and put back into the pending queue";
-    reverseBtn.onclick = (ev) => {
-      ev.stopPropagation();
-      void this.handleReverse(h);
-    };
+    const canReverse = !!h.originalBlock?.target_heading && !!h.originalBlock?.new_block;
+    if (canReverse) {
+      const reverseBtn = actionsTd.createEl("button", {
+        cls: "buena-row-reverse",
+        attr: { "aria-label": "Reverse and re-queue this change" },
+      });
+      setIcon(reverseBtn, "undo-2");
+      reverseBtn.title = "Reverse: strip from .md and put back into the pending queue";
+      reverseBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        void this.handleReverse(h);
+      };
+    }
 
-    // Click row → jump to source
-    tr.onclick = () => {
-      attachHoverPopover; // keep import used; actual popover is on hover anyway
-      if (h.source) {
-        new Notice(h.source);
-      }
-    };
-    attachHoverPopover(tr, () => {
+    whatTd.addClass("buena-history-hover-target");
+    attachHoverPopover(whatTd, () => {
       const fields: HoverField[] = [
         { label: "Decision", value: h.decision },
         { label: "When", value: new Date(h.timestamp).toLocaleString() },
@@ -553,15 +572,26 @@ export class BuenaSidebarView extends ItemView {
   private renderPendingCard(parent: HTMLElement, p: PendingPatch) {
     const card = parent.createDiv({ cls: "buena-card buena-card-pending" });
 
-    // Top row: section + unit pill
+    // Top row: section + scope pill (unit / building / provider)
     const top = card.createDiv({ cls: "buena-card-top" });
     top.createDiv({ text: p.section, cls: "buena-card-section" });
-    if (p.unit) {
-      const unitPill = top.createSpan({ text: p.unit, cls: "buena-unit-pill" });
-      attachHoverPopover(unitPill, () => [
-        { label: "Unit", value: p.unit ?? "", mono: true },
+    const scope = derivePendingScope(p);
+    if (scope) {
+      const scopePill = top.createSpan({
+        text: scope.label,
+        cls: `buena-scope-pill buena-scope-pill-${scope.kind}`,
+      });
+      attachHoverPopover(scopePill, () => [
+        { label: "Scope", value: scope.kind },
+        { label: "Value", value: scope.label, mono: true },
         { label: "Section", value: p.section },
       ]);
+      const scopeRow = card.createDiv({ cls: "buena-scope-row" });
+      scopeRow.createSpan({ text: "Scope", cls: "buena-scope-row-label" });
+      scopeRow.createSpan({
+        text: scope.label,
+        cls: `buena-scope-row-value buena-scope-row-value-${scope.kind}`,
+      });
     }
 
     if (p.oldValue) {
@@ -706,13 +736,21 @@ export class BuenaSidebarView extends ItemView {
       return;
     }
     try {
+      const approvedAt = new Date().toISOString();
+      const annotatedBlock = annotateApprovedBlock(
+        p.new_block,
+        approvedAt,
+        p.actor,
+        p.source,
+        p.confidence
+      );
       const insertedAt = await applyPatchToVault(
         this.app,
         this.currentFile.path,
         {
           id: p.id,
           target_heading: p.target_heading,
-          new_block: p.new_block,
+          new_block: annotatedBlock,
         }
       );
       if (insertedAt === null) {
@@ -732,11 +770,11 @@ export class BuenaSidebarView extends ItemView {
         newValue: p.newValue,
         source: p.source,
         decision: "approved",
-        timestamp: new Date().toISOString(),
+        timestamp: approvedAt,
         actor: p.actor,
         originalBlock: {
           target_heading: p.target_heading,
-          new_block: p.new_block,
+          new_block: annotatedBlock,
           confidence: p.confidence,
           snippet: p.sourceSnippet,
         },
@@ -776,7 +814,7 @@ export class BuenaSidebarView extends ItemView {
         },
       });
       new Notice(`[Buena] rejected ${p.id}`);
-      this.notifyWorker(p.id, "rejected", p.actor);
+      this.notifyWorker(p.id, "rejected", p.actor, reason);
       await this.refresh();
     } catch (err) {
       console.error("[Buena] reject failed", err);
@@ -812,12 +850,17 @@ export class BuenaSidebarView extends ItemView {
   private notifyWorker(
     patchId: string,
     decision: "approved" | "rejected",
-    actor: string
+    actor: string,
+    reason?: string
   ) {
     if (!this.plugin.settings.workerUrl) return;
-    postDecision(this.plugin.settings, patchId, decision, actor || "human").catch(
-      (err) => console.warn("[Buena] postDecision failed", err)
-    );
+    postDecision(
+      this.plugin.settings,
+      patchId,
+      decision,
+      actor || "human",
+      reason
+    ).catch((err) => console.warn("[Buena] postDecision failed", err));
   }
 }
 
@@ -902,4 +945,72 @@ function uniqueUnits(pending: PendingPatch[]): string[] {
     }
   }
   return out.sort();
+}
+
+function derivePendingScope(
+  p: Pick<PendingPatch, "unit" | "newValue" | "sourceSnippet" | "new_block">
+): { kind: "unit" | "building" | "provider"; label: string } | null {
+  if (p.unit) return { kind: "unit", label: p.unit };
+  const hay = [p.newValue, p.sourceSnippet, p.new_block].filter(Boolean).join(" \n ");
+  const building = /\b(HAUS-\d+)\b/i.exec(hay);
+  if (building) return { kind: "building", label: building[1].toUpperCase() };
+  const provider = /\b(DL-\d+)\b/i.exec(hay);
+  if (provider) return { kind: "provider", label: provider[1].toUpperCase() };
+  return null;
+}
+
+function annotateApprovedBlock(
+  block: string,
+  approvedAt: string,
+  actor: string,
+  source?: string,
+  confidence?: number
+): string {
+  const prov = source
+    ? ` {prov: ${source}${typeof confidence === "number" ? ` | conf: ${confidence}` : ""} | actor: ${actor}}`
+    : "";
+  const changed = ` {changed: ${approvedAt} | actor: ${actor}${source ? ` | src: ${source}` : ""}}`;
+  return `${block}${prov}${changed}`;
+}
+
+function mergeHistory(
+  local: HistoryEntry[],
+  remote: Array<{
+    id: string;
+    section: string;
+    unit?: string;
+    oldValue?: string;
+    newValue: string;
+    source?: string;
+    decision: "approved" | "rejected" | "auto";
+    timestamp: string;
+    actor: string;
+    reason?: string;
+  }>
+): HistoryEntry[] {
+  const byKey = new Map<string, HistoryEntry>();
+
+  for (const item of remote) {
+    const key = `${item.id}:${item.decision}`;
+    byKey.set(key, {
+      id: item.id,
+      section: item.section,
+      unit: item.unit,
+      oldValue: item.oldValue,
+      newValue: item.newValue,
+      source: item.source,
+      decision: item.decision,
+      timestamp: item.timestamp,
+      actor: item.actor,
+      rejectionReason: item.reason,
+    });
+  }
+
+  for (const item of local) {
+    const key = `${item.id}:${item.decision}`;
+    // Local wins because it has originalBlock metadata needed for reverse.
+    byKey.set(key, item);
+  }
+
+  return [...byKey.values()].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 }

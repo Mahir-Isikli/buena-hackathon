@@ -37,9 +37,10 @@ import {
 const REF_RE = /^@([A-Z]+-[A-Z0-9-]+)$/i;
 
 type BlockSpec = {
-  layout?: "card" | "cards" | "grid" | "units" | "bank";
+  layout?: "card" | "cards" | "grid" | "units" | "bank" | "buildings" | "owners";
   id?: string;
   ids?: string[];
+  filter?: "beirat" | "selbstnutzer" | "all";
 };
 
 export function registerErpReferenceProcessors(plugin: BuenaPlugin) {
@@ -110,6 +111,12 @@ export function registerErpReferenceProcessors(plugin: BuenaPlugin) {
     switch (layout) {
       case "bank":
         renderBank(el, store);
+        return;
+      case "buildings":
+        renderBuildings(el, ids, store);
+        return;
+      case "owners":
+        renderOwners(el, ids, store, spec.filter ?? "all");
         return;
       case "grid":
         renderGrid(el, ids, store);
@@ -187,49 +194,242 @@ function renderGrid(el: HTMLElement, ids: string[], store: ReturnType<typeof get
   }
 }
 
-// ---- units layout: row per unit with auto-resolved occupant ------------
+// ---- units layout: clean table, minimal hover -------------------------
 function renderUnits(el: HTMLElement, ids: string[], store: ReturnType<typeof getErpStore>) {
   if (!store) return;
-  const wrap = el.createDiv({ cls: "buena-erp-units" });
+  const wrap = el.createDiv({ cls: "buena-erp-units-table-wrap" });
+  const table = wrap.createEl("table", { cls: "buena-units-table" });
+  const thead = table.createEl("thead");
+  const headRow = thead.createEl("tr");
+  for (const label of ["Unit", "Lage", "Typ", "Fläche", "Zi.", "Occupant"]) {
+    headRow.createEl("th", { text: label, cls: "buena-units-th" });
+  }
+  const tbody = table.createEl("tbody");
+
   for (const rawId of ids) {
     const r = store.resolve(rawId);
+    const tr = tbody.createEl("tr", { cls: "buena-units-row" });
     if (!r) {
-      const miss = wrap.createDiv({ cls: "buena-erp-unit-row buena-erp-unit-row-missing" });
-      miss.createSpan({ text: `Unknown unit: ${rawId}` });
+      const td = tr.createEl("td", {
+        cls: "buena-units-td",
+        attr: { colspan: "6" },
+      });
+      td.createSpan({ text: `Unknown unit: ${rawId}` });
       continue;
     }
-    const u = r.raw as { typ?: string };
-    const row = wrap.createDiv({ cls: "buena-erp-unit-row" });
 
-    // left: unit chip
-    const left = row.createDiv({ cls: "buena-erp-unit-left" });
-    const unitChip = left.createSpan({ cls: "buena-erp-unit-chip" });
-    unitChip.createSpan({ cls: "buena-erp-unit-chip-icon", text: kindIcon(r.kind) });
-    unitChip.createSpan({ cls: "buena-erp-unit-chip-label", text: r.label });
-    attachHoverPopover(unitChip, () => buildHoverFields(r));
+    const u = r.raw as {
+      einheit_nr?: string;
+      lage?: string;
+      typ?: string;
+      wohnflaeche_qm?: number;
+      zimmer?: number;
+    };
 
-    // middle: meta
-    const mid = row.createDiv({ cls: "buena-erp-unit-mid" });
-    if (r.sub) mid.createSpan({ cls: "buena-erp-unit-meta", text: r.sub });
-    if (u.typ) {
-      const tag = mid.createSpan({ cls: "buena-erp-unit-typ", text: u.typ });
-      tag.classList.add(`buena-erp-unit-typ-${slug(u.typ)}`);
+    const unitTd = tr.createEl("td", { cls: "buena-units-td buena-units-td-unit" });
+    const unitCell = unitTd.createDiv({ cls: "buena-units-unit-cell" });
+    unitCell.createSpan({ cls: "buena-units-unit-id", text: r.id });
+    if (u.einheit_nr) {
+      unitCell.createSpan({ cls: "buena-units-unit-no", text: u.einheit_nr });
     }
 
-    // right: occupant chip
-    const right = row.createDiv({ cls: "buena-erp-unit-right" });
+    tr.createEl("td", {
+      cls: "buena-units-td buena-units-td-lage",
+      text: u.lage ?? "–",
+    });
+
+    const typTd = tr.createEl("td", { cls: "buena-units-td buena-units-td-typ" });
+    if (u.typ) {
+      const tag = typTd.createSpan({ cls: "buena-units-typ-pill", text: u.typ.toLowerCase() });
+      tag.classList.add(`buena-units-typ-pill-${slug(u.typ)}`);
+    } else {
+      typTd.createSpan({ text: "–" });
+    }
+
+    tr.createEl("td", {
+      cls: "buena-units-td buena-units-td-num",
+      text: typeof u.wohnflaeche_qm === "number" ? `${u.wohnflaeche_qm} m²` : "–",
+    });
+    tr.createEl("td", {
+      cls: "buena-units-td buena-units-td-num",
+      text: typeof u.zimmer === "number" ? String(u.zimmer) : "–",
+    });
+
+    const occTd = tr.createEl("td", { cls: "buena-units-td buena-units-td-occ" });
     const occ = store.occupant(r.id);
     if (!occ) {
-      right.createSpan({ cls: "buena-erp-unit-vacant", text: "vacant" });
+      occTd.createSpan({ cls: "buena-units-vacant", text: "Vacant" });
     } else {
-      const chip = right.createSpan({
-        cls: `buena-erp-unit-occ buena-erp-unit-occ-${occ.role}`,
+      const chip = occTd.createSpan({ cls: `buena-units-occ buena-units-occ-${occ.role}` });
+      chip.createSpan({ cls: "buena-units-occ-role", text: roleLabel(occ.role) });
+      chip.createSpan({ cls: "buena-units-occ-label", text: occ.resolved.label });
+      chip.createSpan({ cls: "buena-units-occ-id", text: occ.resolved.id });
+    }
+  }
+}
+
+// ---- buildings layout: comparison table for HAUS-XX ids ---------------
+function renderBuildings(
+  el: HTMLElement,
+  ids: string[],
+  store: ReturnType<typeof getErpStore>
+) {
+  if (!store) return;
+  const wrap = el.createDiv({ cls: "buena-erp-buildings" });
+  const table = wrap.createEl("table", { cls: "buena-buildings-table" });
+  const thead = table.createEl("thead");
+  const headRow = thead.createEl("tr");
+  for (const label of ["Building", "Units", "Floors", "Elevator", "Baujahr"]) {
+    headRow.createEl("th", { text: label, cls: "buena-buildings-th" });
+  }
+  const tbody = table.createEl("tbody");
+  for (const rawId of ids) {
+    const r = store.resolve(rawId);
+    const tr = tbody.createEl("tr", { cls: "buena-buildings-row" });
+    if (!r || r.kind !== "building") {
+      const td = tr.createEl("td", {
+        cls: "buena-buildings-td",
+        attr: { colspan: "5" },
       });
-      chip.createSpan({ cls: "buena-erp-unit-occ-role", text: roleLabel(occ.role) });
-      chip.createSpan({ cls: "buena-erp-unit-occ-icon", text: kindIcon(occ.resolved.kind) });
-      chip.createSpan({ cls: "buena-erp-unit-occ-label", text: occ.resolved.label });
-      chip.createSpan({ cls: "buena-erp-unit-occ-id", text: occ.resolved.id });
-      attachHoverPopover(chip, () => buildHoverFields(occ.resolved));
+      td.createSpan({ text: `Unknown building: ${rawId}` });
+      continue;
+    }
+    const b = r.raw as { hausnr?: string; einheiten?: number; etagen?: number; fahrstuhl?: boolean; baujahr?: number };
+
+    // Building cell: chip with id + label
+    const buildingTd = tr.createEl("td", { cls: "buena-buildings-td buena-buildings-td-name" });
+    const chip = buildingTd.createSpan({ cls: "buena-erp-chip buena-erp-chip-building" });
+    chip.dataset.id = r.id;
+    const ico = chip.createSpan({ cls: "buena-erp-chip-icon" });
+    ico.textContent = kindIcon(r.kind);
+    chip.createSpan({ cls: "buena-erp-chip-label", text: r.label });
+    chip.createSpan({ cls: "buena-erp-chip-id", text: r.id });
+    attachHoverPopover(chip, () => buildHoverFields(r));
+
+    tr.createEl("td", {
+      cls: "buena-buildings-td buena-buildings-td-num",
+      text: typeof b.einheiten === "number" ? String(b.einheiten) : "–",
+    });
+    tr.createEl("td", {
+      cls: "buena-buildings-td buena-buildings-td-num",
+      text: typeof b.etagen === "number" ? String(b.etagen) : "–",
+    });
+    const elevTd = tr.createEl("td", { cls: "buena-buildings-td buena-buildings-td-bool" });
+    if (b.fahrstuhl === true) {
+      elevTd.createSpan({ text: "yes", cls: "buena-buildings-yes" });
+    } else if (b.fahrstuhl === false) {
+      elevTd.createSpan({ text: "no", cls: "buena-buildings-no" });
+    } else {
+      elevTd.createSpan({ text: "–" });
+    }
+    tr.createEl("td", {
+      cls: "buena-buildings-td buena-buildings-td-num",
+      text: typeof b.baujahr === "number" ? String(b.baujahr) : "–",
+    });
+  }
+}
+
+// ---- owners layout: comparison table with Beirat/Selbstnutzer flags ----
+function renderOwners(
+  el: HTMLElement,
+  ids: string[],
+  store: ReturnType<typeof getErpStore>,
+  filter: "beirat" | "selbstnutzer" | "all"
+) {
+  if (!store) return;
+
+  // If no ids supplied, pull all owners off the store.
+  let ownerIds = ids;
+  if (ownerIds.length === 0) {
+    ownerIds = store.allOwnerIds();
+  }
+
+  const wrap = el.createDiv({ cls: "buena-erp-owners" });
+
+  // Summary strip: total / Beirat / Selbstnutzer counts (computed from full set)
+  const all = store.allOwnerIds().map((id) => store.resolve(id)).filter(Boolean) as ResolvedErp[];
+  const beiratCount = all.filter((r) => (r.raw as any)?.beirat).length;
+  const selbstCount = all.filter((r) => (r.raw as any)?.selbstnutzer).length;
+  const summary = wrap.createDiv({ cls: "buena-owners-summary" });
+  const stat = (label: string, value: string | number) => {
+    const s = summary.createDiv({ cls: "buena-owners-stat" });
+    s.createDiv({ cls: "buena-owners-stat-value", text: String(value) });
+    s.createDiv({ cls: "buena-owners-stat-label", text: label });
+  };
+  stat("Total", all.length);
+  stat("Beirat", beiratCount);
+  stat("Selbstnutzer", selbstCount);
+
+  const table = wrap.createEl("table", { cls: "buena-owners-table" });
+  const thead = table.createEl("thead");
+  const headRow = thead.createEl("tr");
+  for (const label of ["Owner", "Units", "Role", "Contact"]) {
+    headRow.createEl("th", { text: label, cls: "buena-owners-th" });
+  }
+  const tbody = table.createEl("tbody");
+
+  for (const rawId of ownerIds) {
+    const r = store.resolve(rawId);
+    if (!r || r.kind !== "owner") continue;
+    const o = r.raw as {
+      einheit_ids?: string[];
+      selbstnutzer?: boolean;
+      beirat?: boolean;
+      sev_mandat?: boolean;
+      email?: string;
+      telefon?: string;
+    };
+    if (filter === "beirat" && !o.beirat) continue;
+    if (filter === "selbstnutzer" && !o.selbstnutzer) continue;
+
+    const tr = tbody.createEl("tr", { cls: "buena-owners-row" });
+    if (o.beirat) tr.classList.add("buena-owners-row-beirat");
+
+    // Owner cell: chip
+    const ownerTd = tr.createEl("td", { cls: "buena-owners-td buena-owners-td-name" });
+    const chip = ownerTd.createSpan({ cls: "buena-erp-chip buena-erp-chip-owner" });
+    chip.dataset.id = r.id;
+    chip.createSpan({ cls: "buena-erp-chip-icon", text: kindIcon(r.kind) });
+    chip.createSpan({ cls: "buena-erp-chip-label", text: r.label });
+    chip.createSpan({ cls: "buena-erp-chip-id", text: r.id });
+    attachHoverPopover(chip, () => buildHoverFields(r));
+
+    // Units cell: list of EH-XXX pills
+    const unitsTd = tr.createEl("td", { cls: "buena-owners-td buena-owners-td-units" });
+    const list = o.einheit_ids ?? [];
+    if (list.length === 0) {
+      unitsTd.createSpan({ cls: "buena-owners-units-empty", text: "–" });
+    } else {
+      const ul = unitsTd.createDiv({ cls: "buena-owners-units-wrap" });
+      for (const eid of list) {
+        const ru = store.resolve(eid);
+        const pill = ul.createSpan({ cls: "buena-owners-unit-pill" });
+        pill.createSpan({ cls: "buena-owners-unit-pill-icon", text: kindIcon("unit") });
+        pill.createSpan({ cls: "buena-owners-unit-pill-id", text: eid });
+        if (ru) attachHoverPopover(pill, () => buildHoverFields(ru));
+      }
+    }
+
+    // Role cell: flag pills
+    const roleTd = tr.createEl("td", { cls: "buena-owners-td buena-owners-td-role" });
+    const flags = roleTd.createDiv({ cls: "buena-owners-flags" });
+    if (o.beirat) flags.createSpan({ cls: "buena-owners-flag buena-owners-flag-beirat", text: "Beirat" });
+    if (o.selbstnutzer) flags.createSpan({ cls: "buena-owners-flag buena-owners-flag-selbst", text: "Selbstnutzer" });
+    if (o.sev_mandat) flags.createSpan({ cls: "buena-owners-flag buena-owners-flag-sev", text: "SEV" });
+    if (!o.beirat && !o.selbstnutzer && !o.sev_mandat) {
+      flags.createSpan({ cls: "buena-owners-flag-empty", text: "Eigentümer" });
+    }
+
+    // Contact cell
+    const contactTd = tr.createEl("td", { cls: "buena-owners-td buena-owners-td-contact" });
+    if (o.email) {
+      contactTd.createDiv({ cls: "buena-owners-contact-email", text: o.email });
+    }
+    if (o.telefon) {
+      contactTd.createDiv({ cls: "buena-owners-contact-tel", text: o.telefon });
+    }
+    if (!o.email && !o.telefon) {
+      contactTd.createSpan({ cls: "buena-owners-contact-empty", text: "–" });
     }
   }
 }

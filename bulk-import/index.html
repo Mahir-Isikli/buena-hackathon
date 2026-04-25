@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Buena Bulk Import</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f3ec;
+        --card: #fffdf8;
+        --ink: #181818;
+        --muted: #6a645a;
+        --line: #ddd5c9;
+        --accent: #6e56cf;
+        --accent-soft: #efe9ff;
+        --ok: #16794a;
+        --ok-soft: #e8f6ef;
+        --warn: #9a5b00;
+        --warn-soft: #fff3de;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 32px 20px 80px;
+      }
+      .hero {
+        margin-bottom: 24px;
+      }
+      .eyebrow {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 14px 0 10px;
+        font-size: clamp(34px, 6vw, 54px);
+        line-height: 0.95;
+      }
+      .sub {
+        max-width: 720px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.5;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 18px;
+        align-items: start;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+      }
+      .card h2 {
+        margin: 0 0 14px;
+        font-size: 18px;
+      }
+      .stack { display: grid; gap: 14px; }
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      input, select, textarea, button {
+        font: inherit;
+      }
+      input, select, textarea {
+        width: 100%;
+        padding: 11px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+      }
+      textarea { min-height: 88px; resize: vertical; }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .row-3 {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 10px;
+        align-items: end;
+      }
+      .dropzone {
+        border: 2px dashed #cfc4b6;
+        border-radius: 18px;
+        padding: 22px;
+        background: #fffcf6;
+        transition: border-color 120ms ease, background 120ms ease;
+      }
+      .dropzone.drag {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .drop-title {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .drop-sub {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+        margin-bottom: 14px;
+      }
+      .pickers {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      .btn, .ghost {
+        border-radius: 12px;
+        padding: 11px 14px;
+        border: 1px solid var(--line);
+        background: #fff;
+        cursor: pointer;
+        transition: transform 80ms ease, border-color 120ms ease, background 120ms ease;
+      }
+      .btn:hover, .ghost:hover { transform: translateY(-1px); }
+      .btn-primary {
+        background: var(--ink);
+        color: #fff;
+        border-color: var(--ink);
+      }
+      .btn-accent {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+      .ghost {
+        background: transparent;
+      }
+      .hidden { display: none !important; }
+      .file-list {
+        display: grid;
+        gap: 8px;
+        max-height: 260px;
+        overflow: auto;
+      }
+      .file-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: #fff;
+      }
+      .file-meta {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .pill-ok { background: var(--ok-soft); color: var(--ok); }
+      .pill-warn { background: var(--warn-soft); color: var(--warn); }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .results {
+        display: grid;
+        gap: 10px;
+      }
+      .result-item {
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: #fff;
+      }
+      .result-item.ok { border-color: #b8e2ca; }
+      .result-item.error { border-color: #efc0c0; }
+      .progress-card {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: #fff;
+      }
+      .progress-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+      .progress-label {
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .progress-sub {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .progress-bar {
+        height: 10px;
+        border-radius: 999px;
+        background: #eee6da;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent), #9f8cff);
+        transition: width 180ms ease;
+      }
+      .pipeline-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .pipeline-stat {
+        display: inline-flex;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--bg);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .tiny {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .inline-note {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      @media (max-width: 860px) {
+        .grid, .row, .row-3 { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hero">
+        <div class="eyebrow">Buena internal intake</div>
+        <h1>Bulk import for one property</h1>
+        <p class="sub">
+          Built around the PM interviews: one property at a time, mostly PDFs, scans, Excel, JSON,
+          and odd legacy files. Pick the property, add a short note if needed, and upload whatever files you got.
+        </p>
+      </div>
+
+      <div class="grid">
+        <section class="card stack">
+          <h2>1. Intake context</h2>
+
+          <div class="row">
+            <label>
+              Worker URL
+              <input id="workerUrl" type="url" placeholder="https://buena-ingest.isiklimahir.workers.dev" />
+            </label>
+            <label>
+              Bearer token
+              <input id="bearerToken" type="password" placeholder="Optional in dev, required in prod" />
+            </label>
+          </div>
+
+          <div class="row-3">
+            <label>
+              Property
+              <select id="propertySelect"></select>
+            </label>
+            <button id="addPropertyBtn" class="ghost" type="button">Add new property</button>
+            <button id="savePropertyBtn" class="ghost hidden" type="button">Save property</button>
+          </div>
+
+          <div id="newPropertyFields" class="stack hidden">
+            <div class="row">
+              <label>
+                Property ID
+                <input id="newPropertyId" type="text" placeholder="LIE-002" />
+              </label>
+              <label>
+                Property name
+                <input id="newPropertyName" type="text" placeholder="WEG Musterstraße 11" />
+              </label>
+            </div>
+            <label>
+              Address
+              <input id="newPropertyAddress" type="text" placeholder="Musterstraße 11, 10115 Berlin" />
+            </label>
+            <div class="inline-note">This is stored locally in your browser for the intake UI. The backend just receives the selected property metadata for now.</div>
+          </div>
+
+          <label>
+            Intake note
+            <textarea id="note" placeholder="Optional context for the importer, e.g. old PM archive, handover batch 1, mixed scans from seller, invoices only..."></textarea>
+          </label>
+        </section>
+
+        <section class="card stack">
+          <h2>2. Files</h2>
+          <div id="dropzone" class="dropzone">
+            <div class="drop-title">Drop files, folder contents, PDFs, Excel, zips, whatever</div>
+            <div class="drop-sub">
+              This is an internal intake surface. No file type restrictions. Use it for the messy reality the PM described.
+            </div>
+            <div class="pickers">
+              <button id="pickFilesBtn" class="btn" type="button">Choose files</button>
+              <button id="pickFolderBtn" class="btn" type="button">Choose folder</button>
+            </div>
+            <input id="fileInput" class="hidden" type="file" multiple />
+            <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple />
+            <div class="tiny">Current flow: uploads are stored in R2, queued with property metadata, and processed through the same extraction pipeline. Use a small subset first if you want to inspect quality before uploading the full archive.</div>
+          </div>
+
+          <div id="fileSummary" class="inline-note">No files selected yet.</div>
+          <div id="fileList" class="file-list"></div>
+
+          <div class="actions">
+            <button id="clearBtn" class="ghost" type="button">Clear selection</button>
+            <button id="uploadBtn" class="btn btn-accent" type="button">Upload selected files</button>
+          </div>
+
+          <div id="progressCard" class="progress-card hidden">
+            <div class="progress-top">
+              <div>
+                <div id="progressLabel" class="progress-label">Ready</div>
+                <div id="progressSub" class="progress-sub">No upload running.</div>
+              </div>
+              <div id="progressPct" class="pill pill-ok">0%</div>
+            </div>
+            <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+            <div id="pipelineStats" class="pipeline-stats"></div>
+          </div>
+        </section>
+      </div>
+
+      <section class="card stack" style="margin-top: 18px;">
+        <h2>3. Upload results</h2>
+        <div id="results" class="results"></div>
+      </section>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "buena-bulk-import-state-v1";
+      const defaults = {
+        workerUrl: "https://buena-ingest.isiklimahir.workers.dev",
+        bearerToken: "",
+        properties: [
+          {
+            id: "LIE-001",
+            name: "WEG Immanuelkirchstraße 26",
+            address: "Immanuelkirchstraße 26, 10405 Berlin"
+          }
+        ]
+      };
+
+      const state = loadState();
+      let selectedFiles = [];
+
+      const els = {
+        workerUrl: document.getElementById("workerUrl"),
+        bearerToken: document.getElementById("bearerToken"),
+        propertySelect: document.getElementById("propertySelect"),
+        addPropertyBtn: document.getElementById("addPropertyBtn"),
+        savePropertyBtn: document.getElementById("savePropertyBtn"),
+        newPropertyFields: document.getElementById("newPropertyFields"),
+        newPropertyId: document.getElementById("newPropertyId"),
+        newPropertyName: document.getElementById("newPropertyName"),
+        newPropertyAddress: document.getElementById("newPropertyAddress"),
+        note: document.getElementById("note"),
+        dropzone: document.getElementById("dropzone"),
+        fileInput: document.getElementById("fileInput"),
+        folderInput: document.getElementById("folderInput"),
+        pickFilesBtn: document.getElementById("pickFilesBtn"),
+        pickFolderBtn: document.getElementById("pickFolderBtn"),
+        fileSummary: document.getElementById("fileSummary"),
+        fileList: document.getElementById("fileList"),
+        clearBtn: document.getElementById("clearBtn"),
+        uploadBtn: document.getElementById("uploadBtn"),
+        results: document.getElementById("results"),
+        progressCard: document.getElementById("progressCard"),
+        progressLabel: document.getElementById("progressLabel"),
+        progressSub: document.getElementById("progressSub"),
+        progressPct: document.getElementById("progressPct"),
+        progressFill: document.getElementById("progressFill"),
+        pipelineStats: document.getElementById("pipelineStats")
+      };
+
+      init();
+
+      function init() {
+        els.workerUrl.value = state.workerUrl || defaults.workerUrl;
+        els.bearerToken.value = state.bearerToken || "";
+        renderPropertyOptions();
+        bindEvents();
+        renderFiles();
+      }
+
+      function bindEvents() {
+        els.workerUrl.addEventListener("change", persistSettings);
+        els.bearerToken.addEventListener("change", persistSettings);
+        els.pickFilesBtn.addEventListener("click", () => els.fileInput.click());
+        els.pickFolderBtn.addEventListener("click", () => els.folderInput.click());
+        els.fileInput.addEventListener("change", (e) => mergeFiles([...e.target.files]));
+        els.folderInput.addEventListener("change", (e) => mergeFiles([...e.target.files]));
+        els.clearBtn.addEventListener("click", () => { selectedFiles = []; renderFiles(); });
+        els.uploadBtn.addEventListener("click", uploadAll);
+        els.addPropertyBtn.addEventListener("click", toggleNewPropertyFields);
+        els.savePropertyBtn.addEventListener("click", saveNewProperty);
+
+        ["dragenter", "dragover"].forEach((event) => {
+          els.dropzone.addEventListener(event, (e) => {
+            e.preventDefault();
+            els.dropzone.classList.add("drag");
+          });
+        });
+        ["dragleave", "drop"].forEach((event) => {
+          els.dropzone.addEventListener(event, (e) => {
+            e.preventDefault();
+            els.dropzone.classList.remove("drag");
+          });
+        });
+        els.dropzone.addEventListener("drop", (e) => {
+          const files = [...e.dataTransfer.files];
+          mergeFiles(files);
+        });
+      }
+
+      function loadState() {
+        try {
+          return Object.assign({}, defaults, JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"));
+        } catch {
+          return structuredClone(defaults);
+        }
+      }
+
+      function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      function persistSettings() {
+        state.workerUrl = els.workerUrl.value.trim();
+        state.bearerToken = els.bearerToken.value;
+        saveState();
+      }
+
+      function renderPropertyOptions() {
+        els.propertySelect.innerHTML = "";
+        for (const property of state.properties) {
+          const opt = document.createElement("option");
+          opt.value = property.id;
+          opt.textContent = `${property.id} · ${property.name}`;
+          els.propertySelect.appendChild(opt);
+        }
+      }
+
+      function toggleNewPropertyFields() {
+        const hidden = els.newPropertyFields.classList.toggle("hidden");
+        els.savePropertyBtn.classList.toggle("hidden", hidden);
+        els.addPropertyBtn.textContent = hidden ? "Add new property" : "Cancel";
+      }
+
+      function saveNewProperty() {
+        const id = els.newPropertyId.value.trim().toUpperCase();
+        const name = els.newPropertyName.value.trim();
+        const address = els.newPropertyAddress.value.trim();
+        if (!id || !name) {
+          alert("Please add at least a property ID and name.");
+          return;
+        }
+        if (state.properties.some((p) => p.id === id)) {
+          alert("That property ID already exists in this intake UI.");
+          return;
+        }
+        state.properties.push({ id, name, address });
+        saveState();
+        renderPropertyOptions();
+        els.propertySelect.value = id;
+        els.newPropertyId.value = "";
+        els.newPropertyName.value = "";
+        els.newPropertyAddress.value = "";
+        toggleNewPropertyFields();
+      }
+
+      function mergeFiles(files) {
+        const seen = new Set(selectedFiles.map(fileKey));
+        for (const file of files) {
+          const key = fileKey(file);
+          if (!seen.has(key)) {
+            selectedFiles.push(file);
+            seen.add(key);
+          }
+        }
+        renderFiles();
+      }
+
+      function fileKey(file) {
+        return [file.name, file.size, file.lastModified, file.webkitRelativePath || ""].join("::");
+      }
+
+      function renderFiles() {
+        els.fileList.innerHTML = "";
+        if (!selectedFiles.length) {
+          els.fileSummary.textContent = "No files selected yet.";
+          return;
+        }
+        const totalBytes = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+        els.fileSummary.textContent = `${selectedFiles.length} file(s), ${formatBytes(totalBytes)} total`;
+        for (const file of selectedFiles) {
+          const row = document.createElement("div");
+          row.className = "file-item";
+          row.innerHTML = `
+            <div>
+              <div><strong>${escapeHtml(file.webkitRelativePath || file.name)}</strong></div>
+              <div class="file-meta">${formatBytes(file.size)} · ${file.type || "unknown type"}</div>
+            </div>
+            <div class="pill pill-warn">queued</div>
+          `;
+          els.fileList.appendChild(row);
+        }
+      }
+
+      async function uploadAll() {
+        persistSettings();
+        const workerUrl = els.workerUrl.value.trim().replace(/\/$/, "");
+        if (!workerUrl) {
+          alert("Please set the worker URL first.");
+          return;
+        }
+        if (!selectedFiles.length) {
+          alert("Please add at least one file.");
+          return;
+        }
+        const property = state.properties.find((p) => p.id === els.propertySelect.value);
+        if (!property) {
+          alert("Please choose a property.");
+          return;
+        }
+
+        els.uploadBtn.disabled = true;
+        els.uploadBtn.textContent = "Uploading...";
+        els.results.innerHTML = "";
+        showProgress(true);
+        setProgress(0, `Uploading 0 / ${selectedFiles.length}`, "Preparing pipeline stats...");
+
+        const note = els.note.value.trim();
+        const beforeStats = await fetchPipelineStats(workerUrl, property.id, els.bearerToken.value.trim());
+
+        for (let index = 0; index < selectedFiles.length; index++) {
+          const file = selectedFiles[index];
+          const qs = new URLSearchParams({
+            name: file.webkitRelativePath || file.name,
+            propertyId: property.id,
+            propertyLabel: property.name,
+          });
+          if (property.address) qs.set("propertyAddress", property.address);
+          if (note) qs.set("note", note);
+
+          const headers = {};
+          if (els.bearerToken.value.trim()) {
+            headers.Authorization = `Bearer ${els.bearerToken.value.trim()}`;
+          }
+          if (file.type) {
+            headers["Content-Type"] = file.type;
+          }
+
+          setProgress(
+            ((index) / selectedFiles.length) * 100,
+            `Uploading ${index + 1} / ${selectedFiles.length}`,
+            file.webkitRelativePath || file.name
+          );
+
+          try {
+            const res = await fetch(`${workerUrl}/upload?${qs.toString()}`, {
+              method: "POST",
+              headers,
+              body: file,
+            });
+            const text = await res.text();
+            let body = null;
+            try { body = JSON.parse(text); } catch {}
+            addResult({
+              ok: res.ok,
+              title: file.webkitRelativePath || file.name,
+              detail: res.ok
+                ? `Uploaded to ${body?.key || "bulk/"} for ${body?.propertyId || property.id}`
+                : `Upload failed: ${text}`,
+            });
+          } catch (err) {
+            addResult({
+              ok: false,
+              title: file.webkitRelativePath || file.name,
+              detail: String(err),
+            });
+          }
+        }
+
+        setProgress(100, "Uploads finished", "Polling worker queue and patch history...");
+        await monitorPipeline(workerUrl, property.id, els.bearerToken.value.trim(), beforeStats);
+
+        els.uploadBtn.disabled = false;
+        els.uploadBtn.textContent = "Upload selected files";
+      }
+
+      async function fetchPipelineStats(workerUrl, propertyId, token) {
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const [pendingRes, historyRes] = await Promise.all([
+          fetch(`${workerUrl}/vaults/${encodeURIComponent(propertyId)}/pending`, { headers }),
+          fetch(`${workerUrl}/vaults/${encodeURIComponent(propertyId)}/history`, { headers })
+        ]);
+        const pending = pendingRes.ok ? await pendingRes.json() : { pending: [] };
+        const history = historyRes.ok ? await historyRes.json() : { history: [] };
+        return {
+          pending: Array.isArray(pending.pending) ? pending.pending.length : 0,
+          history: Array.isArray(history.history) ? history.history.length : 0,
+        };
+      }
+
+      async function monitorPipeline(workerUrl, propertyId, token, beforeStats) {
+        for (let attempt = 1; attempt <= 10; attempt++) {
+          const stats = await fetchPipelineStats(workerUrl, propertyId, token);
+          renderPipelineStats(stats, beforeStats);
+          if (stats.pending > beforeStats.pending || stats.history > beforeStats.history) {
+            els.progressSub.textContent = "The worker has produced new queue or history activity.";
+            return;
+          }
+          els.progressSub.textContent = `Uploads queued. Waiting for extraction, poll ${attempt} / 10...`;
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        }
+        els.progressSub.textContent = "Uploads are stored and queued. Worker extraction may still be running.";
+      }
+
+      function renderPipelineStats(stats, beforeStats = { pending: 0, history: 0 }) {
+        els.pipelineStats.innerHTML = "";
+        const items = [
+          { label: "Pending now", value: stats.pending },
+          { label: "History now", value: stats.history },
+          { label: "Pending delta", value: stats.pending - beforeStats.pending },
+          { label: "History delta", value: stats.history - beforeStats.history },
+        ];
+        for (const item of items) {
+          const el = document.createElement("div");
+          el.className = "pipeline-stat";
+          el.textContent = `${item.label}: ${item.value}`;
+          els.pipelineStats.appendChild(el);
+        }
+      }
+
+      function showProgress(show) {
+        els.progressCard.classList.toggle("hidden", !show);
+      }
+
+      function setProgress(percent, label, sub) {
+        const value = Math.max(0, Math.min(100, percent));
+        els.progressFill.style.width = `${value}%`;
+        els.progressPct.textContent = `${Math.round(value)}%`;
+        els.progressLabel.textContent = label;
+        els.progressSub.textContent = sub;
+      }
+
+      function addResult({ ok, title, detail }) {
+        const el = document.createElement("div");
+        el.className = `result-item ${ok ? "ok" : "error"}`;
+        el.innerHTML = `
+          <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+            <div>
+              <div><strong>${escapeHtml(title)}</strong></div>
+              <div class="tiny" style="margin-top:4px;">${escapeHtml(detail)}</div>
+            </div>
+            <div class="pill ${ok ? "pill-ok" : "pill-warn"}">${ok ? "uploaded" : "error"}</div>
+          </div>
+        `;
+        els.results.prepend(el);
+      }
+
+      function formatBytes(bytes) {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+    </script>
+  </body>
+</html>

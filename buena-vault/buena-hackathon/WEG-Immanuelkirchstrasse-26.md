@@ -11,40 +11,35 @@ sanierung: 2008
 # WEG Immanuelkirchstraße 26
 
 ## 🏛️ Identity
-- **Address**: Immanuelkirchstraße 26, 10405 Berlin (Prenzlauer Berg)
+- **Address**: Immanuelkirchstraße 26, 10405 Berlin (Prenzlauer Berg)!
 - **Baujahr**: 1928 (saniert 2008)
-- **Verwalter**: [[Huber & Partner Immobilienverwaltung GmbH]] ^[src: stammdaten/stammdaten.json · actor: bootstrap · conf: 1.0]
+- **Verwalter**: [[Huber & Partner Immobilienverwaltung GmbH]] {prov: stammdaten/stammdaten.json | conf: 1.0 | actor: bootstrap}
   - Friedrichstrasse 112, 10117 Berlin
   - info@huber-partner-verwaltung.de · +49 30 12345-0
 - **Buildings**: `@HAUS-12` (18 units), `@HAUS-14` (20 units), `@HAUS-16` (14 units)
 - **Total units**: 52
 
 ## 🏢 Buildings
-- `@HAUS-12` Hausnr. 12 · 18 units · 5 floors · ✓ elevator · Baujahr 1928
-- `@HAUS-14` Hausnr. 14 · 20 units · 5 floors · ✓ elevator · Baujahr 1928
-- `@HAUS-16` Hausnr. 16 · 14 units · 4 floors · no elevator · Baujahr 1926
+```buena-erp
+layout: buildings
+ids:
+  - HAUS-12
+  - HAUS-14
+  - HAUS-16
+```
 
 ## 🏦 Bank
 ```buena-erp
 layout: bank
 id: LIE-001
 ```
-^[src: stammdaten/stammdaten.json · actor: bootstrap · conf: 1.0]
+{prov: stammdaten/stammdaten.json | conf: 1.0 | actor: bootstrap}
 
 ## 👥 Owners
-- **Total**: 35 eigentümer
-- **Selbstnutzer**: 15
-- **Beirat**: 3
-
-### Beirat
 ```buena-erp
-layout: grid
-ids:
-  - EIG-004
-  - EIG-010
-  - EIG-020
+layout: owners
 ```
-^[src: erp:eigentuemer · actor: erp · conf: 1.0]
+{prov: erp:eigentuemer | conf: 1.0 | actor: erp}
 
 ## 🔧 Service providers
 ```buena-erp
@@ -68,7 +63,15 @@ ids:
 ```
 
 ## 🐛 Active issues
-> [!info] No open issues yet — patches from email will land here.
+- EH-029: Der Bewohner mindert die Miete seit dem 15.01.2026 um 10 Prozent. {prov: r2://buena-raw/emails/CAJ9sWTtUYhTymsJ_kK70nm5gAv9O1hgdoNy8EU66UgVoMuwfzQ@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T20:02:04.911Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTtUYhTymsJ_kK70nm5gAv9O1hgdoNy8EU66UgVoMuwfzQ@mail.gmail.com.eml}
+
+- EH-029: Ein Heißwasser-Defekt besteht weiterhin. {prov: r2://buena-raw/emails/CAJ9sWTtUYhTymsJ_kK70nm5gAv9O1hgdoNy8EU66UgVoMuwfzQ@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T20:02:04.911Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTtUYhTymsJ_kK70nm5gAv9O1hgdoNy8EU66UgVoMuwfzQ@mail.gmail.com.eml}
+
+- EH-029: Der Bewohner mindert aufgrund des Heißwasser-Defekts seit dem 15.01.2026 die Miete um 10 Prozent. {prov: r2://buena-raw/emails/CAJ9sWTt-5sGx=CfWfw7XN_WLVUBK3N5KwpGHKNV2FRjZLErehA@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T19:57:45.667Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTt-5sGx=CfWfw7XN_WLVUBK3N5KwpGHKNV2FRjZLErehA@mail.gmail.com.eml}
+
+- EH-029: In der Einheit besteht weiterhin ein Heißwasser-Defekt. {prov: r2://buena-raw/emails/CAJ9sWTt-5sGx=CfWfw7XN_WLVUBK3N5KwpGHKNV2FRjZLErehA@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T19:57:45.667Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTt-5sGx=CfWfw7XN_WLVUBK3N5KwpGHKNV2FRjZLErehA@mail.gmail.com.eml}
+
+- Der Aufzug in HAUS-12 ist defekt und ein Reparaturtermin ist für den 28.04.2026 angesetzt. {prov: r2://buena-raw/emails/CAJ9sWTsTxdGW265k2eyT+rkxLAmpfvNqw2Xt=rmPQVFy0dxU0A@mail.gmail.com.eml | conf: 0.95 | actor: gemini-3-pro} {changed: 2026-04-25T19:57:45.199Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTsTxdGW265k2eyT+rkxLAmpfvNqw2Xt=rmPQVFy0dxU0A@mail.gmail.com.eml}
 
 ## 💸 Active Mahnungen
 > [!info] No active dunning notices.
@@ -158,62 +161,15 @@ ids:
 - State: `state.json` (tribal-knowledge facts + provenance)
 - History: `history/` (immutable change log)
 ```buena-pending
-id: CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com-4
-section: Open issues
-unit: EH-014
-new: Die Miete wird seit dem 15.01.2026 wegen eines Heißwasser-Defekts um 10 Prozent gemindert
-source: r2://buena-raw/emails/CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com.eml
-snippet: Mieter EH-014 mindert ab 15.01.2026 weiterhin die Miete um 10 Prozent wegen Heißwasser-Defekt.
-confidence: 0.99
-actor: gemini-3-pro
-target_heading: "## Open issues"
-new_block: "- Die Miete wird seit dem 15.01.2026 wegen eines Heißwasser-Defekts um 10 Prozent gemindert"
-```
-```buena-pending
-id: CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com-3
-section: Open issues
-unit:
-new: Die Reparatur des Aufzugs in HAUS-12 ist für den 28.04.2026 terminiert
-source: r2://buena-raw/emails/CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com.eml
-snippet: wurde beauftragt, Reparatur am 28.04.2026.
-confidence: 0.98
-actor: gemini-3-pro
-target_heading: "## Open issues"
-new_block: "- Die Reparatur des Aufzugs in HAUS-12 ist für den 28.04.2026 terminiert"
-```
-```buena-pending
-id: CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com-2
+id: CAJ9sWTtk5hfhiGwe6XHTY6PHXeyKQA1NNkrd7Tojsx-sn8jTFA@mail.gmail.com-0
 section: Service providers
 unit:
-new: DL-002 führt die Aufzugswartung für 185 EUR/Monat durch
-source: r2://buena-raw/emails/CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com.eml
-snippet: DL-002 (Aufzugswartung, 185 EUR/Monat) wurde beauftragt
-confidence: 0.98
-actor: gemini-3-pro
-target_heading: "## Service providers"
-new_block: "- DL-002 führt die Aufzugswartung für 185 EUR/Monat durch"
-```
-```buena-pending
-id: CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com-1
-section: Open issues
-unit: EH-007
-new: Die Mieterin hat sich wegen des defekten Aufzugs beschwert
-source: r2://buena-raw/emails/CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com.eml
-snippet: Mieterin Frau Meier in EH-007 hat sich beschwert.
+old: "- DL-002"
+new: Dienstleister DL-002 führt die Aufzugswartung für 185 EUR pro Monat durch.
+source: r2://buena-raw/emails/CAJ9sWTtk5hfhiGwe6XHTY6PHXeyKQA1NNkrd7Tojsx-sn8jTFA@mail.gmail.com.eml
+snippet: DL-002 fuehrt die Aufzugswartung fuer 185 EUR pro Monat durch.
 confidence: 0.95
 actor: gemini-3-pro
-target_heading: "## Open issues"
-new_block: "- Die Mieterin hat sich wegen des defekten Aufzugs beschwert"
-```
-```buena-pending
-id: CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com-0
-section: Open issues
-unit:
-new: Der Aufzug in HAUS-12 ist seit dem 24.04.2026 defekt
-source: r2://buena-raw/emails/CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com.eml
-snippet: der Aufzug in HAUS-12 ist seit 24.04.2026 defekt.
-confidence: 0.98
-actor: gemini-3-pro
-target_heading: "## Open issues"
-new_block: "- Der Aufzug in HAUS-12 ist seit dem 24.04.2026 defekt"
+target_heading: "## 🔧 Service providers"
+new_block: "- Dienstleister DL-002 führt die Aufzugswartung für 185 EUR pro Monat durch."
 ```

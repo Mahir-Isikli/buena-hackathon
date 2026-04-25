@@ -64,20 +64,101 @@ export async function fetchPropertyMd(
   return res.text();
 }
 
+export async function fetchStateJson(
+  settings: BuenaSettings,
+  signal?: AbortSignal
+): Promise<Record<string, unknown> | null> {
+  const res = await fetch(vaultUrl(settings, "state.json"), {
+    headers: authHeaders(settings),
+    signal,
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(`fetchStateJson ${res.status}: ${await res.text()}`);
+  }
+  return (await res.json()) as Record<string, unknown>;
+}
+
+export async function postHumanEdit(
+  settings: BuenaSettings,
+  sections: string[],
+  editedAt: string
+): Promise<void> {
+  const res = await fetch(vaultUrl(settings, "human-edit"), {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authHeaders(settings) },
+    body: JSON.stringify({ sections, editedAt }),
+  });
+  if (!res.ok) {
+    throw new Error(`postHumanEdit ${res.status}: ${await res.text()}`);
+  }
+}
+
+export async function fetchRawSource(
+  settings: BuenaSettings,
+  key: string,
+  signal?: AbortSignal
+): Promise<{ blob: Blob; contentType: string | null }> {
+  const base = settings.workerUrl.replace(/\/$/, "");
+  const url = `${base}/raw?key=${encodeURIComponent(key)}`;
+  const res = await fetch(url, {
+    headers: authHeaders(settings),
+    signal,
+  });
+  if (!res.ok) {
+    throw new Error(`fetchRawSource ${res.status}: ${await res.text()}`);
+  }
+  return {
+    blob: await res.blob(),
+    contentType: res.headers.get("content-type"),
+  };
+}
+
 export async function postDecision(
   settings: BuenaSettings,
   patchId: string,
   decision: "approved" | "rejected",
-  actor: string
+  actor: string,
+  reason?: string
 ): Promise<void> {
+  const body: Record<string, unknown> = { patchId, decision, actor };
+  if (reason && reason.trim()) body.reason = reason.trim();
   const res = await fetch(vaultUrl(settings, "decision"), {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders(settings) },
-    body: JSON.stringify({ patchId, decision, actor }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     throw new Error(`postDecision ${res.status}: ${await res.text()}`);
   }
+}
+
+export interface RemoteHistoryEntry {
+  id: string;
+  section: string;
+  unit?: string;
+  oldValue?: string;
+  newValue: string;
+  source?: string;
+  decision: "approved" | "rejected" | "auto";
+  timestamp: string;
+  actor: string;
+  reason?: string;
+}
+
+export async function fetchHistory(
+  settings: BuenaSettings,
+  signal?: AbortSignal
+): Promise<RemoteHistoryEntry[]> {
+  const res = await fetch(vaultUrl(settings, "history"), {
+    headers: authHeaders(settings),
+    signal,
+  });
+  if (!res.ok) {
+    throw new Error(`fetchHistory ${res.status}: ${await res.text()}`);
+  }
+  const body = (await res.json()) as { history?: RemoteHistoryEntry[] };
+  return body.history ?? [];
 }
 
 export interface EventClient {

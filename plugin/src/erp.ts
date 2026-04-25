@@ -179,6 +179,13 @@ class ErpStore {
   }
 
   /**
+   * All known owner ids in the vault (EIG-xxx).
+   */
+  allOwnerIds(): string[] {
+    return Object.keys(this.data.owners ?? {}).sort();
+  }
+
+  /**
    * For a unit id, find who occupies it.
    * Returns the resolved occupant + role, or null if vacant/unknown.
    *   - role 'tenant'           : leased to MIE-xxx

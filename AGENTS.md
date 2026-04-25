@@ -395,9 +395,9 @@ Order matters: edit flow ships first, then ingestion. The plugin is the demo.
 - [x] `entire enable --agent claude-code` configured
 - [x] Buena dataset extracted to `partner-files/`
 - [x] PM interviews documented
-- [x] Cloudflare Worker skeleton (`workers/ingest`) with R2 + Queue + Email Routing wired, end-to-end tested. SSE endpoint still TODO.
-- [ ] Bootstrap script: parse `stammdaten/` into one initial property.md + state.json + history seed (so the plugin has something real to render on hour 3)
-- [ ] ERP lookup adapter mocked from stammdaten CSVs
+- [x] Cloudflare Worker skeleton (`workers/ingest`) with R2 + Queue + Email Routing wired, end-to-end tested, including SSE vault endpoints.
+- [x] Bootstrap script: parse `stammdaten/` into one initial property.md + state.json + `erp.json` (so the plugin has something real to render on hour 3)
+- [x] ERP lookup adapter mocked from stammdaten CSVs
 
 ### Phase 2, Plugin edit flow (hours 3 to 10), primary demo surface
 - [x] Plugin scaffold (manifest.json, main.ts, settings tab)
@@ -409,37 +409,51 @@ Order matters: edit flow ships first, then ingestion. The plugin is the demo.
 - [x] Local history log (`plugin/src/history.ts`): every approve/reject writes to plugin data, capped at 50 per file, surfaced in sidebar history pane
 - [x] Buena brand palette + wordmark + unit pills + rich hover popovers (styles.css)
 - [x] Dev setup documented (symlink + hot-reload, see `plugin/README.md`)
-- [ ] Pull property.md + state.json from R2 on connect (blocked on Worker)
-- [ ] SSE client for live patch push from Worker (blocked on Worker)
-- [ ] Approve/reject POSTs back to Worker (blocked on Worker)
-- [ ] New-content highlight (24h soft-yellow)
-- [ ] Human-edit detection: `vault.on('modify', ...)` writes a marker into state.json
+- [x] Pull property.md + state.json from R2 on connect (`plugin/src/sync.ts`, `plugin/main.ts`)
+- [x] SSE client for live patch push from Worker (`plugin/main.ts` + `plugin/src/api.ts`)
+- [x] Approve/reject POSTs back to Worker, including rejection reason (`plugin/src/api.ts`, `sidebar.ts`, `inline-patch.ts`)
+- [x] New-content highlight (24h soft-yellow) via inline changed markers + recent-content styling (`plugin/src/popover.ts`, `styles.css`)
+- [x] Human-edit detection: editor changes mark sections in local + remote state.json (`plugin/src/human-edits.ts`, worker `POST /vaults/:id/human-edit`)
+
+#### Current plugin decisions (Sunday morning)
+- Keep `## 🪑 Beirat notes` for now. It is a manual-only notes section and is not removed in this pass.
+- `## 🚪 Units` should render as a clean table, not as hover-heavy chips. Keep hover minimal there. Per-building collapse / expand exists now.
+- Change history lives in the plugin tab, not in markdown. Rejections require a reason and stay visible there.
+- Local property markdown should mirror remote `property.md` + `state.json`, then append only the current remote pending queue. Do not preserve stale local pending blocks.
+- Pending cards should show scope explicitly: `EH-XXX`, `HAUS-XX`, or `DL-XXX`, not pretend everything is a unit issue.
+- Per-property `@kontext.haus` email routing is part of the current path. Worker now resolves subaddress first, then deterministic sender/recipient email lookup from the committed ERP seed. Safe unit hinting applies only when the match collapses to exactly one unit.
+- Speech-to-text for rejection reasons is explicitly deferred for now.
+- Bulk import stays in scope. Do not drop the public drag-and-drop page yet.
+- Current bulk consumer coverage: text, markdown, JSON, CSV, HTML, EML, PDF, common images, zip, docx, and xlsx family parsing.
 
 ### Phase 3, Core ingestion engine (hours 10 to 16)
 - [x] **Email ingestion** via Cloudflare Email Worker (postal-mime, R2, queue). Local walk of `emails/` is the next step.
-- [ ] **PDF extraction**: send PDF bytes directly to Gemini 3.1 Pro (high thinking); pdfplumber only as a pre-pass for token-cost optimization on text-layer PDFs
+- [x] **PDF extraction**: PDFs can flow through Gemini 3.1 Pro in the bulk + attachment paths; text-layer optimization / dedicated OCR tuning can still improve this further
 - [ ] **CSV planner**: NL question → pandas query → JSON result
-- [ ] **Identity resolver**: cluster entities across stammdaten and inbound text
-- [ ] **Routing**: Gemini 3.1 Pro (high thinking) classifier (property + section + unit)
-- [ ] **Patch gate**: implement the 7 rules above
-- [ ] **History log**: every accepted change writes to `history/`
+- [x] **Identity resolver**: deterministic sender/recipient email join against stammdaten seed first, then fallback extraction for the remaining misses (`workers/ingest/src/route.ts` + generated routing index)
+- [x] **Routing**: subaddress routing + deterministic email lookup first, Gemini 3.1 Pro (high thinking) for the ambiguous remainder
+- [x] **Patch gate**: 7-rule worker-side gate implemented end to end with ignore / pending / auto classification, auto-writeback into remote `property.md`, and auto/manual visibility in history (`workers/ingest/src/gate.ts`, `http.ts`, `vaults.ts`)
+- [x] **History log**: every accepted, rejected, or auto-applied change writes to `history/`, with auto/manual visibility
 - [x] ~~Pioneer SLM router fine-tune~~ Dropped for v1. See "Pioneer dropped for v1" at top of file.
 
 ### Phase 3b, Plugin polish (hours 16 to 18)
-- [ ] Provenance jump: clicking a `<!-- prov: ... -->` opens the source PDF in Obsidian's native viewer
-- [ ] Multi-unit collapse/expand under `## Units`
+- [x] Provenance jump: raw `r2://buena-raw/...` sources can be pulled into the vault and opened from the provenance pill (`plugin/src/provenance-open.ts`)
+- [x] Multi-unit collapse/expand under `## Units` (simple per-building toggle in reading view)
 - [x] Animated patch pulse in status bar (`markPatchReceived`)
 - [x] Cloudflare setup playbook drafted (`docs/cloudflare-setup.md`), parked until extractor + edit flow stable
 
 ### Phase 4, Bulk import (hours 18 to 20)
-- [ ] Cloudflare Pages page with drag-and-drop file input
-- [ ] On upload, fans the archive into the same pipeline
-- [ ] Live progress display: "Parsing 47 of 194 invoices…"
+- [x] Public bulk-import page deployed on Cloudflare Pages and attached to `import.kontext.haus`
+- [x] Internal bulk-import page with drag-and-drop, property dropdown, add-new-property flow, and any-file upload (`bulk-import/index.html`)
+- [x] On upload, files are stored in R2 with property metadata and queued into the same pipeline (`workers/ingest/src/http.ts`)
+- [x] Bulk queue consumer now processes text-like files end to end, passes PDFs/images to Gemini as inline multimodal inputs, and parses zip / docx / xlsx families into extractable text (`workers/ingest/src/email.ts`, `workers/ingest/src/gemini.ts`)
+- [x] Basic live progress visibility in the upload UI: per-file upload progress plus pending/history polling after upload
+- [ ] Richer live progress display: "Parsing 47 of 194 invoices…"
 
 ### Phase 5, Demo polish (hours 20 to 22)
 - [ ] **Bootstrap demo**: ingest the full base archive, show the initial vault build live
 - [ ] **Incremental replay**: walk `incremental/day-01` through `day-10`, replay each day's deltas
-- [ ] **Conflict scenario**: trigger one pending patch on a section the human pre-edited, show the queue UX
+- [x] **Conflict scenario foundation**: provider conflict stays pending while unit / building facts auto-apply. A cleaner scripted demo pass is still useful.
 - [ ] **Tavily enrichment**: pull one or two demo facts from public sources
 - [ ] **Real PDF stress test**: drop one scanned PDF (not from simulator) into the pipeline to prove OCR path works
 
@@ -601,7 +615,7 @@ Domain, account, and email routing are already provisioned. The Worker code is *
   - Name servers: `cruz.ns.cloudflare.com`, `huxley.ns.cloudflare.com`
 - **Email Routing**: enabled, subaddressing on, catch-all `*@kontext.haus` → Worker `buena-ingest`. MX/SPF/DKIM all live.
 - **R2 bucket**: `buena-raw` (raw .eml + attachments + bulk uploads).
-- **Queue**: `buena-extract` (queue_id `964ea057236842e6b99a7b4e12ae65c6`). Producer wired. HTTP-pull consumer enabled for testing. **No worker consumer yet** — to be wired after the local extractor lands.
+- **Queue**: `buena-extract` (queue_id `964ea057236842e6b99a7b4e12ae65c6`). Producer wired. HTTP-pull consumer enabled for testing. The repo now also includes a worker consumer in `wrangler.toml` plus `queue()` handling in `workers/ingest/src/email.ts`; re-check deployed Cloudflare state before relying on it.
 - **Worker `buena-ingest`** deployed at `https://buena-ingest.isiklimahir.workers.dev`.
   - HTTP routes: `GET /health`, `POST /upload?name=<filename>` (bulk-import path).
   - `email()` handler parses MIME via `postal-mime`, drops .eml + attachments to R2, enqueues structured job to `buena-extract` with `{source, msgId, from, to, subject, attachmentKeys}`.
@@ -610,6 +624,55 @@ Domain, account, and email routing are already provisioned. The Worker code is *
 - **End-to-end verified 2026-04-25**: real Gmail → kontext.haus → worker → R2 (.eml + PDF attachment) → queue (job with attachmentKeys). Tested with two emails, one with a PDF attachment from `partner-files/rechnungen/`.
 - **Account**: `isiklimahir@gmail.com`, account id `564b8125cf83c4aa38cf87f61f2ac14c`. Workers Paid ($5/mo) active.
 - **Sending test emails autonomously**: use `gog` CLI (Gmail OAuth, already authed). Binary at `/opt/homebrew/Cellar/gogcli/0.11.0/bin/gog`. Example: `gog -a isiklimahir@gmail.com send --to property+LIE-001@kontext.haus --subject ... --body ... [--attach path.pdf]`.
+
+### Gmail / GOG smoke-test recipes (preferred over synthetic injection)
+Use Mahir's real Gmail path for end-to-end verification whenever possible. This proves the full chain, Gmail -> Cloudflare Email Routing -> Worker -> Queue -> Gemini -> gate -> pending/history/property.md.
+
+#### Unit-scoped test
+```bash
+gog -a isiklimahir@gmail.com send \
+  --to "property+LIE-001@kontext.haus" \
+  --subject "WE 29 Mietminderung wegen Heisswasser" \
+  --body "Hallo, in WE 29 besteht weiterhin ein Heisswasser-Defekt. Der Bewohner mindert deshalb seit dem 15.01.2026 die Miete um 10 Prozent. Bitte als offene Angelegenheit erfassen."
+```
+Expected outcome: auto-applied `Open issues` lines scoped to `EH-029`, and the rendered markdown line should visibly include `EH-029:`.
+
+#### Building-scoped test
+```bash
+gog -a isiklimahir@gmail.com send \
+  --to "property+LIE-001@kontext.haus" \
+  --subject "HAUS-12 Aufzug Reparaturtermin bestaetigt" \
+  --body "Hallo, der Aufzug in HAUS-12 ist weiterhin defekt. Die Reparatur ist fuer den 28.04.2026 terminiert. Bitte als gebaeudeweite offene Angelegenheit aufnehmen."
+```
+Expected outcome: building-level `Open issues` entry for `HAUS-12`, usually auto-applied.
+
+#### Provider-scoped test
+```bash
+gog -a isiklimahir@gmail.com send \
+  --to "property+LIE-001@kontext.haus" \
+  --subject "DL-002 Aufzugswartung bestaetigt" \
+  --body "Hallo, DL-002 fuehrt die Aufzugswartung fuer 185 EUR pro Monat durch. Bitte den Dienstleistereintrag entsprechend ergaenzen."
+```
+Expected outcome: provider-scoped item for `DL-002`. Depending on current file state, this may stay pending as a conflict instead of auto-applying.
+
+#### Attachment test
+```bash
+gog -a isiklimahir@gmail.com send \
+  --to "property+LIE-001@kontext.haus" \
+  --subject "Attachment only test" \
+  --body "Bitte siehe Anhang." \
+  --attach /path/to/file.txt
+```
+Expected outcome: the attachment content is extracted through the stored-document path, not only the email body.
+
+#### What to check after sending
+- `GET /vaults/LIE-001/pending` for queued review items
+- `GET /vaults/LIE-001/history` for `auto` vs `approved` vs `rejected`
+- `GET /vaults/LIE-001/property.md` for actual rendered markdown changes
+- In Obsidian, use the plugin sync button, which now does a full mirror sync: remote `property.md` + `state.json`, then current remote pending queue only
+
+#### Important note
+When verifying scope behavior, remember that not every fact should have a unit. Valid scopes are unit (`EH-XXX`), building (`HAUS-XX`), and provider (`DL-XXX`). The pending UI should show the correct scope pill instead of implying everything is a unit issue.
 
 ### Tokens in Keychain (never commit token values, references only)
 | Service name | Scope | Use for |

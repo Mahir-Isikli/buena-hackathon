@@ -1,18 +1,14 @@
 import type BuenaPlugin from "../main";
 import { attachHoverPopover, HoverField } from "./hover";
+import { openProvenanceSource } from "./provenance-open";
 
 /**
  * Inline annotation post-processor.
  *
- * Two annotation flavors are supported, both written inline so they survive
- * Obsidian's renderer (HTML comments are stripped from rendered output):
- *
- *   1) Provenance:  {prov: src | conf: 0.91 | actor: gemini-flash}
- *      → small "src" pill, hover shows source/confidence/actor.
- *
- *   2) Change marker:  {changed: 2026-04-25 | from: 650 EUR | actor: gemini-2.5-pro | src: ...}
- *      → bold "Δ CHANGED" pill, hover shows full diff history.
- *      Written automatically by the patch gate every time a fact is updated.
+ * Supported forms:
+ * - {prov: src | conf: 0.91 | actor: gemini}
+ * - {changed: 2026-04-25T... | from: old | actor: gemini | src: ...}
+ * - ^[src: path · actor: x · conf: 1.0]
  */
 export function registerProvenanceProcessor(plugin: BuenaPlugin) {
   plugin.registerMarkdownPostProcessor((el) => {
@@ -23,6 +19,8 @@ export function registerProvenanceProcessor(plugin: BuenaPlugin) {
       /\{prov:\s*([^}|]+?)(?:\s*\|\s*conf:\s*([0-9.]+))?(?:\s*\|\s*actor:\s*([^}]+?))?\s*\}/g;
     const changedRe =
       /\{changed:\s*([^}|]+?)(?:\s*\|\s*from:\s*([^}|]+?))?(?:\s*\|\s*actor:\s*([^}|]+?))?(?:\s*\|\s*src:\s*([^}]+?))?\s*\}/g;
+    const footnoteProvRe =
+      /\^\[src:\s*([^·\]]+?)(?:\s*·\s*actor:\s*([^·\]]+?))?(?:\s*·\s*conf:\s*([0-9.]+))?\s*\]/g;
 
     let n: Node | null;
     while ((n = walker.nextNode())) {
@@ -43,6 +41,7 @@ export function registerProvenanceProcessor(plugin: BuenaPlugin) {
           fields: provFields(prov),
           label: "src",
           className: "buena-prov-pill",
+          source: prov.source,
         });
       }
 
@@ -60,13 +59,31 @@ export function registerProvenanceProcessor(plugin: BuenaPlugin) {
           raw: m[0],
           fields: changedFields(ch),
           label: "changed",
-          className: "buena-changed-pill",
+          className: `buena-changed-pill${isRecent(ch.when) ? " buena-changed-pill-recent" : ""}`,
+          source: ch.source,
+          recent: isRecent(ch.when),
+        });
+      }
+
+      while ((m = footnoteProvRe.exec(text)) !== null) {
+        const prov: ProvData = {
+          source: m[1].trim(),
+          actor: m[2]?.trim(),
+          confidence: m[3] ? parseFloat(m[3]) : undefined,
+        };
+        matches.push({
+          kind: "prov",
+          node: n as Text,
+          index: m.index,
+          raw: m[0],
+          fields: provFields(prov),
+          label: "src",
+          className: "buena-prov-pill",
+          source: prov.source,
         });
       }
     }
 
-    // Group matches by their text node so we can replace them in one shot
-    // without invalidating subsequent indices.
     const byNode = new Map<Text, AnnotationMatch[]>();
     for (const m of matches) {
       const arr = byNode.get(m.node) ?? [];
@@ -77,7 +94,6 @@ export function registerProvenanceProcessor(plugin: BuenaPlugin) {
     for (const [node, list] of byNode) {
       const parent = node.parentNode;
       if (!parent) continue;
-      // Sort by position ascending and rebuild the node's children
       list.sort((a, b) => a.index - b.index);
 
       const fragments: (Node | string)[] = [];
@@ -85,19 +101,28 @@ export function registerProvenanceProcessor(plugin: BuenaPlugin) {
       const text = node.data;
 
       for (const m of list) {
-        if (m.index > cursor) {
-          fragments.push(text.slice(cursor, m.index));
-        }
-        const pill = document.createElement("span");
+        if (m.index > cursor) fragments.push(text.slice(cursor, m.index));
+        const pill = document.createElement("button");
+        pill.type = "button";
         pill.className = m.className;
         pill.textContent = m.label;
         attachHoverPopover(pill, () => m.fields);
+        if (m.kind === "prov" && m.source) {
+          pill.title = "Open source";
+          pill.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            void openProvenanceSource(plugin, m.source!);
+          });
+        }
+        if (m.recent) {
+          const host = nearestContentHost(parent);
+          host?.classList.add("buena-recent-content");
+        }
         fragments.push(pill);
         cursor = m.index + m.raw.length;
       }
-      if (cursor < text.length) {
-        fragments.push(text.slice(cursor));
-      }
+      if (cursor < text.length) fragments.push(text.slice(cursor));
 
       const frag = document.createDocumentFragment();
       for (const f of fragments) {
@@ -116,6 +141,8 @@ interface AnnotationMatch {
   label: string;
   className: string;
   fields: HoverField[];
+  source?: string;
+  recent?: boolean;
 }
 
 interface ProvData {
@@ -132,25 +159,35 @@ interface ChangedData {
 }
 
 function provFields(p: ProvData): HoverField[] {
-  const fields: HoverField[] = [
-    { label: "Source", value: p.source, mono: true },
-  ];
+  const fields: HoverField[] = [{ label: "Source", value: p.source, mono: true }];
   if (typeof p.confidence === "number") {
-    fields.push({
-      label: "Confidence",
-      value: `${(p.confidence * 100).toFixed(0)}%`,
-    });
+    fields.push({ label: "Confidence", value: `${(p.confidence * 100).toFixed(0)}%` });
   }
   if (p.actor) fields.push({ label: "Actor", value: p.actor });
   return fields;
 }
 
 function changedFields(c: ChangedData): HoverField[] {
-  const fields: HoverField[] = [
-    { label: "Changed", value: c.when },
-  ];
+  const fields: HoverField[] = [{ label: "Changed", value: c.when }];
   if (c.from) fields.push({ label: "Was", value: c.from });
   if (c.actor) fields.push({ label: "Actor", value: c.actor });
   if (c.source) fields.push({ label: "Source", value: c.source, mono: true });
   return fields;
+}
+
+function isRecent(when: string): boolean {
+  const t = Date.parse(when);
+  if (!Number.isFinite(t)) return false;
+  return Date.now() - t < 24 * 60 * 60 * 1000;
+}
+
+function nearestContentHost(node: Node): HTMLElement | null {
+  let cur: Node | null = node;
+  while (cur) {
+    if (cur instanceof HTMLElement && ["LI", "P", "DIV"].includes(cur.tagName)) {
+      return cur;
+    }
+    cur = cur.parentNode;
+  }
+  return null;
 }

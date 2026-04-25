@@ -7,11 +7,12 @@
     "dev": "wrangler dev"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0",
     "@cloudflare/workers-types": "^4.20240909.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "wrangler": "^4.0.0"
   },
   "dependencies": {
+    "jszip": "^3.10.1",
     "postal-mime": "^2.4.0"
   }
 }

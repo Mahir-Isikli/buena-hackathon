@@ -1,9 +1,9 @@
+import JSZip from "jszip";
 import PostalMime from "postal-mime";
 import { Env, handleHttp } from "./http";
-import { extractCandidates } from "./gemini";
-import { resolvePropertyId } from "./route";
-import { buildPendingPatches } from "./gate";
-import { appendPending } from "./vaults";
+import { extractBulkCandidates, extractCandidates } from "./gemini";
+import { resolveRouting, routingHintText } from "./route";
+import { applyPatchGate } from "./gate";
 
 interface ForwardableEmailMessage {
   from: string;
@@ -92,16 +92,13 @@ export default {
     });
   },
 
-  // Queue consumer: real extractor.
-  // Each message is one inbound email. Pull the .eml from R2, ask Gemini
-  // for candidate facts, build pending patches, append to vaults/<id>/pending.json.
-  // Per-message try/catch so a single bad email doesn't poison the batch.
-  async queue(batch: QueueBatch<EmailJob>, env: Env): Promise<void> {
+  // Queue consumer: email + bulk extraction.
+  async queue(batch: QueueBatch<QueueJob>, env: Env): Promise<void> {
     console.log(`[buena-queue] ${batch.messages.length} message(s) on ${batch.queue}`);
     await Promise.all(
       batch.messages.map(async (msg) => {
         try {
-          await processEmailJob(msg.body, env);
+          await processQueueJob(msg.body, env);
           msg.ack();
         } catch (err) {
           console.error("[buena-queue] failed", msg.body, err);
@@ -112,29 +109,49 @@ export default {
   },
 };
 
+type QueueJob = EmailJob | BulkJob;
+
 interface EmailJob {
-  source: "email" | "bulk";
+  source: "email";
   msgId?: string;
   from?: string;
   to?: string;
   subject?: string;
   receivedAt?: string;
   attachmentKeys?: string[];
-  // bulk shape
+}
+
+interface BulkJob {
+  source: "bulk";
   key?: string;
   filename?: string;
   size?: number;
+  contentType?: string;
+  propertyId?: string;
+  propertyLabel?: string;
+  propertyAddress?: string;
+  note?: string;
+  uploadedAt?: string;
+}
+
+async function processQueueJob(job: QueueJob, env: Env): Promise<void> {
+  if (job.source === "email") {
+    await processEmailJob(job, env);
+    return;
+  }
+  if (job.source === "bulk") {
+    await processBulkJob(job, env);
+    return;
+  }
+  console.log("[buena-queue] skipping unknown job source", (job as { source?: string }).source);
 }
 
 async function processEmailJob(job: EmailJob, env: Env): Promise<void> {
-  if (job.source !== "email" || !job.msgId) {
-    // Bulk path is handled in a later iteration.
-    console.log("[buena-queue] skipping non-email job", job.source);
+  if (!job.msgId) {
+    console.log("[buena-queue] skipping email job without msgId");
     return;
   }
-  if (!env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY secret is not set");
-  }
+  ensureGemini(env);
 
   const emlKey = `emails/${job.msgId}.eml`;
   const obj = await env.RAW.get(emlKey);
@@ -145,28 +162,362 @@ async function processEmailJob(job: EmailJob, env: Env): Promise<void> {
   const raw = await obj.arrayBuffer();
   const parsed = await PostalMime.parse(raw);
   const body = (parsed.text ?? parsed.html ?? "").trim();
-  if (!body) {
-    console.warn("[buena-queue] empty email body for", job.msgId);
+
+  const routing = resolveRouting(
+    job.from ?? "",
+    job.to ?? "",
+    job.subject ?? parsed.subject ?? "",
+    body
+  );
+  const propertyId = routing.propertyId;
+  const routingHint = routingHintText(routing);
+
+  let totalCandidates = 0;
+
+  if (body) {
+    const candidates = await extractCandidates(env.GEMINI_API_KEY!, body, {
+      subject: job.subject ?? parsed.subject ?? "",
+      from: job.from ?? "",
+      to: job.to ?? "",
+      routingHint,
+    });
+    const candidatesWithHints = applyPreferredUnit(candidates, routing.preferredUnit);
+    totalCandidates += candidatesWithHints.length;
+    await applyPatchGate({
+      bucket: env.VAULTS,
+      propertyId,
+      patchBaseId: job.msgId,
+      source: `r2://buena-raw/${emlKey}`,
+      candidates: candidatesWithHints,
+      receivedAt: job.receivedAt ?? new Date().toISOString(),
+      actor: "gemini-3-pro",
+    });
+  }
+
+  const attachmentKeys = job.attachmentKeys ?? [];
+  let attachmentIndex = 0;
+  for (const key of attachmentKeys) {
+    const attachmentCandidates = await processEmailAttachment(
+      env,
+      key,
+      {
+        msgId: job.msgId,
+        propertyId,
+        propertyLabel: propertyId,
+        note: `Attachment from email subject: ${job.subject ?? parsed.subject ?? ""}`,
+        routingHint,
+        preferredUnit: routing.preferredUnit,
+        receivedAt: job.receivedAt ?? new Date().toISOString(),
+      },
+      attachmentIndex++
+    );
+    totalCandidates += attachmentCandidates;
+  }
+
+  if (!body && attachmentKeys.length === 0) {
+    console.warn("[buena-queue] empty email body and no attachments for", job.msgId);
     return;
   }
 
-  const propertyId = resolvePropertyId(job.to ?? "");
-  const candidates = await extractCandidates(env.GEMINI_API_KEY, body, {
-    subject: job.subject ?? parsed.subject ?? "",
-    from: job.from ?? "",
-    to: job.to ?? "",
-  });
   console.log(
-    `[buena-queue] ${job.msgId} -> property ${propertyId}, ${candidates.length} candidate(s)`
+    `[buena-queue] email ${job.msgId} -> property ${propertyId} via ${routing.via}, ${routing.matches.length} deterministic match(es), ${totalCandidates} candidate(s) total`
+  );
+}
+
+async function processBulkJob(job: BulkJob, env: Env): Promise<void> {
+  if (!job.key) {
+    console.log("[buena-queue] skipping bulk job without key");
+    return;
+  }
+  ensureGemini(env);
+  await processStoredDocument(env, {
+    key: job.key,
+    propertyId: job.propertyId ?? "LIE-001",
+    propertyLabel: job.propertyLabel,
+    propertyAddress: job.propertyAddress,
+    note: job.note,
+    preferredUnit: undefined,
+    routingHint: undefined,
+    receivedAt: job.uploadedAt ?? new Date().toISOString(),
+    patchBaseId: bulkPatchBaseId(job.key),
+  });
+}
+
+async function processEmailAttachment(
+  env: Env,
+  key: string,
+  meta: {
+    msgId: string;
+    propertyId: string;
+    propertyLabel?: string;
+    note?: string;
+    routingHint?: string;
+    preferredUnit?: string;
+    receivedAt: string;
+  },
+  attachmentIndex: number
+): Promise<number> {
+  return processStoredDocument(env, {
+    key,
+    propertyId: meta.propertyId,
+    propertyLabel: meta.propertyLabel,
+    note: meta.note,
+    routingHint: meta.routingHint,
+    preferredUnit: meta.preferredUnit,
+    receivedAt: meta.receivedAt,
+    patchBaseId: `${meta.msgId}-att-${attachmentIndex}`,
+  });
+}
+
+async function processStoredDocument(
+  env: Env,
+  meta: {
+    key: string;
+    propertyId: string;
+    propertyLabel?: string;
+    propertyAddress?: string;
+    note?: string;
+    routingHint?: string;
+    preferredUnit?: string;
+    receivedAt: string;
+    patchBaseId: string;
+  }
+): Promise<number> {
+  const obj = await env.RAW.get(meta.key);
+  if (!obj) {
+    console.warn("[buena-queue] no stored object in R2 for", meta.key);
+    return 0;
+  }
+
+  const raw = await obj.arrayBuffer();
+  if (raw.byteLength === 0) {
+    console.warn("[buena-queue] empty stored object", meta.key);
+    return 0;
+  }
+
+  const filename = basename(meta.key);
+  const mimeType = obj.httpMetadata?.contentType ?? guessMimeType(filename);
+  const text = await extractTextLike(raw, filename, mimeType);
+  const routing = resolveRouting(
+    "bulk-import",
+    `property+${meta.propertyId}@kontext.haus`,
+    filename,
+    text ?? ""
+  );
+  const routingHint = [
+    meta.routingHint,
+    routingHintText(routing),
+    meta.note ? `- Operator note: ${meta.note}` : null,
+  ]
+    .filter((v): v is string => !!v)
+    .join("\n");
+
+  const candidates = await extractBulkCandidates(
+    env.GEMINI_API_KEY!,
+    {
+      filename,
+      mimeType,
+      text: text ?? undefined,
+      data: text ? undefined : raw,
+    },
+    {
+      propertyId: meta.propertyId,
+      propertyLabel: meta.propertyLabel,
+      propertyAddress: meta.propertyAddress,
+      note: meta.note,
+      routingHint: routingHint || undefined,
+    }
   );
 
-  const patches = buildPendingPatches({
-    msgId: job.msgId,
-    source: `r2://buena-raw/${emlKey}`,
-    candidates,
-    receivedAt: job.receivedAt ?? new Date().toISOString(),
-  });
-  for (const p of patches) {
-    await appendPending(env.VAULTS, propertyId, p);
+  if (!text && candidates.length === 0) {
+    console.log(`[buena-queue] stored doc ${filename} unsupported or no extractable facts (${mimeType})`);
+    return 0;
   }
+
+  const preferredUnit = meta.preferredUnit ?? routing.preferredUnit;
+  const candidatesWithHints = applyPreferredUnit(candidates, preferredUnit);
+  console.log(
+    `[buena-queue] stored doc ${filename} -> property ${meta.propertyId}, mime ${mimeType}, ${candidatesWithHints.length} candidate(s)`
+  );
+
+  await applyPatchGate({
+    bucket: env.VAULTS,
+    propertyId: meta.propertyId,
+    patchBaseId: meta.patchBaseId,
+    source: `r2://buena-raw/${meta.key}`,
+    candidates: candidatesWithHints,
+    receivedAt: meta.receivedAt,
+    actor: "gemini-3-pro",
+  });
+  return candidatesWithHints.length;
+}
+
+function ensureGemini(env: Env): void {
+  if (!env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY secret is not set");
+  }
+}
+
+function applyPreferredUnit<T extends { section: string; unit?: string }>(
+  candidates: T[],
+  preferredUnit?: string
+): T[] {
+  if (!preferredUnit) return candidates;
+  return candidates.map((c) =>
+    c.unit || !prefersUnitContext(c.section)
+      ? c
+      : {
+          ...c,
+          unit: preferredUnit,
+        }
+  );
+}
+
+function prefersUnitContext(section: string): boolean {
+  return section === "Units" || section === "Open issues";
+}
+
+async function extractTextLike(
+  raw: ArrayBuffer,
+  filename: string,
+  mimeType: string
+): Promise<string | null> {
+  const ext = extension(filename);
+  if (ext === "eml" || mimeType === "message/rfc822") {
+    try {
+      const parsed = await PostalMime.parse(raw);
+      return (parsed.text ?? parsed.html ?? "").trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  if (
+    mimeType.startsWith("text/") ||
+    ["json", "csv", "md", "markdown", "html", "htm", "xml"].includes(ext)
+  ) {
+    try {
+      return new TextDecoder().decode(raw).trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  if (["zip", "docx", "xlsx"].includes(ext)) {
+    return extractZipFamilyText(raw, ext);
+  }
+
+  return null;
+}
+
+async function extractZipFamilyText(raw: ArrayBuffer, ext: string): Promise<string | null> {
+  try {
+    const zip = await JSZip.loadAsync(raw);
+    const files = Object.values(zip.files).filter((f) => !f.dir);
+    const parts: string[] = [];
+
+    if (ext === "docx") {
+      for (const f of files) {
+        if (f.name === "word/document.xml" || f.name.startsWith("word/footnotes")) {
+          const xml = await f.async("string");
+          const text = stripXml(xml);
+          if (text) parts.push(text);
+        }
+      }
+    } else if (ext === "xlsx") {
+      for (const f of files) {
+        if (
+          f.name === "xl/sharedStrings.xml" ||
+          f.name.startsWith("xl/worksheets/") ||
+          f.name === "xl/workbook.xml"
+        ) {
+          const xml = await f.async("string");
+          const text = stripXml(xml);
+          if (text) parts.push(text);
+        }
+      }
+    } else {
+      parts.push(`Archive entries:\n${files.map((f) => `- ${f.name}`).join("\n")}`);
+      for (const f of files.slice(0, 25)) {
+        const innerExt = extension(f.name);
+        if (["txt", "md", "markdown", "json", "csv", "html", "htm", "xml"].includes(innerExt)) {
+          const text = (await f.async("string")).trim();
+          if (text) parts.push(`\n## ${f.name}\n${text.slice(0, 4000)}`);
+        } else if (["docx", "xlsx"].includes(innerExt)) {
+          const buf = await f.async("arraybuffer");
+          const nested = await extractZipFamilyText(buf, innerExt);
+          if (nested) parts.push(`\n## ${f.name}\n${nested.slice(0, 4000)}`);
+        }
+      }
+    }
+
+    const joined = parts.join("\n\n").trim();
+    return joined || null;
+  } catch (err) {
+    console.warn("[buena-queue] failed to parse zip-family file", ext, err);
+    return null;
+  }
+}
+
+function stripXml(xml: string): string {
+  return xml
+    .replace(/<w:tab\/?\s*>/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function guessMimeType(filename: string): string {
+  const ext = extension(filename);
+  switch (ext) {
+    case "txt":
+      return "text/plain";
+    case "md":
+    case "markdown":
+      return "text/markdown";
+    case "json":
+      return "application/json";
+    case "csv":
+      return "text/csv";
+    case "html":
+    case "htm":
+      return "text/html";
+    case "xml":
+      return "application/xml";
+    case "eml":
+      return "message/rfc822";
+    case "pdf":
+      return "application/pdf";
+    case "png":
+      return "image/png";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "webp":
+      return "image/webp";
+    case "gif":
+      return "image/gif";
+    case "zip":
+      return "application/zip";
+    case "docx":
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    case "xlsx":
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    default:
+      return "application/octet-stream";
+  }
+}
+
+function extension(filename: string): string {
+  const idx = filename.lastIndexOf(".");
+  return idx === -1 ? "" : filename.slice(idx + 1).toLowerCase();
+}
+
+function basename(path: string): string {
+  const parts = path.split("/");
+  return parts[parts.length - 1] || path;
+}
+
+function bulkPatchBaseId(key: string): string {
+  return `bulk-${key.replace(/[^a-zA-Z0-9._-]+/g, "_")}`;
 }
