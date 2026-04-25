@@ -1,6 +1,6 @@
 # AGENTS.md, Buena Context Engine
 
-A briefing for any coding agent working in this repo. We're competing in the **Buena track** at Big Berlin Hack 2026, building "CLAUDE.md for buildings", a self-updating context engine for property management, exposed through an **iOS app**.
+A briefing for any coding agent working in this repo. We're competing in the **Buena track** at Big Berlin Hack 2026, building "CLAUDE.md for buildings", a self-updating context engine for property management.
 
 Read this file first, every session.
 
@@ -14,12 +14,13 @@ Read this file first, every session.
 | **Track prize** | €2,500 cash, plus path to €10K finalist prize |
 | **Submission deadline** | Sunday 14:00 |
 | **Required submission** | 2 min Loom, public GitHub repo with README |
-| **Required partner tech** | At least 3 of: Google DeepMind, Tavily, Gradium, Lovable, Entire, Aikido, Pioneer/Fastino |
-| **Team** | 3 people: Mahir (AI/product, Arbio day-job edge), Anwar (automation), Yasin (design) |
-| **Surface** | Native iOS app (SwiftUI), thin Python/FastAPI backend for the engine |
-| **Team edge** | Mahir works at Arbio (AI-driven holiday rental management). This challenge is his actual day-job problem framed as a hackathon prompt. |
+| **Partner techs (3 required)** | Gemini, Tavily, Pioneer/GLiNER2. Plus Entire and Aikido as side challenges. |
+| **Team** | Mahir (AI/product), Anwar (automation), Yasin (design) |
+| **Surface** | Cloudflare Workers backend, Obsidian vault as the human-facing output, no iOS, no web upload UI for v1 |
+| **Demo property** | WEG Immanuelkirchstraße 26, 10405 Berlin (the dataset Buena gave us) |
+| **Storyline** | Homeowner onboarding: a homeowner forwards their old property manager's archive, the engine produces a clean Obsidian vault per property, then keeps it surgically up to date as new emails arrive. |
 
-> **Open question**: original message mentioned "Telli we already have has an e-programmer". Unclear if that means a 4th teammate, or telli the partner tech. Confirm before submission and update team count and partner tech list accordingly.
+> **Partner-tech risk**: we are at exactly 3 required techs. If one fails to integrate, we miss the bar. Gradium is the natural fallback (transcribing voicemails or PDFs) if we need a buffer.
 
 ---
 
@@ -29,173 +30,171 @@ Build an engine that produces a single **Context Markdown file per property**, l
 
 Buena framing: *"CLAUDE.md, but for a building, plus it writes itself."*
 
-The engine ingests scattered context (Gmail, ERPs, Slack, Drive, scanned PDFs, voice walkthroughs, plus institutional knowledge) and produces a dense, structured markdown file an AI agent can act on. No more re-crawling all sources for every task.
-
-The iOS app is the **capture and inspection surface**: walk a building, narrate context, see the .md update live with provenance.
+Ingestion is **email-first**. PDFs, scanned paper, JSON, v-files arrive as attachments. The engine extracts, resolves identity across systems, and patches the right markdown file in place. Output lives in an Obsidian vault, since the Buena team are heavy Obsidian users (confirmed in the PM interview).
 
 ---
 
-## The challenge (paraphrased from Buena's brief)
+## Ground truth (from the PM interview)
 
-Property management runs on context. Every ticket, email, and owner question requires knowing a hundred facts about one specific building: who owns it, what the last assembly decided, whether the roof leak is open, who the heating contractor is.
+See `partner-files/product-interview/pm-interview.md` for the verbatim Q&A. Headlines:
 
-That context lives across ERPs, Gmail, Slack, Drive, scanned PDFs, and the head of the property manager who's been there 12 years. Today, AI agents have to crawl all of it for every task. Inefficient and lossy.
+- **Don't reprocess on every input.** A single new email should pull context only from itself plus the resolved property, never from the global archive.
+- **Inputs are mostly PDF**, sometimes scanned paper, sometimes JSON or v-files. Always arrives via email.
+- **Heavy Obsidian users.** Markdown is the format. Output natively to a vault.
+- **False positives are the worst possible outcome.** Precision over recall on every patch. Route ambiguous cases to a human review queue.
+- **95% of inbound is relevant.** Filter is light, not aggressive.
+- **Triggers**: email arrives, bank transaction lands.
+- **No PII restrictions** for the demo, no preferred location in their stack.
 
-The challenge is to consolidate this into a single Context.md per property, automatically.
+---
 
-### Three explicit hard problems from Buena's brief
+## Three explicit hard problems from Buena's brief
 
 1. **Schema alignment.** "Owner" is called *Eigentümer*, *MietEig*, *Kontakt*, or *owner* depending on the source system. Same person, different keys. The engine must resolve identity across ERPs.
 2. **Surgical updates.** When a new email arrives, you can't regenerate the whole file. That destroys human edits and burns tokens. Patch the right section only.
-3. **Signal vs. noise.** About 90% of inbound emails are irrelevant to the property file. The engine must judge what belongs and what doesn't.
+3. **Signal vs. noise.** Even at 95% relevance, the engine still has to judge what belongs and what doesn't.
 
 ---
 
 ## About Buena (sponsor context, critical for the pitch)
 
-**What they are**: Berlin-based PropTech, Series A €49.4M ($58M total funding, mid-2025), led by GV (Google Ventures) with 20VC, Stride, Capnamic. Founded 2016 (originally as "Home"), rebranded to Buena. CEO Din Bisevac (26). Co-founder Moritz von Hase. About 30-person HQ team.
+Berlin-based PropTech. Series A €49.4M (mid-2025), led by GV (Google Ventures) with 20VC, Stride, Capnamic. CEO Din Bisevac (26). Co-founder Moritz von Hase. Around 30-person HQ team.
 
-**What they do**: Full-stack AI-driven residential property management for the German market. 60,000+ units under management. Roughly 5,000-landlord waitlist. Revenue grew 500% in 2024, 300% in 2023.
+Full-stack AI-driven residential property management for the German market. 60,000+ units under management. Roughly 5,000-landlord waitlist. Revenue grew 500% in 2024.
 
-**Their strategy**: Two-pronged. (1) Build their own AI property management software. (2) **AI-led M&A rollup**, acquire small German property managers (20+ acquisitions to date, roughly 2 per month) and migrate them onto the Buena platform.
+Their original strategy was **AI-led M&A rollup** of small German PMs (20+ acquisitions, roughly 2 per month), each migrated onto Buena's platform. They've since pivoted toward **home ownership onboarding**. The PM told us either angle is fine for the demo.
 
-**The core pain Buena lives with daily**: 96.3% of German property managers still use pre-cloud software. When Buena acquires one, they have to ingest all that scattered, often paper-based context onto their platform. *This is exactly the challenge they wrote.*
-
-### What this means for the pitch
-- The judges are likely Buena engineers or leadership. They feel this pain weekly.
-- The demo must speak to their M&A onboarding scenario directly. Phrase the demo as: *"Buena just acquired a property manager. Watch the engine ingest their stack."*
-- Buena's stated philosophy is "AI enhances, doesn't replace" property managers. Keep humans in the loop in the design (review queue for ambiguous patches, etc.).
-- Buena CEO Din Bisevac co-initiated Project Europe with Harry Stebbings (20VC). They care about European tech that ships.
+Their stated philosophy is "AI enhances, doesn't replace" property managers. Keep humans in the loop in the design (review queue for ambiguous patches).
 
 ---
 
 ## Why we have an edge
 
-- **Domain expertise.** Mahir is a full-time AI Product Engineer at Arbio (AI-driven holiday rental management). He has been building Nexus, Arbio's AI ops platform with voice agents, document processing, chat UI, for 6 weeks. Every other team in this track is reading about property management for the first time today.
-- **Real metrics access.** Mahir has a colleague (Lenos) who can describe Arbio's actual property-onboarding schema and KPIs (e.g. 2-week integration target). That is our output template.
-- **Demo set close to the venue.** Mahir's apartment at Hasenheide 76 is 5 min from the venue. We can do a live property walkthrough capture as part of the demo, straight from the iOS app.
+- **Domain expertise.** Mahir is a full-time AI Product Engineer at Arbio (AI-driven holiday rental management). He has been building Nexus, Arbio's AI ops platform with voice agents, document processing, chat UI, for 6 weeks. Most other teams in this track are reading about property management for the first time today.
+- **Real metrics access.** Mahir has a colleague (Lenos) who can describe Arbio's actual property-onboarding schema and KPIs (e.g. 2-week integration target).
+- **Real dataset from Buena.** They handed us a complete simulated archive: stammdaten (1 property, 3 buildings, 52 units, 50 owners, 50+ tenants, 9+ service providers), 6,546 emails, 135 letters, 194 invoices, full bank statements, plus 10 days of incremental updates. See `partner-files/`.
 
 ---
 
 ## Architecture
 
 ```
-                  ┌──────────────────────────────────────┐
-                  │  iOS APP (SwiftUI)                   │
-                  │  • Voice capture (mic + AVAudioEngine)│
-                  │  • Camera capture for visual context │
-                  │  • Property picker / inbox viewer    │
-                  │  • Live context.md viewer with diffs │
-                  └──────────────┬───────────────────────┘
-                                 │ HTTPS / WebSocket
-                                 ▼
                 ┌─────────────────────────────────────┐
-                │   INGESTION LAYER (FastAPI)         │
-                │   • Gmail mock                       │
-                │   • Drive / PDFs                     │
-                │   • Voice notes (Gradium STT)        │
-                │   • Web research (Tavily)            │
+                │   EMAIL INGESTION                   │
+                │   Cloudflare Email Worker route     │
+                │   Attachments to R2                  │
                 └────────────────┬────────────────────┘
                                  │
                                  ▼
                 ┌─────────────────────────────────────┐
-                │   PROCESSING LAYER                  │
-                │   • GLiNER2 entity extraction       │
-                │   • Identity resolver (schema map)  │
-                │   • Relevance classifier (Gemini)   │
-                │   • Section classifier (Gemini)     │
+                │   EXTRACTION                        │
+                │   • Gemini 2.5 Pro vision (PDFs)    │
+                │   • Gemini Flash for plain text     │
+                │   • GLiNER2 for structured fields   │
                 └────────────────┬────────────────────┘
                                  │
                                  ▼
                 ┌─────────────────────────────────────┐
-                │   CONTEXT GRAPH                     │
-                │   per-property store with           │
-                │   provenance (source, timestamp,    │
-                │   confidence)                       │
+                │   ROUTING (intent SLM, Pioneer)     │
+                │   • Which property?                  │
+                │   • Which section?                   │
+                │   • Patch / ignore / escalate?       │
                 └────────────────┬────────────────────┘
                                  │
                                  ▼
                 ┌─────────────────────────────────────┐
-                │   PATCHING LAYER                    │
-                │   • Section-level diff emitter      │
-                │   • Human-edit conflict resolver    │
-                │   • Surgical markdown writer        │
+                │   IDENTITY RESOLVER                 │
+                │   Cross-schema clustering           │
+                │   (Eigentümer / Kontakt / owner_id) │
                 └────────────────┬────────────────────┘
                                  │
                                  ▼
                 ┌─────────────────────────────────────┐
-                │   CONTEXT.MD per property           │
-                │   (the deliverable, served to iOS)  │
+                │   SCOPED RETRIEVAL                  │
+                │   Pull context only for the         │
+                │   resolved property, never global    │
+                └────────────────┬────────────────────┘
+                                 │
+                                 ▼
+                ┌─────────────────────────────────────┐
+                │   SURGICAL PATCHER                  │
+                │   • Section-level diff               │
+                │   • Human-edit conflict guard        │
+                │   • Provenance comments              │
+                └────────────────┬────────────────────┘
+                                 │
+                                 ▼
+                ┌─────────────────────────────────────┐
+                │   OBSIDIAN VAULT (R2 + sync)        │
+                │   one .md per property               │
+                │   frontmatter + wikilinks            │
                 └─────────────────────────────────────┘
+
+           Tavily sits to the side: lazy enrichment for
+           public registries, contractor reviews, permits.
 ```
 
 ### Why this architecture
 
-- **Separation of extraction from patching.** Extraction is noisy (recall-biased). Patching is conservative (precision-biased). Different models, different rules.
-- **Provenance is first-class.** Every fact in the .md links to its source (email message-id, PDF page, transcript timestamp). This is what wins judges.
-- **Human edits are sacred.** The patcher detects human-edited sections and routes conflicts to a review queue instead of overwriting. Buena's "AI enhances, doesn't replace" philosophy lives here.
-- **iOS as capture surface.** The phone is the natural input device for property walkthroughs (voice, photo, location). It is also a polished demo artifact in its own right.
+- **Email-first ingestion.** PM confirmed email is the real trigger. Cloudflare Email Workers route domain-bound mail straight into our pipeline.
+- **No FastAPI.** Cloudflare Workers handle the webhook, run extraction, write to R2. One stack, fast, no tunnel needed for the demo.
+- **Provenance is first-class.** Every fact in the .md links to its source (email message-id, PDF page, attachment hash).
+- **Human edits are sacred.** The patcher detects human-edited sections via a checksum or explicit marker, routes conflicts to a review queue.
+- **Scoped retrieval, not global.** PM was explicit: don't re-examine all history per email. Resolve property first, retrieve only that subtree.
 
 ### Concrete .md structure (per property)
 
 ```markdown
-# Hasenheide 76, 10967 Berlin
+---
+property_id: LIE-001
+name: WEG Immanuelkirchstraße 26
+address: Immanuelkirchstraße 26, 10405 Berlin
+verwalter: Huber & Partner Immobilienverwaltung GmbH
+last_updated: 2026-04-25
+---
+
+# WEG Immanuelkirchstraße 26
 
 ## Identity
-- **Address**: Hasenheide 76, 10967 Berlin (Kreuzberg)
-- **Building ID**: HAS076
-- **Units**: 12 apartments, 1 commercial
-- **Owner association (WEG)**: HAS076-WEG
-  - <!-- src: contracts/2019-WEG-protocol.pdf, p.1 | conf: 0.94 -->
+- **Address**: Immanuelkirchstraße 26, 10405 Berlin (Prenzlauer Berg)
+- **Buildings**: HAUS-12 (18 units), HAUS-14 (20 units), HAUS-16 (14 units)
+- **Total units**: 52
+- **Verwalter**: [[Huber & Partner Immobilienverwaltung GmbH]]
+  - <!-- src: stammdaten/stammdaten.json | conf: 1.0 -->
+
+## Bank
+- WEG-Konto: DE02 1001 0010 0123 4567 89 (Postbank Berlin)
+- Rücklage: DE12 1203 0000 0098 7654 32
 
 ## Owners
-- Hans Müller (Eigentümer / Kontakt: hans.mueller@email.de)
-  - Apt 4B, owned since 2018
-  - <!-- src: erp.buena/owners/4831, gmail/thread/abc123 | conf: 0.91 -->
+- [[Marcus Dowerg]] (Eigentümer, EH-037, EH-032)
+  - <!-- src: stammdaten/eigentuemer.csv:EIG-001 | conf: 1.0 -->
+
+## Service providers
+- Hausmeister: [[Hausmeister Mueller GmbH]] (DL-001), 650 €/Monat
+- Aufzugswartung: [[Aufzug Schindler & Co. GmbH]] (DL-002), 185 €/Monat
+- Heizungswartung: [[Heiztechnik Berlin GmbH]] (DL-003), 78 €/h
 
 ## Open issues
-- Roof leak (apt 7C, reported 2026-04-12)
-  - Contractor: Dachdecker Schmidt GmbH (+49 30 555 0123)
-  - <!-- src: gmail/thread/xyz789 | last_updated: 2026-04-23 -->
-
-## Contractors
-- Heating: Heizungsbau Berlin GmbH, +49 30 ...
-- Roofing: Dachdecker Schmidt GmbH, +49 30 555 0123
-- ...
+- Wartungstermin Heizung bestätigt für 06.10.2024 um 10:00
+  - <!-- src: emails/2024-09/EMAIL-02443.eml | conf: 0.94 -->
 
 ## Last assembly decisions
-- 2025-11-15: Approved €18K budget for facade repainting
-  - <!-- src: contracts/2025-11-WEG-minutes.pdf | conf: 0.97 -->
+- ETV 2024-04: see [[ETV-2024-04-Protokoll]]
 ```
 
-The `<!-- src: ... -->` comments are provenance. The patcher uses them to find the right section to update.
+Wikilinks make Obsidian's graph view explode into a network of properties, owners, contractors. That's the visual demo moment.
 
 ---
 
-## Partner technology stack (confirmed picks in bold)
+## Partner technology stack
 
-We aim for at least 3 partner techs. Current confirmed picks:
+We use exactly **3 required techs** plus **2 side-challenge techs**.
 
-1. **Google DeepMind (Gemini)**, primary LLM and vision
-2. **Gradium**, speech-to-text for the iOS walkthrough capture
-3. **Tavily**, fast web research and extraction API
-4. **Pioneer / Fastino (GLiNER2)**, schema-driven extraction, possibly fine-tuned for intent classification
+### 1. Google DeepMind (Gemini), primary LLM and vision
 
-Plus opportunistic:
-
-5. **Entire**, agent context capture, essentially free side challenge
-6. **Aikido**, security scan side challenge
-
-### 1. Google DeepMind (Gemini), primary LLM, multimodal
-
-Frontier multimodal. Use for:
-- Reasoning over emails to classify relevance and assign sections
-- Vision on scanned PDFs and photos
-- Generating the surgical patches
-
-**Onboarding**: Temporary accounts on-site at the hackathon. Check `goo.gle/hackathon-account` for setup.
-
-**Recommended models**: Gemini 2.5 Pro for reasoning, Gemini Flash for fast classification.
+- **Gemini 2.5 Pro** for PDF vision plus reasoning over multi-page contracts and ETV protocols.
+- **Gemini Flash** for relevance classification and section assignment, fast and cheap.
 
 ```python
 # uv pip install google-generativeai
@@ -204,173 +203,93 @@ from google import genai
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 response = client.models.generate_content(
     model="gemini-2.5-flash",
-    contents=[email_text, "Is this relevant to property HAS076? Output JSON: {relevant: bool, sections: [...], confidence: float}"]
+    contents=[email_text, "Output JSON: {property_id: str, sections: [str], confidence: float}"]
 )
 ```
 
-### 2. Gradium, voice for the iOS capture interface
+Onboarding: `goo.gle/hackathon-account` for temporary accounts.
 
-The walkthrough demo is the wow moment: walk through Mahir's apartment with iPhone, voice gets transcribed in real-time on-device or via streaming, becomes new context entries.
+### 2. Tavily, web research and extraction
 
-Gradium has native German support and integrates with LiveKit. Latency is sub-300 ms.
+For lazy enrichment: building permits, contractor reviews, public registry data. Pulled only when the engine wants to add an external fact, never speculatively.
 
-For iOS specifically, options to evaluate at hour 0:
-- **Server-streamed**: iOS streams mic audio to our FastAPI backend, backend pipes to Gradium STT, returns transcript chunks via WebSocket. Simpler, less iOS code.
-- **Direct from device**: only if Gradium has an iOS SDK or a stable WebRTC ingestion path. Lower latency, more iOS code.
-
-Default plan: server-streamed via WebSocket.
-
-```bash
-uv pip install "livekit-plugins-gradium[stt,tts]"
-export GRADIUM_API_KEY=...
-export LIVEKIT_URL=wss://your-project.livekit.cloud
-```
+Setup: 1,000 free credits per account. Fallback code `TVLY-DLEE5IJU`. Hosted MCP at `https://mcp.tavily.com/mcp/?tavilyApiKey=<key>`.
 
 ```python
-from livekit.agents import AgentSession
-from livekit.plugins import gradium
-
-session = AgentSession(
-    stt=gradium.STT(language="de"),
-    llm=gemini.LLM(model="gemini-2.5-flash"),
-)
-# Audio in -> transcript -> fact extractor -> context.md patch
-```
-
-If voice walkthrough is descoped, Gradium STT can still be used to ingest voicemails left by tenants/contractors. Either way it earns its slot in the partner tech requirement.
-
-### 3. Tavily, web research and extraction
-
-For enriching the .md with public-source facts (building permits, zoning, public registry data, contractor reviews).
-
-**Setup**: 1,000 free credits per account. Fallback code from manual: `TVLY-DLEE5IJU`. There is also a hosted MCP server at `https://mcp.tavily.com/mcp/?tavilyApiKey=<key>`.
-
-```python
-# uv pip install tavily-python
 from tavily import TavilyClient
-
 client = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
-
-# Search
-results = client.search("Hasenheide 76 Berlin building permit", max_results=5)
-
-# Extract from a known URL
-extracted = client.extract("https://www.berlin.de/...")
+results = client.search("Immanuelkirchstraße 26 Berlin Bauakte", max_results=5)
 ```
 
-### 4. Pioneer / Fastino (GLiNER2), schema-driven extraction and intent SLM
+### 3. Pioneer / Fastino (GLiNER2), structured extraction and intent SLM
 
-**This is the schema-alignment workhorse.** GLiNER2 is a 205M to 1B parameter model that does NER plus classification plus structured data extraction in one schema-driven prompt. CPU-friendly, no GPU needed. Pioneer fine-tunes it.
+**Schema-driven extraction** for property facts (owner, contractor, issue, decision, contract). Plus an **intent SLM** that routes incoming items to {patch, ignore, escalate, contractor-update, owner-change, ...}.
 
-**Side challenge**: best use of Pioneer wins €700 (Mac Mini cash value). Worth pursuing.
+Pioneer fine-tune is now trivial: the dataset's `*_index.csv` files have categories like `eigentuemer/rechtlich`, `mieter/kaution`, `versorger/versorger` already labelled. Use those as supervised training data.
 
-Two concrete uses for us:
-- **Schema-driven extraction**: pull `property_fact` records from incoming emails and PDFs.
-- **Intent classification SLM** (Mahir's plan): tiny model that routes incoming items to {patch, ignore, escalate, contractor-update, owner-change, ...}. Fine-tune via Pioneer in around 6 hours from synthetic data.
+Targets the **Pioneer side challenge** (€700) at the same time.
 
 ```python
 # uv pip install gliner2
 from gliner2 import GLiNER2
 
 extractor = GLiNER2.from_pretrained("fastino/gliner2-base-v1")
-
 schema = (extractor.create_schema()
     .structure("property_fact")
         .field("property_id", dtype="str")
         .field("fact_type", dtype="str", labels=["owner", "contractor", "issue", "decision", "contract"])
         .field("entity_name", dtype="str")
-        .field("entity_role", dtype="str")
         .field("contact", dtype="str")
         .field("amount", dtype="float", optional=True)
-        .field("date", dtype="str", optional=True)
 )
-
-email = "Hi, I'm Hans Müller, owner of apt 4B at Hasenheide 76..."
-results = extractor.extract(email, schema)
+results = extractor.extract(email_text, schema)
 ```
 
-For identity resolution, also use GLiNER2's classification head:
+### Side challenges
 
-```python
-# Resolve "Eigentümer Müller" / "Kontakt: hans.m@..." / "owner_id: 4831" to the same person
-resolution_schema = extractor.create_schema().classify("same_person", labels=["yes", "no", "uncertain"])
-```
+- **Entire** (`entire enable --agent claude-code`). Free, captures Claude Code sessions per commit. Targets $1,000 Apple cards plus Switch 2 plus PS5 plus XBOX.
+- **Aikido**. Connect repo, screenshot security report. Targets €1,000. Not eligible as one of the 3 required partner techs.
 
-The bigger model (`gliner2-large-v1`, 340M) supports descriptions for higher precision, useful for nuanced property terminology.
+### Dropped from v1
 
-To fine-tune via Pioneer: get an API key at `gliner.pioneer.ai`, define task in natural language, Pioneer handles synthetic data plus training in roughly 6 hours.
-
-### 5. Entire, agent context capture (essentially free)
-
-Entire is a CLI that hooks into Git and captures every Claude Code agent session as a checkpoint alongside the commit. Open source, $60M seed.
-
-**Why this is essentially free for us**: we are using Claude Code anyway. Just running `entire enable --agent claude-code` adds Entire as a partner tech with zero engineering cost.
-
-**Side challenge**: best use of Entire wins **$1,000 in Apple gift cards plus Switch 2 plus PS5 plus XBOX**. The narrative writes itself: *"we used Entire to capture how Claude Code built a context engine, a context engine for context engines."*
-
-```bash
-curl -fsSL https://entire.io/install.sh | bash
-cd buena-hackathon
-entire enable --agent claude-code
-# That's it. Every commit now has full agent context attached.
-```
-
-### 6. Aikido, security scan side challenge
-
-Free Pro trial during the hackathon. Connect the GitHub repo, screenshot the security report, submit. **Side challenge prize: €1,000 cash.** Cheap to add, around 15 min of work.
-
-NB from manual: Aikido is **not eligible as one of the 3 required partner techs**. Pure side-challenge upside.
-
----
-
-## iOS app design notes (Yasin owns)
-
-- **SwiftUI**, iOS 17+, no UIKit unless a specific component forces it.
-- **Tabs**: Properties (list), Property Detail (.md viewer with diff highlights), Capture (mic + camera), Inbox (email-style stream of incoming items being processed live).
-- **Capture screen**: big mic button. Hold to talk, release to send. Show streaming transcript in real time (from Gradium via our WebSocket). After release, show the resulting patch preview before commit.
-- **Property detail**: render markdown with provenance comments turned into tappable footnotes. Tap a footnote to see the source email or PDF page.
-- **Diff visualisation**: when a new patch lands while viewing a property, animate the changed lines (yellow flash, then settle). This is the demo money shot.
-- **Backend**: configurable base URL in Settings, default to ngrok or similar tunnel during dev so judges can use the app live if needed.
+- **Gradium / voice**: dropped. Reserved as fallback if a required partner tech doesn't pan out.
+- **iOS app**: dropped.
+- **Web upload UI**: dropped, email is the ingestion route.
+- **FastAPI backend**: dropped, Cloudflare Workers replaces it.
+- **Telli as 4th partner**: dropped.
 
 ---
 
 ## Implementation plan (24-hour build)
 
-### Phase 1, Foundation (hours 0 to 4)
-- [ ] Public GitHub repo created
-- [ ] `entire enable --agent claude-code` configured
-- [ ] FastAPI backend skeleton (`backend/`)
-- [ ] iOS app skeleton (`ios/`), SwiftUI, Xcode project committed
-- [ ] `uv` for Python deps (Mahir's preference)
-- [ ] Mock data folder with realistic German PM data:
-  - 30+ emails (owner queries, contractor invoices, tenant complaints, M&A handover)
-  - 5+ scanned PDF contracts
-  - 2+ ERP-style CSV exports with conflicting field names (`Eigentümer` vs `owner`)
-- [ ] One real demo property: `examples/hasenheide-76/` with seed `context.md`
-- [ ] Tunnel set up (ngrok or cloudflared) so iOS device can hit local backend
+### Phase 1, Foundation (hours 0 to 3)
+- [x] Public GitHub repo (initial commit done)
+- [x] `entire enable --agent claude-code` configured
+- [x] Buena dataset extracted to `partner-files/`
+- [x] PM interview verbatim in `partner-files/product-interview/pm-interview.md`
+- [ ] Cloudflare Worker skeleton (`workers/ingest`)
+- [ ] R2 bucket for vault and attachments
+- [ ] Bootstrap script: parse `stammdaten/` into one initial vault file per property
 
-### Phase 2, Core engine (hours 4 to 12)
-- [ ] **Extraction**: GLiNER2 with property-management schema
-- [ ] **Identity resolver**: clusters entities across ERPs
-- [ ] **Relevance classifier**: Gemini Flash, returns `{property_id, sections[], confidence}`
-- [ ] **Section classifier**: maps facts to .md sections (Owners, Contractors, Open issues, Decisions, etc.)
-- [ ] **Surgical patcher**: section-level diff, never regenerates whole file
-- [ ] **Provenance**: every fact gets a `<!-- src: ... | conf: ... -->` comment
-- [ ] **WebSocket endpoint**: stream patches to iOS
+### Phase 2, Core engine (hours 3 to 12)
+- [ ] **PDF extraction**: Gemini 2.5 Pro vision over `briefe/` and `rechnungen/`
+- [ ] **Email parsing**: walk `emails/`, normalise headers, extract body plus attachments
+- [ ] **Identity resolver**: cluster entities across stammdaten CSVs and inbound text
+- [ ] **Routing SLM**: Pioneer fine-tune using `*_index.csv` category labels
+- [ ] **Surgical patcher**: section-level diff with provenance comments
+- [ ] **Human-edit guard**: detect and skip patches that would overwrite human edits
 
-### Phase 3, iOS surface (hours 12 to 18)
-- [ ] Property list and detail screens
-- [ ] Markdown viewer with provenance footnotes
-- [ ] Mic capture + Gradium STT streaming
-- [ ] Live diff animation on incoming patches
-- [ ] **The M&A drop**: dev-only screen that triggers ingestion of a portfolio of buildings at once, emits one .md per property
-- [ ] **The Hasenheide walkthrough** (stretch): walk through the apartment narrating, .md updates live with timestamps and provenance
+### Phase 3, Demo loop (hours 12 to 18)
+- [ ] **Bootstrap demo**: ingest the full base archive, generate the initial vault. Show graph view in Obsidian.
+- [ ] **Incremental replay**: walk `incremental/day-01` through `day-10`, replay each day's deltas live. Each day shows surgical patches landing in the vault.
+- [ ] **Provenance footnotes**: every fact links back to source PDF page or email message-id, clickable from Obsidian.
+- [ ] **Tavily enrichment**: one or two demo facts pulled from public sources to show the layer exists.
 
 ### Phase 4, Polish and side challenges (hours 18 to 22)
-- [ ] Aikido scan, screenshot for side challenge submission
-- [ ] Pioneer fine-tune of GLiNER2 on synthetic property data (intent SLM, side challenge)
-- [ ] README with full setup instructions for both backend and iOS
-- [ ] 2 min Loom recording (script below)
+- [ ] Aikido scan, screenshot for side challenge
+- [ ] Pioneer fine-tune documentation for side challenge
+- [ ] README with setup instructions
+- [ ] 2 min Loom recording
 
 ### Phase 5, Submission (hours 22 to 24)
 - [ ] Final commit, public push
@@ -382,37 +301,40 @@ NB from manual: Aikido is **not eligible as one of the 3 required partner techs*
 
 ## Demo plan, the 2-min Loom
 
-Aim: judges feel Buena's M&A pain in the first 15 seconds, see surgical patching by 1 minute, and remember the wow at 1:45.
+Storyline: **homeowner onboarding**.
 
 ### 0:00 to 0:15, the hook
-> *"Buena just acquired a property manager. 14 buildings, 200 units. Their data is in Outlook PST files, scanned PDFs, and Frau Schmidt's head. Today, that takes 2 weeks to onboard. We just built it in 24 hours."*
+> *"A homeowner just bought into a Berlin WEG. Their old property manager handed over an archive: thousands of emails, scanned letters, contracts, bank statements, master data exports. Today, untangling that takes weeks. Watch this."*
 
-Screen: a chaotic folder with mixed file types. Logo of fictional acquired firm.
+Screen: a chaotic folder with mixed file types from `partner-files/`.
 
-### 0:15 to 0:50, the engine
-Drop the folder onto a backend dev tool. Watch on the iOS app:
-- Files stream in to the inbox tab
-- GLiNER2 entities highlighted live
-- Identity resolver merges duplicates ("Eigentümer Müller" plus "owner: hans.m" highlighted as same)
-- One `Context.md` per building emerges in real time on the property list
+### 0:15 to 0:50, the bootstrap
+Trigger ingestion against the full base archive. On screen:
+- Files stream through the Cloudflare Worker
+- Gemini extracts entities from PDFs
+- Identity resolver merges duplicates
+- One Obsidian vault file emerges for `WEG Immanuelkirchstraße 26`
+- Cut to Obsidian: the graph view explodes with property, owners, tenants, service providers as nodes
 
-### 0:50 to 1:20, the surgical update
-A new email arrives mid-demo: roof contractor changes phone number. Show on iOS:
-- Email classified as relevant (Hasenheide 76)
-- Section classifier picks "Contractors, Roofing"
-- Surgical patch: only that one line changes, animated yellow flash
-- Tap the footnote: jumps to the source email
-- Human-edited section nearby: untouched
+### 0:50 to 1:30, the surgical update
+Replay `incremental/day-01`. Three new items land:
+- An email from the Heizungs-Versorger about a maintenance appointment
+- An invoice PDF from the Hausmeister
+- A bank transaction (rent payment)
 
-### 1:20 to 1:45, the wow
-Cut to phone-camera POV walking into the Hasenheide apartment, app open in capture mode.
-- "Heating valve in living room is dripping" (voice into the iPhone)
-- New entry appears in `Context.md` under "Open issues" with timestamp and provenance back to the audio clip
+Show in Obsidian:
+- Each item routed by the Pioneer SLM to the right section
+- Surgical patches: only the affected lines change, animated
+- Provenance footnote: tap, jumps to source email or PDF
+- A pre-edited human note nearby is untouched
 
-### 1:45 to 2:00, the close
-> *"This is Buena's onboarding pain solved in 24 hours. CLAUDE.md for buildings, plus it writes itself. Built with Gemini, Tavily, GLiNER2, Gradium, and Entire, and we used Entire to capture how Claude Code built it. Context engine, all the way down."*
+### 1:30 to 1:50, the speed
+Run days 02 through 05 in fast-forward. Vault keeps updating. No re-processing of the base archive on any new email.
 
-End on the polished Context.md inside the iOS app.
+### 1:50 to 2:00, the close
+> *"Buena's onboarding pain solved in 24 hours, native to their Obsidian workflow. Built with Gemini, Tavily, and a Pioneer-fine-tuned router. Every fact in the vault traces back to its source."*
+
+End on the Obsidian graph view.
 
 ---
 
@@ -421,61 +343,56 @@ End on the polished Context.md inside the iOS app.
 ```
 buena-hackathon/
 ├── AGENTS.md                    # this file
-├── README.md                    # public README (setup, install, partner tech list)
+├── README.md                    # public README
 ├── docs/
 │   ├── architecture.md
 │   ├── demo-script.md
-│   ├── partner-tech-integration.md
 │   └── pioneer-finetune-notes.md
-├── backend/
-│   ├── pyproject.toml          # uv-managed
-│   ├── ingestion/
-│   │   ├── gmail_mock.py
-│   │   ├── pdf_parser.py
-│   │   ├── voice.py            # Gradium STT
-│   │   └── web_research.py     # Tavily
-│   ├── processing/
-│   │   ├── extraction.py       # GLiNER2
-│   │   ├── identity.py         # cross-schema resolver
-│   │   ├── relevance.py        # Gemini classifier
-│   │   └── sections.py         # section classifier
-│   ├── patching/
-│   │   ├── differ.py
-│   │   ├── conflict.py         # human-edit detector
-│   │   └── writer.py
-│   ├── graph/
-│   │   └── store.py            # context graph w/ provenance
-│   └── api/
-│       └── main.py             # FastAPI + WebSocket
-├── ios/
-│   └── BuenaContext.xcodeproj  # SwiftUI app
-├── data/
-│   ├── mock-emails/
-│   ├── mock-pdfs/
-│   ├── mock-erp-exports/
-│   └── synthetic-finetune/     # for Pioneer
-└── examples/
-    └── hasenheide-76/
-        └── context.md          # the live demo property
+├── workers/
+│   ├── wrangler.toml
+│   ├── src/
+│   │   ├── ingest.ts            # email webhook entry
+│   │   ├── extract.ts           # Gemini PDF + text
+│   │   ├── route.ts             # Pioneer SLM call
+│   │   ├── identity.ts          # cross-schema resolver
+│   │   ├── patch.ts             # surgical markdown writer
+│   │   └── enrich.ts            # Tavily lookups
+│   └── package.json
+├── pipeline/                    # local Python helpers, fine-tune, batch bootstrap
+│   ├── pyproject.toml           # uv-managed
+│   ├── bootstrap.py             # one-shot full-archive ingestion
+│   ├── replay_incremental.py    # walks day-01 to day-10
+│   └── pioneer_finetune.py
+├── vault/                       # generated Obsidian vault, output of the engine
+│   └── WEG-Immanuelkirchstrasse-26.md
+└── partner-files/               # Buena's dataset (committed)
+    ├── stammdaten/
+    ├── briefe/
+    ├── emails/
+    ├── rechnungen/
+    ├── bank/
+    ├── incremental/
+    └── product-interview/
+        └── pm-interview.md
 ```
 
 ---
 
 ## Submission checklist (Sunday 14:00 hard deadline)
 
-- [ ] **2-min Loom video demo** (key features plus live walkthrough)
+- [ ] **2-min Loom video demo**
 - [ ] **Public GitHub repo** with:
-  - [ ] Comprehensive README (backend setup, iOS build instructions)
-  - [ ] Documentation of all APIs, frameworks, tools used
+  - [ ] Comprehensive README
+  - [ ] Documentation of all APIs and tools
   - [ ] Sufficient technical docs for jury evaluation
-- [ ] At least **3 partner techs** used and confirmed
+- [ ] At least **3 partner techs** confirmed (Gemini, Tavily, Pioneer)
 - [ ] Project newly created at this hackathon (boilerplates allowed)
 - [ ] Submitted via the project submission form
 
-### Side challenge submissions (extra prizes)
-- [ ] **Pioneer**: confirm Pioneer use, document creative GLiNER2 use case, €700
-- [ ] **Aikido**: connect repo, screenshot security report, €1,000
-- [ ] **Entire**: confirm use, document the meta-narrative, $1K Apple cards plus Switch 2 plus PS5 plus XBOX
+### Side challenge submissions
+- [ ] Pioneer: confirm use, document the GLiNER2 router fine-tune (€700)
+- [ ] Aikido: connect repo, screenshot security report (€1,000)
+- [ ] Entire: confirm use, document the meta-narrative ($1K Apple cards plus Switch 2 plus PS5 plus XBOX)
 
 ---
 
@@ -483,69 +400,54 @@ buena-hackathon/
 
 - **Location**: Donaustraße 44, 12043 Berlin
 - **Hosts**: The Delta Campus and Code University of Applied Sciences
-- **Discord**: https://discord.gg/brSqTjJVdh (main support channel)
-- **Legal office hours**: PXR, 2pm to 4pm, sign up via the office-hours form (might be useful for an open-source license question)
-- **Lunch and dinner**: provided
-- **Team size**: max 5
-
-### Agenda
-- **Saturday**: 10:00 doors open, 10:30 opening, 12:30 lunch, 18:30 dinner
-- **Sunday**: 12:30 lunch, **14:00 submission deadline**, 15:00 finalists announced, 15:15 finalist pitches, 16:30 award ceremony
-
-### Finalist stage
-- 8 finalist teams (1 per track)
-- 5 minute live pitch
-- Top 3 finalists win cash plus credits
-- **1st place: €10K cash** plus 5K Gemini credits plus 10K Tavily credits plus 900K Gradium credits plus Pioneer Pro
+- **Discord**: https://discord.gg/brSqTjJVdh
+- **Lunch and dinner** provided
+- **Saturday**: 10:00 doors, 10:30 opening, 12:30 lunch, 18:30 dinner
+- **Sunday**: 12:30 lunch, **14:00 deadline**, 15:00 finalists, 15:15 finalist pitches, 16:30 awards
+- **Finalist stage**: 8 teams, 5-min pitch, top 3 win cash plus credits. **1st place: €10K** plus 5K Gemini credits plus 10K Tavily credits plus 900K Gradium credits plus Pioneer Pro.
 
 ---
 
 ## Anti-patterns to avoid
 
-- **Don't regenerate the whole .md.** Surgical patches only. Buena explicitly calls this out.
-- **Don't ignore provenance.** Every fact must trace to a source. This is what wins.
-- **Don't let the demo become a generic LLM chatbot demo.** The .md file IS the product. Show it changing live, on the phone.
-- **Don't over-build the iOS app.** A clean, fast, polished list plus detail plus capture flow beats a flashy one. Spend should go into engine quality and the demo moment.
-- **Don't use Ray-Bans.** (Earlier discussion: too fragile a hardware dependency. iPhone plus AirPods only.)
-- **Don't propose AI replacing property managers.** Buena's stated philosophy is enhancement, not replacement. Keep humans in the loop (review queue for ambiguous patches).
+- **Don't regenerate the whole .md.** Surgical patches only.
+- **Don't ignore provenance.** Every fact must trace to a source.
+- **Don't reprocess the global archive on every email.** PM was explicit. Resolve property first, then scope retrieval to that subtree.
+- **Don't patch on uncertainty.** False positives are the worst possible outcome. Route ambiguous cases to a review queue.
+- **Don't propose AI replacing property managers.** Buena's stated philosophy is enhancement.
 
 ---
 
 ## Operational rules for the agent
 
-- **No em dashes** in any human-facing text (per global CLAUDE.md). Use commas, periods, colons, or semicolons.
-- **Python**: always `uv pip install` and `uv run python ...`, never bare `pip` or `python`.
-- **API keys**: check macOS Keychain first via `security find-generic-password -s "<service>" -w` before asking. The `gemini-api-key` is already in Keychain and added to `.env.local` as `GEMINI_API_KEY`.
-- **Long-running processes**: use tmux per the project CLAUDE.md, never `&` or `nohup`.
+- **No em dashes** in human-facing text. Use commas, periods, colons, or semicolons.
+- **Python**: always `uv pip install` and `uv run python ...`.
+- **API keys**: check macOS Keychain first via `security find-generic-password -s "<service>" -w`. `gemini-api-key` is in Keychain and added to `.env.local` as `GEMINI_API_KEY`.
+- **Long-running processes**: use tmux, never `&` or `nohup`.
 - **Before committing**: run `diffity --no-open` and open the URL for review.
 
 ---
 
-## Open questions to resolve before serious building starts
+## Open questions to resolve
 
-1. **Lenos call**: get Arbio's actual onboarding doc schema. Use as our output template.
-2. **M&A demo data**: real public registry data for a Berlin building, or fully synthesised? Probably synthesised to avoid data issues.
-3. **Telli ambiguity**: confirm whether Telli is a 4th teammate, the partner tech telli, or a misheard reference. Update team and partner tech accordingly.
-4. **iOS walkthrough**: ship as part of v1 or descope to "v2 future" mention in pitch? Decide at hour 12.
-5. **Backend host**: local with ngrok tunnel for the demo, or quick Fly.io / Render deploy? Default to ngrok unless wifi at venue is shaky.
+1. **Lenos call**: get Arbio's actual onboarding doc schema as a sanity check on our output template.
+2. **Cloudflare Email Worker setup**: confirm Anwar can wire the email route end-to-end before hour 6.
+3. **Obsidian sync from R2**: simplest path for the demo? Local clone of R2 contents into a vault folder, or a thin watcher?
+4. **Partner-tech buffer**: if any of Gemini/Tavily/Pioneer underperforms, do we add Gradium back as a fourth?
+5. **Human-review surface**: minimal review queue UI, or just a flagged section inside the .md itself with `> [!warning]` callouts?
 
 ---
 
-## Appendix, relevant references
+## Appendix, references
 
 - Buena: https://www.buena.com/en
-- Buena Series A coverage (GV-led, mid-2025): https://www.gv.com/news/buena-property-management
-- Buena CEO context: https://www.eu-startups.com/2025/07/berlin-based-buena-raises-e49-million-to-digitise-property-management/
 - Tavily docs: https://docs.tavily.com
-- Tavily MCP: https://github.com/tavily-ai/tavily-mcp
-- GLiNER2 (Fastino): https://github.com/fastino-ai/GLiNER2
-- Pioneer launch: https://fastino.ai/docs/overview
-- Gradium docs: https://docs.gradium.ai
-- Gradium plus LiveKit guide: https://gradium.ai/content/how-to-build-voice-ai-agent-gradium-livekit
+- GLiNER2: https://github.com/fastino-ai/GLiNER2
+- Pioneer: https://fastino.ai/docs/overview
 - Entire CLI: https://github.com/entireio/cli
-- Entire blog (vision): https://entire.io/blog/hello-entire-world
-- Big Berlin Hack project submission form: https://forms.techeurope.io/bbh/content-challenge
+- Cloudflare Email Workers: https://developers.cloudflare.com/email-routing/email-workers/
+- Big Berlin Hack submission form: https://forms.techeurope.io/bbh/content-challenge
 
 ---
 
-*Last updated Saturday by Mahir, Anwar, Yasin. Update this file as decisions evolve.*
+*Last updated Saturday, post-PM-interview, by Mahir + team. Update this file as decisions evolve.*
