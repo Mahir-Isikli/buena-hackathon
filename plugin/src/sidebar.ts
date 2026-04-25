@@ -1,6 +1,24 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import {
+  ItemView,
+  MarkdownView,
+  Notice,
+  parseYaml,
+  TFile,
+  WorkspaceLeaf,
+} from "obsidian";
 import type BuenaPlugin from "../main";
 import { attachHoverPopover, HoverField } from "./hover";
+import {
+  addHistoryEntry,
+  HistoryEntry,
+  loadHistory,
+} from "./history";
+import {
+  applyPatchToVault,
+  findPendingBlocks,
+  revealLineInActiveView,
+  stripPendingBlockById,
+} from "./vault-patch";
 
 export const BUENA_SIDEBAR_VIEW_TYPE = "buena-sidebar";
 
@@ -14,73 +32,16 @@ interface PendingPatch {
   sourceSnippet?: string;
   confidence: number;
   actor: string;
-  receivedAt: string;
+  receivedAt?: string;
+  target_heading?: string;
+  new_block?: string;
 }
-
-interface HistoryEntry {
-  id: string;
-  section: string;
-  unit?: string;
-  oldValue?: string;
-  newValue: string;
-  source?: string;
-  decision: "auto" | "approved" | "rejected";
-  timestamp: string;
-  actor: string;
-}
-
-const MOCK_PENDING: PendingPatch[] = [
-  {
-    id: "p-001",
-    section: "Open issues",
-    unit: "EH-014",
-    newValue:
-      "Tenant withholding 10% rent due to broken hot water (since 2026-01-15)",
-    source: "emails/2026-01-15/EMAIL-12891.eml",
-    sourceSnippet:
-      "Sehr geehrte Damen und Herren, seit dem 15. Januar gibt es in unserer Wohnung kein Warmwasser mehr...",
-    confidence: 0.91,
-    actor: "gemini-flash",
-    receivedAt: "2026-04-25T09:14:00Z",
-  },
-  {
-    id: "p-002",
-    section: "Service providers",
-    unit: "Hausmeister",
-    oldValue: "650 EUR/Monat",
-    newValue: "720 EUR/Monat (price increase notice)",
-    source: "briefe/2026-04-10/BRIEF-00781.pdf",
-    sourceSnippet:
-      "Aufgrund gestiegener Lohn- und Materialkosten passen wir den Pauschalbetrag ab dem 01.05.2026 an...",
-    confidence: 0.87,
-    actor: "gemini-2.5-pro",
-    receivedAt: "2026-04-25T08:02:00Z",
-  },
-];
-
-const MOCK_HISTORY: HistoryEntry[] = [
-  {
-    id: "h-001",
-    section: "Open issues",
-    newValue: "Wartungstermin Heizung bestätigt für 06.10.2024 um 10:00",
-    source: "emails/2024-09/EMAIL-02443.eml",
-    decision: "auto",
-    timestamp: "2026-04-22T08:14:00Z",
-    actor: "gemini-flash",
-  },
-  {
-    id: "h-002",
-    section: "Bank",
-    oldValue: "DE02 1001 0010 0123 4567 89",
-    newValue: "DE02 1001 0010 0123 4567 89 (Postbank Berlin)",
-    decision: "approved",
-    timestamp: "2026-04-20T11:02:00Z",
-    actor: "human",
-  },
-];
 
 export class BuenaSidebarView extends ItemView {
   plugin: BuenaPlugin;
+  private pending: PendingPatch[] = [];
+  private history: HistoryEntry[] = [];
+  private currentFile: TFile | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: BuenaPlugin) {
     super(leaf);
@@ -100,11 +61,67 @@ export class BuenaSidebarView extends ItemView {
   }
 
   async onOpen() {
-    this.render();
+    // Refresh when the active file changes or its content is modified.
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", () => this.refresh())
+    );
+    this.registerEvent(
+      this.app.vault.on("modify", (file) => {
+        if (file instanceof TFile && file === this.currentFile) {
+          this.refresh();
+        }
+      })
+    );
+    await this.refresh();
   }
 
   async onClose() {
     this.contentEl.empty();
+  }
+
+  /**
+   * Re-scan the active markdown file for buena-pending blocks and re-render.
+   */
+  async refresh() {
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+    this.currentFile = view?.file ?? null;
+    this.pending = await this.scanPending(this.currentFile);
+    this.history = this.currentFile
+      ? await loadHistory(this.plugin, this.currentFile.path)
+      : [];
+    this.plugin.statusBar.setPendingCount(this.pending.length);
+    this.render();
+  }
+
+  private async scanPending(file: TFile | null): Promise<PendingPatch[]> {
+    if (!file) return [];
+    const text = await this.app.vault.read(file);
+    const blocks = findPendingBlocks(text);
+    const out: PendingPatch[] = [];
+    for (const yamlSrc of blocks) {
+      try {
+        const spec = (parseYaml(yamlSrc) as Record<string, unknown>) ?? {};
+        if (!spec.id) continue;
+        out.push({
+          id: String(spec.id),
+          section: String(spec.section ?? "Unsorted"),
+          unit: spec.unit ? String(spec.unit) : undefined,
+          oldValue: spec.old ? String(spec.old) : undefined,
+          newValue: String(spec.new ?? ""),
+          source: String(spec.source ?? ""),
+          sourceSnippet: spec.snippet ? String(spec.snippet) : undefined,
+          confidence: typeof spec.confidence === "number" ? spec.confidence : 0,
+          actor: String(spec.actor ?? "unknown"),
+          target_heading: spec.target_heading
+            ? String(spec.target_heading)
+            : undefined,
+          new_block: spec.new_block ? String(spec.new_block) : undefined,
+        });
+      } catch (err) {
+        console.warn("[Buena] failed to parse pending block", err);
+      }
+    }
+    return out;
   }
 
   render() {
@@ -122,7 +139,7 @@ export class BuenaSidebarView extends ItemView {
       cls: "buena-sidebar-tagline",
     });
     header.createEl("div", {
-      text: this.plugin.settings.propertyId,
+      text: this.currentFile?.basename ?? this.plugin.settings.propertyId,
       cls: "buena-sidebar-subtitle",
     });
 
@@ -131,17 +148,22 @@ export class BuenaSidebarView extends ItemView {
     const pendingHeader = pendingSection.createDiv({ cls: "buena-section-header" });
     pendingHeader.createEl("h4", { text: "Pending queue" });
     pendingHeader.createEl("span", {
-      text: `${MOCK_PENDING.length}`,
+      text: `${this.pending.length}`,
       cls: "buena-badge",
     });
 
-    if (MOCK_PENDING.length === 0) {
+    if (!this.currentFile) {
       pendingSection.createEl("div", {
-        text: "No pending patches.",
+        text: "Open a property file to see its pending patches.",
+        cls: "buena-empty",
+      });
+    } else if (this.pending.length === 0) {
+      pendingSection.createEl("div", {
+        text: "No pending patches in this file.",
         cls: "buena-empty",
       });
     } else {
-      for (const p of MOCK_PENDING) {
+      for (const p of this.pending) {
         this.renderPendingCard(pendingSection, p);
       }
     }
@@ -149,13 +171,18 @@ export class BuenaSidebarView extends ItemView {
     // History
     const historySection = root.createDiv({ cls: "buena-section" });
     historySection.createEl("h4", { text: "Recent changes" });
-    if (MOCK_HISTORY.length === 0) {
+    if (!this.currentFile) {
       historySection.createEl("div", {
-        text: "No changes yet.",
+        text: "Open a property file to see its history.",
+        cls: "buena-empty",
+      });
+    } else if (this.history.length === 0) {
+      historySection.createEl("div", {
+        text: "No changes yet. Approve or reject a pending patch to start the log.",
         cls: "buena-empty",
       });
     } else {
-      for (const h of MOCK_HISTORY) {
+      for (const h of this.history) {
         this.renderHistoryCard(historySection, h);
       }
     }
@@ -182,41 +209,41 @@ export class BuenaSidebarView extends ItemView {
 
     // Source row with rich hover
     const meta = card.createDiv({ cls: "buena-card-meta" });
-    meta.createSpan({
-      text: `${(p.confidence * 100).toFixed(0)}% conf`,
-      cls: "buena-meta-pill",
-    });
+    if (p.confidence > 0) {
+      meta.createSpan({
+        text: `${(p.confidence * 100).toFixed(0)}% conf`,
+        cls: "buena-meta-pill",
+      });
+    }
     meta.createSpan({ text: p.actor, cls: "buena-meta-pill" });
-    const sourcePill = meta.createSpan({
-      text: shortSource(p.source),
-      cls: "buena-meta-source",
-    });
-    attachHoverPopover(sourcePill, () => {
-      const fields: HoverField[] = [
-        { label: "Source", value: p.source, mono: true },
-        { label: "Confidence", value: `${(p.confidence * 100).toFixed(0)}%` },
-        { label: "Actor", value: p.actor },
-        {
-          label: "Received",
-          value: new Date(p.receivedAt).toLocaleString(),
-        },
-      ];
-      if (p.sourceSnippet) {
-        fields.push({ label: "Snippet", value: p.sourceSnippet });
-      }
-      return fields;
-    });
+    if (p.source) {
+      const sourcePill = meta.createSpan({
+        text: shortSource(p.source),
+        cls: "buena-meta-source",
+      });
+      attachHoverPopover(sourcePill, () => {
+        const fields: HoverField[] = [
+          { label: "Source", value: p.source, mono: true },
+          { label: "Confidence", value: `${(p.confidence * 100).toFixed(0)}%` },
+          { label: "Actor", value: p.actor },
+        ];
+        if (p.sourceSnippet) {
+          fields.push({ label: "Snippet", value: p.sourceSnippet });
+        }
+        return fields;
+      });
+    }
 
     const actions = card.createDiv({ cls: "buena-card-actions" });
     const approve = actions.createEl("button", {
       text: "Approve",
       cls: "buena-btn buena-btn-primary",
     });
-    approve.onclick = () => this.handleApprove(p.id);
+    approve.onclick = () => this.handleApprove(p);
     const reject = actions.createEl("button", { text: "Reject", cls: "buena-btn" });
-    reject.onclick = () => this.handleReject(p.id);
+    reject.onclick = () => this.handleReject(p);
     const edit = actions.createEl("button", { text: "Edit", cls: "buena-btn" });
-    edit.onclick = () => this.handleEdit(p.id);
+    edit.onclick = () => this.handleEdit(p);
   }
 
   private renderHistoryCard(parent: HTMLElement, h: HistoryEntry) {
@@ -261,24 +288,86 @@ export class BuenaSidebarView extends ItemView {
     }
   }
 
-  private handleApprove(id: string) {
-    console.log("[Buena] approve patch", id);
-    this.plugin.statusBar.bumpPendingCount(-1);
-    this.plugin.statusBar.markPatchReceived();
+  private async handleApprove(p: PendingPatch) {
+    if (!this.currentFile) {
+      new Notice("[Buena] no active file");
+      return;
+    }
+    if (!p.target_heading || !p.new_block) {
+      new Notice(
+        `[Buena] cannot apply ${p.id}: missing target_heading or new_block`
+      );
+      return;
+    }
+    try {
+      const insertedAt = await applyPatchToVault(
+        this.app,
+        this.currentFile.path,
+        {
+          id: p.id,
+          target_heading: p.target_heading,
+          new_block: p.new_block,
+        }
+      );
+      if (insertedAt === null) {
+        new Notice(
+          `[Buena] approve failed: heading "${p.target_heading}" not found`
+        );
+        return;
+      }
+      new Notice(`[Buena] approved ${p.id}, written to vault`);
+      this.plugin.statusBar.markPatchReceived();
+      await addHistoryEntry(this.plugin, this.currentFile.path, {
+        id: p.id,
+        section: p.section,
+        unit: p.unit,
+        oldValue: p.oldValue,
+        newValue: p.newValue,
+        source: p.source,
+        decision: "approved",
+        timestamp: new Date().toISOString(),
+        actor: p.actor,
+      });
+      await revealLineInActiveView(this.app, this.currentFile.path, insertedAt);
+      // refresh() will be triggered by the vault.modify event.
+    } catch (err) {
+      console.error("[Buena] approve failed", err);
+      new Notice(`[Buena] approve failed: ${err}`);
+    }
   }
 
-  private handleReject(id: string) {
-    console.log("[Buena] reject patch", id);
-    this.plugin.statusBar.bumpPendingCount(-1);
+  private async handleReject(p: PendingPatch) {
+    if (!this.currentFile) return;
+    try {
+      const text = await this.app.vault.read(this.currentFile);
+      const stripped = stripPendingBlockById(text, p.id);
+      if (stripped !== text) {
+        await this.app.vault.modify(this.currentFile, stripped);
+      }
+      await addHistoryEntry(this.plugin, this.currentFile.path, {
+        id: p.id,
+        section: p.section,
+        unit: p.unit,
+        oldValue: p.oldValue,
+        newValue: p.newValue,
+        source: p.source,
+        decision: "rejected",
+        timestamp: new Date().toISOString(),
+        actor: p.actor,
+      });
+      new Notice(`[Buena] rejected ${p.id}`);
+    } catch (err) {
+      console.error("[Buena] reject failed", err);
+      new Notice(`[Buena] reject failed: ${err}`);
+    }
   }
 
-  private handleEdit(id: string) {
-    console.log("[Buena] edit patch", id);
+  private handleEdit(p: PendingPatch) {
+    new Notice(`[Buena] edit not wired yet (${p.id})`);
   }
 }
 
 function shortSource(s: string): string {
-  // Show only the last segment so the meta line doesn't wrap.
   const parts = s.split("/");
   return parts[parts.length - 1];
 }

@@ -40,6 +40,11 @@ export class BuenaStatusBar {
     this.render();
   }
 
+  setPendingCount(count: number) {
+    this.pendingCount = Math.max(0, count);
+    this.render();
+  }
+
   markPatchReceived() {
     this.lastPatchAt = Date.now();
     this.render();

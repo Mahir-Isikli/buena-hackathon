@@ -6,6 +6,12 @@ Read this file first, every session.
 
 ---
 
+## Model lock (do not deviate)
+
+**All extraction, routing, classification, and reasoning uses Gemini 3.1 Pro with high thinking.** Model id: `gemini-3-pro-preview` (or whatever the current 3.1 Pro alias is in `google-genai`), with `thinking_config={"thinking_level": "high"}` (or equivalent SDK flag for high reasoning).
+
+Do not propose, suggest, or fall back to Flash, 2.5 Pro, 2.0, or any other model unless the user explicitly asks. One model, end to end. If a call fails, retry on the same model — do not silently downgrade.
+
 ## TL;DR
 
 | | |
@@ -87,20 +93,20 @@ Stated philosophy: "AI enhances, doesn't replace" property managers. Keep humans
                   ▼                  ▼
 ┌────────────────────────────────────────────────────────┐
 │  EXTRACTION                                            │
-│  • Gemini Flash for plain text emails                  │
-│  • pdfplumber + Gemini Flash for text-layer PDFs       │
-│  • Gemini 2.5 Pro vision for scanned / image PDFs      │
+│  • Gemini 3.1 Pro (high thinking) for ALL extraction:  │
+│    plain text emails, text-layer PDFs, scanned PDFs,   │
+│    vision, classification, routing — one model.        │
 │  • CSV planner: NL → pandas/duckdb query, never feed   │
 │    full CSVs to an LLM                                 │
 └─────────────────┬──────────────────────────────────────┘
                   │
                   ▼
 ┌────────────────────────────────────────────────────────┐
-│  ROUTING (Pioneer / GLiNER2 SLM)                       │
+│  ROUTING (Gemini 3.1 Pro high thinking)                │
 │  • Which property?                                     │
 │  • Which section?                                      │
 │  • Patch / ignore / escalate?                          │
-│  Fine-tuned on partner-files/*_index.csv labels        │
+│  Pioneer/GLiNER2 SLM is a stretch alt, not default.    │
 └─────────────────┬──────────────────────────────────────┘
                   │
                   ▼
@@ -249,8 +255,8 @@ A `history/` entry contains: `section`, `oldValue`, `newValue`, `source`, `actor
 
 ```
 For each candidate fact extracted from an inbound item:
-  1. Route it to a property + section + (optional) unit via Gemini Flash classifier
-     (Pioneer SLM is a stretch upgrade, not a blocker).
+  1. Route it to a property + section + (optional) unit via Gemini 3.1 Pro (high thinking).
+     (Pioneer SLM is a stretch upgrade, not a blocker.)
   2. If the property doesn't resolve confidently → human queue (escalate).
   3. If the section doesn't exist yet in the .md → auto-apply with provenance.
   4. If the section exists and the fact is new (no overlap) → auto-apply.
@@ -300,19 +306,22 @@ File watching: register `vault.on('modify', ...)` on the property.md so a human 
 
 We use exactly **3 required techs** plus **2 side-challenge techs**.
 
-### 1. Google DeepMind (Gemini), primary LLM and vision
+### 1. Google DeepMind (Gemini), single model for everything
 
-- **Gemini 2.5 Pro** for PDF vision plus reasoning over multi-page contracts and ETV protocols. **Default for any PDF where text-layer extraction returns < N characters.**
-- **Gemini Flash** for relevance classification, section assignment, plain text emails, fast and cheap.
+- **Gemini 3.1 Pro with high thinking** for ALL inference: PDF vision, contract reasoning, ETV protocols, plain text emails, relevance classification, section assignment, routing. One model, no Flash, no fallbacks.
 
 ```python
-# uv pip install google-generativeai
+# uv pip install google-genai
 from google import genai
+from google.genai import types
 
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 response = client.models.generate_content(
-    model="gemini-2.5-flash",
-    contents=[email_text, "Output JSON: {property_id: str, sections: [str], confidence: float}"]
+    model="gemini-3-pro-preview",  # 3.1 Pro
+    contents=[email_text, "Output JSON: {property_id: str, sections: [str], confidence: float}"],
+    config=types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_level="high"),
+    ),
 )
 ```
 
@@ -368,23 +377,28 @@ Order matters: edit flow ships first, then ingestion. The plugin is the demo.
 - [ ] Bootstrap script: parse `stammdaten/` into one initial property.md + state.json + history seed (so the plugin has something real to render on hour 3)
 - [ ] ERP lookup adapter mocked from stammdaten CSVs
 
-### Phase 2, Plugin edit flow (hours 3 to 10) — primary demo surface
-- [ ] Plugin scaffold (manifest.json, main.ts, settings)
-- [ ] Pull property.md + state.json from R2 on connect
-- [ ] Sidebar `ItemView` with pending queue + history list
-- [ ] Inline `buena-pending` code-block processor with approve/reject/edit card
-- [ ] Hover popover on `<!-- prov: ... -->` markers
-- [ ] Status bar with connection + pending count + last-patch indicator
-- [ ] Approve/reject POSTs back to Worker, Worker updates R2 and pushes SSE
+### Phase 2, Plugin edit flow (hours 3 to 10), primary demo surface
+- [x] Plugin scaffold (manifest.json, main.ts, settings tab)
+- [x] Sidebar `ItemView` with pending queue + history list (`plugin/src/sidebar.ts`, 470+ LOC, scans vault for `buena-pending` blocks live)
+- [x] Inline `buena-pending` code-block processor with approve/reject card (`plugin/src/inline-patch.ts`)
+- [x] Approve/reject wired to actually edit the vault file (`plugin/src/vault-patch.ts`: `applyPatchToVault`, `stripPendingBlockById`, `findPendingBlocks`)
+- [x] Hover popover on `<!-- prov: ... -->` markers (`plugin/src/popover.ts` + `hover.ts`)
+- [x] Status bar with connection + pending count + last-patch indicator (`plugin/src/statusbar.ts`)
+- [x] Local history log (`plugin/src/history.ts`): every approve/reject writes to plugin data, capped at 50 per file, surfaced in sidebar history pane
+- [x] Buena brand palette + wordmark + unit pills + rich hover popovers (styles.css)
+- [x] Dev setup documented (symlink + hot-reload, see `plugin/README.md`)
+- [ ] Pull property.md + state.json from R2 on connect (blocked on Worker)
+- [ ] SSE client for live patch push from Worker (blocked on Worker)
+- [ ] Approve/reject POSTs back to Worker (blocked on Worker)
 - [ ] New-content highlight (24h soft-yellow)
-- [ ] Human-edit detection: `vault.on('modify', ...)` marks edited sections in state.json
+- [ ] Human-edit detection: `vault.on('modify', ...)` writes a marker into state.json
 
 ### Phase 3, Core ingestion engine (hours 10 to 16)
 - [ ] **Email parsing**: walk `emails/`, normalise headers, extract body plus attachments
-- [ ] **PDF extraction**: pdfplumber first, Gemini 2.5 Pro vision fallback
+- [ ] **PDF extraction**: send PDF bytes directly to Gemini 3.1 Pro (high thinking); pdfplumber only as a pre-pass for token-cost optimization on text-layer PDFs
 - [ ] **CSV planner**: NL question → pandas query → JSON result
 - [ ] **Identity resolver**: cluster entities across stammdaten and inbound text
-- [ ] **Routing**: Gemini Flash classifier (property + section + unit)
+- [ ] **Routing**: Gemini 3.1 Pro (high thinking) classifier (property + section + unit)
 - [ ] **Patch gate**: implement the 7 rules above
 - [ ] **History log**: every accepted change writes to `history/`
 - [ ] (stretch) Pioneer SLM router fine-tune for side-challenge
@@ -392,7 +406,8 @@ Order matters: edit flow ships first, then ingestion. The plugin is the demo.
 ### Phase 3b, Plugin polish (hours 16 to 18)
 - [ ] Provenance jump: clicking a `<!-- prov: ... -->` opens the source PDF in Obsidian's native viewer
 - [ ] Multi-unit collapse/expand under `## Units`
-- [ ] Animated patch pulse in status bar
+- [x] Animated patch pulse in status bar (`markPatchReceived`)
+- [x] Cloudflare setup playbook drafted (`docs/cloudflare-setup.md`), parked until extractor + edit flow stable
 
 ### Phase 4, Bulk import (hours 18 to 20)
 - [ ] Cloudflare Pages page with drag-and-drop file input
