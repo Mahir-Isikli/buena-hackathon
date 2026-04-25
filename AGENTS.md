@@ -373,7 +373,7 @@ Order matters: edit flow ships first, then ingestion. The plugin is the demo.
 - [x] `entire enable --agent claude-code` configured
 - [x] Buena dataset extracted to `partner-files/`
 - [x] PM interviews documented
-- [ ] Cloudflare Worker skeleton (`workers/ingest`) with R2 read/write + SSE endpoint
+- [x] Cloudflare Worker skeleton (`workers/ingest`) with R2 + Queue + Email Routing wired, end-to-end tested. SSE endpoint still TODO.
 - [ ] Bootstrap script: parse `stammdaten/` into one initial property.md + state.json + history seed (so the plugin has something real to render on hour 3)
 - [ ] ERP lookup adapter mocked from stammdaten CSVs
 
@@ -394,7 +394,7 @@ Order matters: edit flow ships first, then ingestion. The plugin is the demo.
 - [ ] Human-edit detection: `vault.on('modify', ...)` writes a marker into state.json
 
 ### Phase 3, Core ingestion engine (hours 10 to 16)
-- [ ] **Email parsing**: walk `emails/`, normalise headers, extract body plus attachments
+- [x] **Email ingestion** via Cloudflare Email Worker (postal-mime, R2, queue). Local walk of `emails/` is the next step.
 - [ ] **PDF extraction**: send PDF bytes directly to Gemini 3.1 Pro (high thinking); pdfplumber only as a pre-pass for token-cost optimization on text-layer PDFs
 - [ ] **CSV planner**: NL question → pandas query → JSON result
 - [ ] **Identity resolver**: cluster entities across stammdaten and inbound text
@@ -576,13 +576,20 @@ buena-hackathon/
 Domain, account, and email routing are already provisioned. The Worker code is **not** deployed yet. Do not touch this until we hit Phase 3 (core ingestion). Listing it here so future sessions don't waste time rediscovering the wiring.
 
 ### What's live on Cloudflare today
-- **Domain**: `kontext.haus` (registered 2026-04-25, Cloudflare Registrar). Active zone, Free Website plan (zone tier, irrelevant to our needs).
+- **Domain**: `kontext.haus` (registered 2026-04-25, Cloudflare Registrar). Active zone.
   - Zone ID: `34c29fb320c85246d499440d103d2dde`
   - Name servers: `cruz.ns.cloudflare.com`, `huxley.ns.cloudflare.com`
-  - DNS: only Email Routing records present (MX route1/2/3, DKIM `cf2024-1._domainkey`, SPF). No A/CNAME yet.
-- **Email Routing on `kontext.haus`**: status `ready`, enabled. Catch-all rule `*@kontext.haus` routes to a Worker named **`buena-ingest`** that does NOT exist yet. Mail will bounce until the Worker is deployed under that exact name.
-- **Account**: `isiklimahir@gmail.com`, account id `564b8125cf83c4aa38cf87f61f2ac14c`. Workers Paid ($5/mo) is active at the account level (unlocks Browser Rendering, higher CPU).
-- **Existing infra in account** (not ours, but visible): 2 Durable Object namespaces, 1 Queue, lots of unrelated Pages projects. We do not need DOs for this build.
+- **Email Routing**: enabled, subaddressing on, catch-all `*@kontext.haus` → Worker `buena-ingest`. MX/SPF/DKIM all live.
+- **R2 bucket**: `buena-raw` (raw .eml + attachments + bulk uploads).
+- **Queue**: `buena-extract` (queue_id `964ea057236842e6b99a7b4e12ae65c6`). Producer wired. HTTP-pull consumer enabled for testing. **No worker consumer yet** — to be wired after the local extractor lands.
+- **Worker `buena-ingest`** deployed at `https://buena-ingest.isiklimahir.workers.dev`.
+  - HTTP routes: `GET /health`, `POST /upload?name=<filename>` (bulk-import path).
+  - `email()` handler parses MIME via `postal-mime`, drops .eml + attachments to R2, enqueues structured job to `buena-extract` with `{source, msgId, from, to, subject, attachmentKeys}`.
+  - Subaddress is preserved in `to` (e.g. `property+LIE-001@kontext.haus`) — the routing layer should use `+TAG` as a property hint to skip routing inference.
+  - Source: `workers/ingest/`.
+- **End-to-end verified 2026-04-25**: real Gmail → kontext.haus → worker → R2 (.eml + PDF attachment) → queue (job with attachmentKeys). Tested with two emails, one with a PDF attachment from `partner-files/rechnungen/`.
+- **Account**: `isiklimahir@gmail.com`, account id `564b8125cf83c4aa38cf87f61f2ac14c`. Workers Paid ($5/mo) active.
+- **Sending test emails autonomously**: use `gog` CLI (Gmail OAuth, already authed). Binary at `/opt/homebrew/Cellar/gogcli/0.11.0/bin/gog`. Example: `gog -a isiklimahir@gmail.com send --to property+LIE-001@kontext.haus --subject ... --body ... [--attach path.pdf]`.
 
 ### Tokens in Keychain (never commit token values, references only)
 | Service name | Scope | Use for |
@@ -614,9 +621,9 @@ mcporter call cloudflare-api.execute code='async () => { return cloudflare.reque
 **Token caveat:** The MCP currently authenticates with `cloudflare-api-token`, which lacks Email Routing scope. For Email Routing changes either (a) shell with the buena token directly via `curl -H "Authorization: Bearer $(security find-generic-password -s cloudflare-buena-token -w)" ...`, or (b) swap the MCP config to use `cloudflare-buena-token` when we start Phase 3.
 
 ### When we resume Phase 3 (ingest)
-1. Deploy a Worker named `buena-ingest` (exact name, the catch-all rule already points at it).
-2. Worker reads inbound `email` event, fans attachments into R2 bucket(s) we still need to create.
-3. R2 bucket naming convention: `buena-raw/` (raw inbound), `buena-vaults/` (rendered property.md + state.json + history). Decide before creating.
+1. Build the local extractor + patch gate against `partner-files/`.
+2. Wire it as the **queue consumer** for `buena-extract` (replace HTTP-pull with a worker consumer in `wrangler.toml`).
+3. Create a second R2 bucket `buena-vaults/` (rendered property.md + state.json + history) when the renderer lands.
 4. Add a Pages project for the bulk-import page later, point a subdomain on `kontext.haus` at it.
 
 ---
