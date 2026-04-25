@@ -72,7 +72,107 @@ Their stated philosophy is "AI enhances, doesn't replace" property managers. Kee
 
 - **Domain expertise.** Mahir is a full-time AI Product Engineer at Arbio (AI-driven holiday rental management). He has been building Nexus, Arbio's AI ops platform with voice agents, document processing, chat UI, for 6 weeks. Most other teams in this track are reading about property management for the first time today.
 - **Real metrics access.** Mahir has a colleague (Lenos) who can describe Arbio's actual property-onboarding schema and KPIs (e.g. 2-week integration target).
-- **Real dataset from Buena.** They handed us a complete simulated archive: stammdaten (1 property, 3 buildings, 52 units, 50 owners, 50+ tenants, 9+ service providers), 6,546 emails, 135 letters, 194 invoices, full bank statements, plus 10 days of incremental updates. See `partner-files/`.
+- **Real dataset from Buena.** They handed us a complete simulated archive: stammdaten (1 property, 3 buildings, 52 units, 35 owners, 26 tenants, 16 service providers), 6,546 emails, 135 letters, 194 invoices, full bank statements (3 formats), plus 10 days of incremental updates. See `partner-files/` and the recon report at `docs/recon/partner-files-overview.md`.
+
+---
+
+## Partner files data layout
+
+The `partner-files/` folder is the simulated archive Buena gave us. Treat it as ground truth for v1.
+
+### Layout
+
+```
+partner-files/
+├── stammdaten/stammdaten/        # master data (CSVs + stammdaten.json)
+├── briefe/briefe/                # 135 outgoing letters (PDF)
+├── emails/emails/                # 6,546 .eml files in 25 month folders (2024-01 .. 2026-01)
+├── rechnungen/rechnungen/        # 194 invoice PDFs from service providers
+├── bank/bank/                    # 1,619 transactions in 3 formats
+├── incremental/incremental/      # 10 days of delta-only updates (day-01 .. day-10)
+└── product-interview/            # PM interview transcript
+```
+
+### Stammdaten (the spine)
+
+- `stammdaten.json` is the canonical object: `liegenschaft` (LIE-001), `gebaeude[]` (HAUS-12 18 units, HAUS-14 20 units, HAUS-16 14 units), `einheiten[]`, plus 3 IBANs (Verwalter, WEG-Konto Postbank, Rücklage).
+- `eigentuemer.csv` (35 rows): owner contact, IBAN, `einheit_ids` list, `selbstnutzer`, `sev_mandat`, `beirat`, `sprache`.
+- `mieter.csv` (26 rows): tenant contact, `einheit_id`, `eigentuemer_id`, `mietbeginn`/`mietende`, `kaltmiete`, `nk_vorauszahlung`, `kaution`, IBAN.
+- `einheiten.csv` (52 rows): `id, haus_id, einheit_nr, lage, typ, wohnflaeche_qm, zimmer, miteigentumsanteil`.
+- `dienstleister.csv` (16 rows): vendor contact, IBAN, `vertrag_monatlich`, `stundensatz`, `branche`, `stil`, `sprache`.
+
+### ID scheme (these are the join keys)
+
+| Prefix | Meaning | Example |
+|---|---|---|
+| `LIE-001` | Liegenschaft (the WEG) | `LIE-001` |
+| `HAUS-XX` | Gebäude / building | `HAUS-12` |
+| `EH-XXX` | Einheit / unit | `EH-037` |
+| `EIG-XXX` | Eigentümer / owner | `EIG-001` |
+| `MIE-XXX` | Mieter / tenant | `MIE-014` |
+| `DL-XXX` | Dienstleister / service provider | `DL-001` |
+| `TX-XXXXX` | Bank transaction | `TX-01337` |
+| `INV-XXXXX` | Invoice (plus `INV-DUP-...` for duplicates) | `INV-04421` |
+| `LTR-XXXX` | Outgoing letter | `LTR-0042` |
+| `EMAIL-XXXXX` | Email message | `EMAIL-02443` |
+| `THR-XXX` | Email thread | `THR-118` |
+
+Filename conventions encode IDs directly: emails are `YYYYMMDD_HHMMSS_EMAIL-NNNNN.eml`, invoices `YYYYMMDD_DL-XXX_INV-NNNNN.pdf`, letters `YYYYMMDD_TYPE_LTR-NNNN.pdf`.
+
+### Bank ships in three formats
+
+All three describe the same 1,619 transactions on the WEG-Konto. Pick one to trust:
+
+1. `bank_index.csv`, the structured ground truth: `id, datum, typ, betrag, kategorie, gegen_name, verwendungszweck, referenz_id, error_types`. Categories: `hausgeld` (806), `miete` (624), `dienstleister` (155), `versorger` (8), `sonstige` (26). The `error_types` column flags injected anomalies (each owner has 22 to 24).
+2. `kontoauszug_2024_2025.csv`, German MT940-style semicolon-separated: `Auftragskonto;Buchungstag;...;Verwendungszweck;Beguenstigter/Zahlungspflichtiger;Kontonummer/IBAN;BIC;Betrag;Waehrung;Info`. The `Info` column carries running `Saldo`.
+3. `kontoauszug_2024_2025.camt053.xml`, ISO 20022 CAMT.053 v02. Path: `Document/BkToCstmrStmt/Stmt/Ntry`. Each `Ntry` has `NtryRef` (= TX id), `Amt`, `CdtDbtInd`, `BookgDt`/`ValDt`, `NtryDtls/TxDtls/RltdPties/Dbtr` (counterparty), `RmtInf/Ustrd` (Verwendungszweck).
+
+**Bank reconciliation has 3 join paths** and they disagree, which is the whole point. This is Buena's "schema alignment" challenge made concrete:
+- IBAN exact match against `eigentuemer.csv` / `mieter.csv` / `dienstleister.csv`.
+- Counterparty name fuzzy match (typos, missing umlauts, abbreviations).
+- `Verwendungszweck` regex for `EH-XXX` (rent / Hausgeld) or `INV-XXXXX` (invoice payment).
+
+### `*_index.csv` files are evaluation ground truth, not engine input
+
+Files like `emails_index.csv`, `rechnungen_index.csv`, `bank_index.csv` are the answer key. They list IDs, categories (`eigentuemer/rechtlich`, `mieter/kaution`, `versorger/versorger`, ...), `error_types`, and direction. Use them to (a) supervise the Pioneer SLM fine-tune and (b) score the engine. Do **not** feed them into the live ingestion path, that would be cheating.
+
+### Incremental simulation
+
+`incremental/day-01` through `day-10` covers 2026-01-01 to 2026-01-10. Each day folder contains:
+
+```
+day-NN/
+├── incremental_manifest.json     # schema_version, day_index, content_date, seed, difficulty, counts, note
+├── bank/{bank_index.csv, kontoauszug_delta.csv}
+├── emails/2026-01/*.eml          # ~4 new emails per day
+├── rechnungen/2026-01/*.pdf      # ~1 new invoice per day
+├── emails_index.csv              # answer key for the day's emails
+└── rechnungen_index.csv          # answer key for the day's invoices
+```
+
+Manifest example: `{"day_index":1,"content_date":"2026-01-01","seed":42,"difficulty":"medium","emails_written":4,"invoices_written":1,"bank_transactions_written":1,"stammdaten_relative":"../stammdaten/stammdaten.json","note":"Nur Delta-Dateien. Basis-Paket ... liegt im uebergeordneten Ordner."}`. Daily volume is small on purpose, this is the surgical-update demo loop.
+
+### Briefe and Rechnungen
+
+- `briefe/`: 135 outgoing PDFs from the verwalter. Heavy ETV: 70 `etv_einladung`, 2 `etv_protokoll`, plus `kuendigung` notices.
+- `rechnungen/`: 194 invoice PDFs in. Top vendors by volume: DL-001 (Hausmeister) 35, DL-005 24, DL-004 24, DL-013 23, DL-012 20. Includes `INV-DUP-...` duplicates the engine has to dedup.
+
+**All PDFs are text-layer** (pdfplumber works, no OCR required). This means we don't need Gemini 2.5 Pro vision for the demo, Gemini Flash plus pdfplumber is enough and much cheaper.
+
+### Email layout
+
+6,546 `.eml` files spread across 25 month folders. Top sender domains: `huber-partner-verwaltung.de` 1,678 (verwalter outgoing), then `gmx.de` 830, `gmail.com` 407, `outlook.com` 398, `posteo.de` 239, `web.de` 236, `icloud.com` 222, `t-online.de` 179, plus dienstleister domains. Threads tracked via `THR-XXX` in `emails_index.csv`.
+
+### Vault granularity
+
+Given the structure, the natural output is **1 markdown file per HAUS-XX (3 buildings) plus 1 umbrella WEG file** for `LIE-001`. Owner / tenant / dienstleister files become wikilinked nodes referenced from each HAUS file.
+
+### Anti-patterns specific to this dataset
+
+- **Don't ingest `*_index.csv` files.** They are the answer key.
+- **Don't OCR.** PDFs have a text layer.
+- **Don't trust any single bank format.** Cross-check at least two of the three when reconciling.
+- **Don't ignore `error_types`.** That column is the simulator telling you which records are intentionally noisy.
 
 ---
 
