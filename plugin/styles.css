@@ -3034,6 +3034,7 @@ button.buena-changed-pill-recent {
   border-collapse: collapse;
   font-size: 14px;
   background: #ffffff;
+  table-layout: fixed;
 }
 
 .buena-history-table thead {
@@ -3051,6 +3052,22 @@ button.buena-changed-pill-recent {
   font-weight: 600;
   white-space: nowrap;
   text-align: left;
+}
+
+.buena-history-table thead th:nth-child(1) {
+  width: 22%;
+}
+
+.buena-history-table thead th:nth-child(2) {
+  width: 18%;
+}
+
+.buena-history-table thead th:nth-child(3) {
+  width: 44%;
+}
+
+.buena-history-table thead th:nth-child(4) {
+  width: 14%;
 }
 
 .buena-th-sortable:hover {
@@ -3085,19 +3102,41 @@ button.buena-changed-pill-recent {
   vertical-align: top;
 }
 
-.buena-td-when {
-  color: #6b7280;
-  white-space: nowrap;
+.buena-td-section {
+  min-width: 0;
+}
+
+.buena-history-row-meta {
+  margin-bottom: 6px;
+}
+
+.buena-history-row-time {
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
+.buena-history-row-section {
+  color: #374151;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.buena-td-unit {
+  white-space: nowrap;
+}
+
 .buena-td-what {
-  max-width: 360px;
+  max-width: 0;
 }
 
 .buena-td-what-text {
   line-height: 1.45;
   color: #374151;
+  word-break: break-word;
 }
 
 .buena-strike {
@@ -3110,6 +3149,7 @@ button.buena-changed-pill-recent {
   margin-top: 10px;
   color: #6b7280;
   font-style: italic;
+  line-height: 1.45;
 }
 
 .buena-unit-pill {
@@ -3127,10 +3167,16 @@ button.buena-changed-pill-recent {
   text-transform: uppercase;
 }
 
+.buena-td-decision {
+  white-space: nowrap;
+}
+
 .buena-decision-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  min-width: 44px;
   padding: 6px 12px;
   border-radius: 9999px;
   font-size: 12px;
@@ -3143,36 +3189,25 @@ button.buena-changed-pill-recent {
   height: 13px;
 }
 
+.buena-decision-label {
+  line-height: 1;
+}
+
 .buena-decision-approved {
+  min-width: 0;
+  padding: 6px 10px;
   background: #ecfdf5;
   color: #047857;
 }
 
 .buena-decision-rejected {
+  min-width: 0;
+  padding: 6px 10px;
   background: #fef2f2;
   color: #b91c1c;
 }
 
 .buena-decision-auto {
-  background: #eef2ff;
-  color: #4f46e5;
-}
-
-.buena-mode-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 12px;
-  border-radius: 9999px;
-  background: #f3f4f6;
-  color: #4b5563;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.buena-mode-auto {
   background: #eef2ff;
   color: #4f46e5;
 }

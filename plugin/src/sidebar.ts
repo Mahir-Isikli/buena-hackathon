@@ -347,12 +347,10 @@ export class BuenaSidebarView extends ItemView {
     const table = tableWrap.createEl("table", { cls: "buena-history-table" });
     const thead = table.createEl("thead");
     const headRow = thead.createEl("tr");
-    this.renderHistoryHeader(headRow, "when", "When");
     this.renderHistoryHeader(headRow, "section", "Section");
     this.renderHistoryHeader(headRow, "unit", "Unit");
     headRow.createEl("th", { text: "What", cls: "buena-th" });
     this.renderHistoryHeader(headRow, "decision", "Decision");
-    headRow.createEl("th", { text: "Mode", cls: "buena-th" });
     headRow.createEl("th", { text: "", cls: "buena-th buena-th-actions" });
 
     const tbody = table.createEl("tbody");
@@ -433,13 +431,15 @@ export class BuenaSidebarView extends ItemView {
   private renderHistoryRow(tbody: HTMLElement, h: HistoryEntry) {
     const tr = tbody.createEl("tr", { cls: `buena-history-row buena-history-${h.decision}` });
 
-    // When
-    const whenTd = tr.createEl("td", { cls: "buena-td buena-td-when" });
-    whenTd.createSpan({ text: timeAgo(h.timestamp) });
-    whenTd.title = new Date(h.timestamp).toLocaleString();
-
-    // Section
-    tr.createEl("td", { cls: "buena-td", text: h.section });
+    // Section, with inline time meta
+    const sectionTd = tr.createEl("td", { cls: "buena-td buena-td-section" });
+    const sectionMeta = sectionTd.createDiv({ cls: "buena-history-row-meta" });
+    const timeEl = sectionMeta.createSpan({
+      text: timeAgo(h.timestamp),
+      cls: "buena-history-row-time",
+    });
+    timeEl.title = new Date(h.timestamp).toLocaleString();
+    sectionTd.createDiv({ text: h.section, cls: "buena-history-row-section" });
 
     // Unit
     const unitTd = tr.createEl("td", { cls: "buena-td buena-td-unit" });
@@ -455,7 +455,7 @@ export class BuenaSidebarView extends ItemView {
     });
     if (h.decision === "rejected" && h.rejectionReason) {
       whatTd.createDiv({
-        text: `Reason: ${h.rejectionReason}`,
+        text: h.rejectionReason,
         cls: "buena-td-reason",
       });
     }
@@ -469,15 +469,10 @@ export class BuenaSidebarView extends ItemView {
       pill.createSpan({ cls: "buena-decision-icon" }),
       h.decision === "approved" ? "check" : h.decision === "rejected" ? "x" : "zap"
     );
-    pill.createSpan({ text: h.decision });
-
-    // Mode
-    const modeTd = tr.createEl("td", { cls: "buena-td buena-td-mode" });
-    const mode = h.decision === "auto" ? "Auto" : "Manual";
-    modeTd.createSpan({
-      text: mode,
-      cls: `buena-mode-pill buena-mode-${mode.toLowerCase()}`,
-    });
+    if (h.decision === "auto") {
+      pill.createSpan({ text: "auto", cls: "buena-decision-label" });
+    }
+    pill.title = h.decision;
 
     // Actions (hover-only)
     const actionsTd = tr.createEl("td", { cls: "buena-td buena-td-actions" });
