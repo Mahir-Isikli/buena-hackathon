@@ -2,14 +2,9 @@
 property_id: LIE-001
 name: WEG Immanuelkirchstraße 26
 address: Immanuelkirchstraße 26, 10405 Berlin
-district: Prenzlauer Berg
 verwalter_id: HUB-001
-buildings: 3
 units: 52
 owners: 35
-service_providers: 16
-baujahr: 1928
-sanierung: 2008
 weg_iban: DE02 1001 0010 0123 4567 89
 ruecklage_iban: DE12 1203 0000 0098 7654 32
 beirat:
@@ -46,12 +41,36 @@ tags:
 
 ## 🟡 Pending patches
 
-> [!warning] [[EH-014]] — broken hot water (review needed)
-> Tenant in [[EH-014]] reports **broken hot water**, claims **rent-withholding 10 %**.
-> Conflicts with current note "no open issues" on EH-014.
-> *Source: `emails/2026-01-15/EMAIL-12891.eml` · confidence 0.83*
->
-> **[ Approve ] · [ Reject ] · [ Edit ]**
+```buena-pending
+id: p-001
+unit: EH-014
+section: Active issues
+new: Tenant in EH-014 reports broken hot water, claims rent-withholding 10% (since 2026-01-15). Conflicts with prior note "no open issues".
+source: emails/2026-01-15/EMAIL-12891.eml
+snippet: "Sehr geehrte Damen und Herren, seit dem 15. Januar gibt es in unserer Wohnung kein Warmwasser mehr. Wir behalten daher 10% der Miete ein, bis das Problem behoben ist."
+confidence: 0.83
+actor: gemini-flash
+target_heading: "## ⚠️ Active issues"
+new_block: |
+  > [!todo] [[EH-014]] — broken hot water
+  > Tenant in [[EH-014]] reports **broken hot water**, claims **rent-withholding 10 %** seit 2026-01-15.
+  > *Source: `emails/2026-01-15/EMAIL-12891.eml` · confidence 0.83* {changed: 2026-04-25 | actor: gemini-flash | src: emails/2026-01-15/EMAIL-12891.eml}
+```
+
+```buena-pending
+id: p-002
+unit: Hausmeister
+section: Service providers
+old: "DL-001: 650 €/Monat"
+new: "DL-001: 720 €/Monat (price increase notice, effective 2026-05-01)"
+source: briefe/2026-04-10/BRIEF-00781.pdf
+snippet: "Aufgrund gestiegener Lohn- und Materialkosten passen wir den Pauschalbetrag ab dem 01.05.2026 von 650 € auf 720 € monatlich an."
+confidence: 0.87
+actor: gemini-2.5-pro
+target_heading: "## 🔗 Connected pages"
+new_block: |
+  - [[DL-001]] Hausmeister cost change: **720 €/Monat** ab 2026-05-01 (was 650 €/Monat) {changed: 2026-04-25 | actor: gemini-2.5-pro | src: briefe/2026-04-10/BRIEF-00781.pdf}
+```
 
 ---
 
