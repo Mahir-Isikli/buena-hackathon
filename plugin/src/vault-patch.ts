@@ -175,8 +175,13 @@ export async function findHeadingLine(
   const text = await app.vault.read(file);
   const lines = text.split("\n");
   const target = heading.trim();
+  const targetNorm = normalizeHeading(target);
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim() === target) return i;
+    const line = lines[i].trim();
+    if (line === target) return i;
+    if (/^#{1,6}\s+/.test(line) && normalizeHeading(line) === targetNorm) {
+      return i;
+    }
   }
   return null;
 }
@@ -268,6 +273,16 @@ export async function reverseHistoryEntry(
 
 function jsonString(s: string): string {
   return JSON.stringify(s);
+}
+
+function normalizeHeading(s: string): string {
+  return s
+    .replace(/^#{1,6}\s+/, "")
+    .replace(/[`*_]/g, " ")
+    .replace(/[^\p{L}\p{N}\s-]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 /**

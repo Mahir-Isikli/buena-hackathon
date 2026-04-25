@@ -33,9 +33,15 @@ export async function openProvenanceSource(
 }
 
 function parseR2RawSource(source: string): { key: string } | null {
+  const trimmed = source.trim();
   const prefix = "r2://buena-raw/";
-  if (!source.startsWith(prefix)) return null;
-  return { key: source.slice(prefix.length) };
+  if (trimmed.startsWith(prefix)) {
+    return { key: trimmed.slice(prefix.length) };
+  }
+  if (/^(emails|attachments|bulk)\//i.test(trimmed)) {
+    return { key: trimmed };
+  }
+  return null;
 }
 
 async function ensureParentFolders(plugin: BuenaPlugin, path: string): Promise<void> {

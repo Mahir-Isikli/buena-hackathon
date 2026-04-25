@@ -611,9 +611,30 @@ export class BuenaSidebarView extends ItemView {
     }
     idLine.createSpan({ text: p.section, cls: "buena-card-section-name" });
 
+    const topIndicators = top.createDiv({ cls: "buena-card-indicators" });
+
+    if (p.source) {
+      const srcName = shortSource(p.source);
+      const sourcePill = topIndicators.createSpan({
+        text: srcName,
+        cls: "buena-source-pill",
+      });
+      attachHoverPopover(sourcePill, () => {
+        const fields: HoverField[] = [
+          { label: "Source", value: srcName, mono: true },
+          { label: "Confidence", value: `${(p.confidence * 100).toFixed(0)}%` },
+          { label: "Actor", value: p.actor },
+        ];
+        if (p.sourceSnippet) {
+          fields.push({ label: "Snippet", value: p.sourceSnippet });
+        }
+        return fields;
+      });
+    }
+
     if (p.confidence > 0) {
-      top.createSpan({
-        text: `${(p.confidence * 100).toFixed(0)}% Confidence`,
+      topIndicators.createSpan({
+        text: `${(p.confidence * 100).toFixed(0)}%`,
         cls: "buena-confidence-pill",
       });
     }
@@ -623,33 +644,12 @@ export class BuenaSidebarView extends ItemView {
     }
     card.createDiv({ text: p.newValue, cls: "buena-card-new" });
 
-    if (p.sourceSnippet || p.source) {
+    if (p.sourceSnippet) {
       const sourceBlock = card.createDiv({ cls: "buena-card-source" });
-      if (p.sourceSnippet) {
-        sourceBlock.createDiv({
-          text: `“${p.sourceSnippet}”`,
-          cls: "buena-card-source-quote",
-        });
-      }
-      if (p.source) {
-        const sourceMeta = sourceBlock.createDiv({ cls: "buena-card-source-meta" });
-        sourceMeta.createSpan({ text: "Source: ", cls: "buena-card-source-label" });
-        const sourceValue = sourceMeta.createSpan({
-          text: shortSource(p.source),
-          cls: "buena-card-source-id",
-        });
-        attachHoverPopover(sourceValue, () => {
-          const fields: HoverField[] = [
-            { label: "Source", value: p.source, mono: true },
-            { label: "Confidence", value: `${(p.confidence * 100).toFixed(0)}%` },
-            { label: "Actor", value: p.actor },
-          ];
-          if (p.sourceSnippet) {
-            fields.push({ label: "Snippet", value: p.sourceSnippet });
-          }
-          return fields;
-        });
-      }
+      sourceBlock.createDiv({
+        text: `“${p.sourceSnippet}”`,
+        cls: "buena-card-source-quote",
+      });
     }
 
     if (p.target_heading && this.currentFile) {
