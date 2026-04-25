@@ -22,6 +22,8 @@ sanierung: 2008
 > [!note] ERP remains the source of truth for master data. This file keeps the current property briefing, exceptions, and lightweight reference tables.
 
 ## Open issues
+- Der Reparaturtermin für den defekten Aufzug in HAUS-12 wurde vom 28.04.2026 auf den 30.04.2026 verschoben. {prov: r2://buena-raw/emails/CAJ9sWTun9k+NczvRPZvN9RkLhUN9h_8z1UCdozkPszvhZfq-og@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T22:41:04.710Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTun9k+NczvRPZvN9RkLhUN9h_8z1UCdozkPszvhZfq-og@mail.gmail.com.eml}
+
 - EH-029: Heißwasser-Defekt besteht weiterhin, der Mieter mindert seit dem 15.01.2026 die Miete um 10 Prozent. {prov: r2://buena-raw/emails/CAJ9sWTtUYhTymsJ_kK70nm5gAv9O1hgdoNy8EU66UgVoMuwfzQ@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T20:02:04.911Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTtUYhTymsJ_kK70nm5gAv9O1hgdoNy8EU66UgVoMuwfzQ@mail.gmail.com.eml}
 - HAUS-12: Aufzug weiterhin defekt, Reparaturtermin ist für den 28.04.2026 angesetzt. {prov: r2://buena-raw/emails/CAJ9sWTsTxdGW265k2eyT+rkxLAmpfvNqw2Xt=rmPQVFy0dxU0A@mail.gmail.com.eml | conf: 0.95 | actor: gemini-3-pro} {changed: 2026-04-25T19:57:45.199Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTsTxdGW265k2eyT+rkxLAmpfvNqw2Xt=rmPQVFy0dxU0A@mail.gmail.com.eml}
 

@@ -23,8 +23,13 @@ import {
   reverseHistoryEntry,
   stripPendingBlockById,
 } from "./vault-patch";
-import { fetchHistory, postDecision } from "./api";
-import { pullPendingOnce } from "./sync";
+import {
+  fetchHistory,
+  fetchPending,
+  postDecision,
+  RemotePendingPatch,
+} from "./api";
+import { pullPendingOnce, resolvePropertyFile } from "./sync";
 
 export const BUENA_SIDEBAR_VIEW_TYPE = "buena-sidebar";
 
@@ -95,17 +100,21 @@ export class BuenaSidebarView extends ItemView {
   }
 
   async refresh() {
-    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-    const newFile = view?.file ?? null;
-    if (newFile && newFile !== this.currentFile) {
-      this.currentFile = newFile;
+    const resolvedFile = await resolvePropertyFile(this.app, this.plugin);
+    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+    const activeFile = activeView?.file ?? null;
+    const nextFile = resolvedFile ?? activeFile ?? null;
+
+    if (nextFile && nextFile !== this.currentFile) {
+      this.currentFile = nextFile;
     } else if (
       this.currentFile &&
       !this.app.vault.getAbstractFileByPath(this.currentFile.path)
     ) {
       this.currentFile = null;
     }
-    this.pending = await this.scanPending(this.currentFile);
+
+    this.pending = await this.loadPending(this.currentFile);
     if (this.currentFile) {
       const local = await loadHistory(this.plugin, this.currentFile.path);
       let remote = [] as Awaited<ReturnType<typeof fetchHistory>>;
@@ -124,6 +133,37 @@ export class BuenaSidebarView extends ItemView {
     this.plugin.statusBar.setStreak(computeStreak(this.history));
     this.plugin.statusBar.setVelocity(computeVelocity(this.history));
     this.render();
+  }
+
+  private async loadPending(file: TFile | null): Promise<PendingPatch[]> {
+    if (this.plugin.settings.workerUrl) {
+      try {
+        const remote = await fetchPending(this.plugin.settings);
+        return remote
+          .map((patch) => this.fromRemotePending(patch))
+          .sort(comparePendingByRecency);
+      } catch (err) {
+        console.warn("[Buena] remote pending fetch failed, falling back to local blocks", err);
+      }
+    }
+    return this.scanPending(file);
+  }
+
+  private fromRemotePending(patch: RemotePendingPatch): PendingPatch {
+    return {
+      id: patch.id,
+      section: patch.section,
+      unit: patch.unit,
+      oldValue: patch.old,
+      newValue: patch.new,
+      source: patch.source ?? "",
+      sourceSnippet: patch.snippet,
+      confidence: patch.confidence ?? 0,
+      actor: patch.actor ?? "unknown",
+      receivedAt: patch.addedAt,
+      target_heading: patch.target_heading,
+      new_block: patch.new_block,
+    };
   }
 
   private async scanPending(file: TFile | null): Promise<PendingPatch[]> {
@@ -184,7 +224,7 @@ export class BuenaSidebarView extends ItemView {
         const { pullPropertySnapshotOnce } = await import("./sync");
         await pullPropertySnapshotOnce(this.plugin);
         const r = await pullPendingOnce(this.plugin);
-        new Notice(`[Buena] full sync: property + state, then ${r.total} pending (${r.added} added)`);
+        new Notice(`[Buena] synced property, state, and ${r.total} remote queue items`);
         await this.refresh();
       } catch (err) {
         console.error("[Buena] sync failed", err);
@@ -746,7 +786,7 @@ export class BuenaSidebarView extends ItemView {
       }
       new Notice(`[Buena] approved ${p.id}, written to vault`);
       this.plugin.statusBar.markPatchReceived();
-      this.notifyWorker(p.id, "approved", p.actor);
+      await this.notifyWorker(p.id, "approved", p.actor);
       await addHistoryEntry(this.plugin, this.currentFile.path, {
         id: p.id,
         section: p.section,
@@ -799,7 +839,7 @@ export class BuenaSidebarView extends ItemView {
         },
       });
       new Notice(`[Buena] rejected ${p.id}`);
-      this.notifyWorker(p.id, "rejected", p.actor, reason);
+      await this.notifyWorker(p.id, "rejected", p.actor, reason);
       await this.refresh();
     } catch (err) {
       console.error("[Buena] reject failed", err);
@@ -832,20 +872,20 @@ export class BuenaSidebarView extends ItemView {
     }
   }
 
-  private notifyWorker(
+  private async notifyWorker(
     patchId: string,
     decision: "approved" | "rejected",
     actor: string,
     reason?: string
   ) {
     if (!this.plugin.settings.workerUrl) return;
-    postDecision(
+    await postDecision(
       this.plugin.settings,
       patchId,
       decision,
       actor || "human",
       reason
-    ).catch((err) => console.warn("[Buena] postDecision failed", err));
+    );
   }
 }
 
@@ -918,6 +958,13 @@ function computeVelocity(history: HistoryEntry[]): {
 
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+function comparePendingByRecency(a: PendingPatch, b: PendingPatch): number {
+  const at = a.receivedAt ? new Date(a.receivedAt).getTime() : 0;
+  const bt = b.receivedAt ? new Date(b.receivedAt).getTime() : 0;
+  if (at !== bt) return bt - at;
+  return a.id.localeCompare(b.id);
 }
 
 function uniqueUnits(pending: PendingPatch[]): string[] {

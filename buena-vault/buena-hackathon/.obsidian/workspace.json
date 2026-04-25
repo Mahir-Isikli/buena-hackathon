@@ -195,7 +195,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 963.5
+    "width": 713.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -209,7 +209,7 @@
       "buena:Buena: open pending queue": false
     }
   },
-  "active": "ac57853ea65b0f59",
+  "active": "acefd6079a3ebf3c",
   "lastOpenFiles": [
     "Huber & Partner Immobilienverwaltung GmbH.md",
     "WEG-Immanuelkirchstrasse-26.md",

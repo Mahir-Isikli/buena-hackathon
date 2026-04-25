@@ -2792,6 +2792,48 @@ button.buena-changed-pill-recent {
   color: #dc2626;
 }
 
+.buena-history-chip-approved {
+  color: #059669;
+}
+
+.buena-history-chip-approved.buena-chip-active {
+  color: #ffffff;
+  background: #059669;
+  border-color: #059669;
+}
+
+.buena-history-chip-approved.buena-chip-active:hover {
+  color: #ffffff;
+  background: #047857;
+  border-color: #047857;
+}
+
+.buena-history-chip-approved.buena-chip-active .buena-chip-count {
+  background: #ffffff;
+  color: #059669;
+}
+
+.buena-history-chip-auto {
+  color: #4f46e5;
+}
+
+.buena-history-chip-auto.buena-chip-active {
+  color: #ffffff;
+  background: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.buena-history-chip-auto.buena-chip-active:hover {
+  color: #ffffff;
+  background: #4338ca;
+  border-color: #4338ca;
+}
+
+.buena-history-chip-auto.buena-chip-active .buena-chip-count {
+  background: #ffffff;
+  color: #4f46e5;
+}
+
 .buena-empty {
   display: flex;
   align-items: center;

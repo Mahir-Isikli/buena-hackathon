@@ -103,28 +103,32 @@ export async function pullPropertySnapshotOnce(
 }
 
 export async function pullPendingOnce(plugin: BuenaPlugin): Promise<{
-  added: number;
+  strippedLocalBlocks: number;
   total: number;
 }> {
   const file = await resolvePropertyFile(plugin.app, plugin);
   if (!file) {
     new Notice(`[Buena] no vault file matched property ${plugin.settings.propertyId}`);
-    return { added: 0, total: 0 };
+    return { strippedLocalBlocks: 0, total: 0 };
   }
   const remote = await fetchPending(plugin.settings);
   const local = await plugin.app.vault.read(file);
-  const stripped = stripAllPendingBlocks(local);
+  const { text: stripped, removed } = stripAllPendingBlocks(local);
   if (stripped !== local) {
     await plugin.app.vault.modify(file, ensureTrailingNewline(stripped));
   }
-  return { added: 0, total: remote.length };
+  return { strippedLocalBlocks: removed, total: remote.length };
 }
 
-function stripAllPendingBlocks(text: string): string {
-  return text
-    .replace(/\n?```buena-pending\n[\s\S]*?\n```\n?/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trimEnd();
+function stripAllPendingBlocks(text: string): { text: string; removed: number } {
+  const matches = text.match(/\n?```buena-pending\n[\s\S]*?\n```\n?/g) ?? [];
+  return {
+    text: text
+      .replace(/\n?```buena-pending\n[\s\S]*?\n```\n?/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trimEnd(),
+    removed: matches.length,
+  };
 }
 
 function ensureTrailingNewline(s: string): string {
