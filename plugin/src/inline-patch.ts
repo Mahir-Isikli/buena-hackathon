@@ -1,30 +1,19 @@
 import { Notice, parseYaml } from "obsidian";
 import type BuenaPlugin from "../main";
+import { attachHoverPopover, HoverField } from "./hover";
 
 interface PendingPatchSpec {
   id?: string;
   section?: string;
+  unit?: string;
   old?: string;
   new?: string;
   source?: string;
+  snippet?: string;
   confidence?: number;
   actor?: string;
 }
 
-/**
- * Renders a `buena-pending` codeblock as an interactive approve/reject card.
- *
- * Usage in markdown:
- *
- * ```buena-pending
- * id: p-001
- * section: Open issues
- * new: Tenant in EH-014 withholding 10% rent due to broken hot water
- * source: emails/2026-01-15/EMAIL-12891.eml
- * confidence: 0.91
- * actor: gemini-flash
- * ```
- */
 export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
   plugin.registerMarkdownCodeBlockProcessor("buena-pending", (source, el) => {
     let spec: PendingPatchSpec = {};
@@ -42,10 +31,13 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
     if (spec.section) {
       header.createSpan({ text: spec.section, cls: "buena-pending-section" });
     }
+    if (spec.unit) {
+      header.createSpan({ text: spec.unit, cls: "buena-unit-pill" });
+    }
 
     const body = card.createDiv({ cls: "buena-pending-body" });
     if (spec.old) {
-      body.createDiv({ text: `was: ${spec.old}`, cls: "buena-pending-old" });
+      body.createDiv({ text: spec.old, cls: "buena-pending-old" });
     }
     if (spec.new) {
       body.createDiv({ text: spec.new, cls: "buena-pending-new" });
@@ -54,12 +46,31 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
     const meta = card.createDiv({ cls: "buena-pending-meta" });
     if (typeof spec.confidence === "number") {
       meta.createSpan({
-        text: `conf ${(spec.confidence * 100).toFixed(0)}%`,
+        text: `${(spec.confidence * 100).toFixed(0)}% conf`,
         cls: "buena-meta-pill",
       });
     }
     if (spec.actor) meta.createSpan({ text: spec.actor, cls: "buena-meta-pill" });
-    if (spec.source) meta.createSpan({ text: spec.source, cls: "buena-meta-source" });
+    if (spec.source) {
+      const srcEl = meta.createSpan({
+        text: shortSource(spec.source),
+        cls: "buena-meta-source",
+      });
+      attachHoverPopover(srcEl, () => {
+        const fields: HoverField[] = [
+          { label: "Source", value: spec.source ?? "", mono: true },
+        ];
+        if (typeof spec.confidence === "number") {
+          fields.push({
+            label: "Confidence",
+            value: `${(spec.confidence * 100).toFixed(0)}%`,
+          });
+        }
+        if (spec.actor) fields.push({ label: "Actor", value: spec.actor });
+        if (spec.snippet) fields.push({ label: "Snippet", value: spec.snippet });
+        return fields;
+      });
+    }
 
     const actions = card.createDiv({ cls: "buena-pending-actions" });
     const approve = actions.createEl("button", {
@@ -85,4 +96,9 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
       new Notice("[Buena] inline edit not wired yet");
     };
   });
+}
+
+function shortSource(s: string): string {
+  const parts = s.split("/");
+  return parts[parts.length - 1];
 }

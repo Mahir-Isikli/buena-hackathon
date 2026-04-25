@@ -1,4 +1,5 @@
 import type BuenaPlugin from "../main";
+import { attachHoverPopover, HoverField } from "./hover";
 
 /**
  * Inline annotation post-processor.
@@ -29,33 +30,35 @@ export function registerProvenanceProcessor(plugin: BuenaPlugin) {
 
       let m: RegExpExecArray | null;
       while ((m = provRe.exec(text)) !== null) {
+        const prov: ProvData = {
+          source: m[1].trim(),
+          confidence: m[2] ? parseFloat(m[2]) : undefined,
+          actor: m[3]?.trim(),
+        };
         matches.push({
           kind: "prov",
           node: n as Text,
           index: m.index,
           raw: m[0],
-          tooltip: formatProvTooltip({
-            source: m[1].trim(),
-            confidence: m[2] ? parseFloat(m[2]) : undefined,
-            actor: m[3]?.trim(),
-          }),
+          fields: provFields(prov),
           label: "src",
           className: "buena-prov-pill",
         });
       }
 
       while ((m = changedRe.exec(text)) !== null) {
+        const ch: ChangedData = {
+          when: m[1].trim(),
+          from: m[2]?.trim(),
+          actor: m[3]?.trim(),
+          source: m[4]?.trim(),
+        };
         matches.push({
           kind: "changed",
           node: n as Text,
           index: m.index,
           raw: m[0],
-          tooltip: formatChangedTooltip({
-            when: m[1].trim(),
-            from: m[2]?.trim(),
-            actor: m[3]?.trim(),
-            source: m[4]?.trim(),
-          }),
+          fields: changedFields(ch),
           label: "changed",
           className: "buena-changed-pill",
         });
@@ -88,8 +91,7 @@ export function registerProvenanceProcessor(plugin: BuenaPlugin) {
         const pill = document.createElement("span");
         pill.className = m.className;
         pill.textContent = m.label;
-        pill.title = m.tooltip;
-        pill.setAttribute("aria-label", m.tooltip);
+        attachHoverPopover(pill, () => m.fields);
         fragments.push(pill);
         cursor = m.index + m.raw.length;
       }
@@ -113,7 +115,7 @@ interface AnnotationMatch {
   raw: string;
   label: string;
   className: string;
-  tooltip: string;
+  fields: HoverField[];
 }
 
 interface ProvData {
@@ -129,19 +131,26 @@ interface ChangedData {
   source?: string;
 }
 
-function formatProvTooltip(p: ProvData): string {
-  const parts = [`Source: ${p.source}`];
+function provFields(p: ProvData): HoverField[] {
+  const fields: HoverField[] = [
+    { label: "Source", value: p.source, mono: true },
+  ];
   if (typeof p.confidence === "number") {
-    parts.push(`Confidence: ${(p.confidence * 100).toFixed(0)}%`);
+    fields.push({
+      label: "Confidence",
+      value: `${(p.confidence * 100).toFixed(0)}%`,
+    });
   }
-  if (p.actor) parts.push(`Actor: ${p.actor}`);
-  return parts.join("\n");
+  if (p.actor) fields.push({ label: "Actor", value: p.actor });
+  return fields;
 }
 
-function formatChangedTooltip(c: ChangedData): string {
-  const parts = [`Changed ${c.when}`];
-  if (c.from) parts.push(`Was: ${c.from}`);
-  if (c.actor) parts.push(`By: ${c.actor}`);
-  if (c.source) parts.push(`Source: ${c.source}`);
-  return parts.join("\n");
+function changedFields(c: ChangedData): HoverField[] {
+  const fields: HoverField[] = [
+    { label: "Changed", value: c.when },
+  ];
+  if (c.from) fields.push({ label: "Was", value: c.from });
+  if (c.actor) fields.push({ label: "Actor", value: c.actor });
+  if (c.source) fields.push({ label: "Source", value: c.source, mono: true });
+  return fields;
 }

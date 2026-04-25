@@ -44,19 +44,45 @@
 }
 
 .buena-sidebar-wordmark {
-  font-size: 1.1em;
-  font-weight: 600;
-  letter-spacing: 0.32em;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
   color: var(--buena-white);
   font-family: var(--font-text);
 }
 
-.buena-sidebar-subtitle {
-  margin-top: 6px;
+.buena-wordmark-text {
+  font-size: 1.6em;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  font-style: italic;
+  color: var(--buena-white);
+}
+
+.buena-wordmark-dot {
+  font-size: 1.6em;
   color: var(--buena-beige);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.buena-sidebar-tagline {
+  margin-top: 2px;
+  color: var(--buena-gray);
   font-size: 0.75em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   font-family: var(--font-monospace);
-  letter-spacing: 0.08em;
+}
+
+.buena-sidebar-subtitle {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #2a2a2a;
+  color: var(--buena-beige);
+  font-size: 0.72em;
+  font-family: var(--font-monospace);
+  letter-spacing: 0.12em;
 }
 
 .buena-section {
@@ -107,6 +133,37 @@
   border-radius: 0;
   padding: 12px 14px;
   margin-bottom: 10px;
+}
+
+.buena-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.buena-card-top .buena-card-section {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.buena-unit-pill {
+  background: var(--buena-black);
+  color: var(--buena-beige);
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 0;
+  font-weight: 600;
+  font-family: var(--font-monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: help;
+  white-space: nowrap;
 }
 
 .buena-card-pending {
@@ -405,4 +462,56 @@
   color: var(--buena-ink-faint);
   font-size: 0.8em;
   font-family: var(--font-monospace);
+}
+
+/* ============================================================
+   HOVER POPOVER
+   ============================================================ */
+.buena-popover {
+  position: fixed;
+  z-index: 9999;
+  background: var(--buena-white, #fff);
+  color: var(--buena-black, #000);
+  border: 1px solid var(--buena-black, #000);
+  border-left: 4px solid var(--buena-beige, #CDBDA3);
+  padding: 12px 14px;
+  font-size: 0.85em;
+  max-width: 360px;
+  min-width: 240px;
+  box-shadow: 4px 4px 0 var(--buena-beige, #CDBDA3);
+  font-family: var(--font-text);
+  line-height: 1.45;
+  pointer-events: none;
+}
+
+.buena-popover-row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--buena-cream, #F5F1EA);
+}
+
+.buena-popover-row:last-child {
+  border-bottom: none;
+}
+
+.buena-popover-label {
+  font-size: 0.78em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--buena-ink-faint, #8A8580);
+  font-family: var(--font-monospace);
+  font-weight: 600;
+  padding-top: 1px;
+}
+
+.buena-popover-value {
+  color: var(--buena-black, #000);
+  word-break: break-word;
+}
+
+.buena-popover-mono {
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
 }
