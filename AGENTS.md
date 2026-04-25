@@ -599,12 +599,19 @@ CLOUDFLARE_ACCOUNT_ID=$(security find-generic-password -s cloudflare-account-id 
 wrangler <command>
 ```
 
-### Cloudflare MCP server (Code Mode) is wired up
-MCPorter has a `cloudflare-api` entry that calls the Cloudflare MCP at `https://mcp.cloudflare.com/mcp`. It currently uses `cloudflare-api-token`, which means **Email Routing endpoints are blocked through the MCP**. For Email Routing changes, either:
-- shell directly with the buena token (`curl -H "Authorization: Bearer $(security find-generic-password -s cloudflare-buena-token -w)" ...`), or
-- swap the MCP config to use `cloudflare-buena-token` when we start Phase 3.
+### Cloudflare MCP server (Code Mode) via MCPorter — prefer this over wrangler
+MCPorter exposes the official Cloudflare MCP at `https://mcp.cloudflare.com/mcp` as `cloudflare-api` (config in `~/.mcporter/mcporter.json`). This gives the agent the **full Cloudflare API** (2,500+ endpoints, 130+ products) through just two tools, instead of being limited to the ~20 things wrangler covers. **Default to this when you need to inspect or change Cloudflare state**, fall back to wrangler only for `pages dev`, D1 migrations, and `wrangler tail`.
 
-The MCP exposes 2 tools: `cloudflare-api.search` (discover endpoints) and `cloudflare-api.execute` (run JS in a sandbox using `cloudflare.request()`, with `accountId` auto-injected). Useful for things wrangler can't do: analytics, security insights, bulk parallel calls, Email Routing rule management.
+Call it from a shell:
+```bash
+mcporter call cloudflare-api.search code='async () => { /* JS over the OpenAPI spec object */ }'
+mcporter call cloudflare-api.execute code='async () => { return cloudflare.request({ method: "GET", path: `/zones` }); }'
+```
+- `accountId` is auto-injected into the `execute` sandbox.
+- `cloudflare.request({ method, path, query, body })` returns the parsed Cloudflare response.
+- Use this for things wrangler can't do: analytics, security insights, WAF rules, audit logs, Email Routing rules, bulk parallel calls, account-wide inventories.
+
+**Token caveat:** The MCP currently authenticates with `cloudflare-api-token`, which lacks Email Routing scope. For Email Routing changes either (a) shell with the buena token directly via `curl -H "Authorization: Bearer $(security find-generic-password -s cloudflare-buena-token -w)" ...`, or (b) swap the MCP config to use `cloudflare-buena-token` when we start Phase 3.
 
 ### When we resume Phase 3 (ingest)
 1. Deploy a Worker named `buena-ingest` (exact name, the catch-all rule already points at it).
