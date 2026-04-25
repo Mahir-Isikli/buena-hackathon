@@ -164,14 +164,15 @@ export class BuenaSidebarView extends ItemView {
 
     // Compact header: wordmark + property name + sync.
     const header = root.createDiv({ cls: "buena-sidebar-header" });
-    const wordmark = header.createDiv({ cls: "buena-sidebar-wordmark" });
-    wordmark.createSpan({ text: "buena", cls: "buena-wordmark-text" });
-    wordmark.createSpan({ text: "·", cls: "buena-wordmark-dot" });
-    header.createEl("span", {
-      text:
-        this.currentFile?.basename ?? this.plugin.settings.propertyId ?? "",
+    const titleRow = header.createDiv({ cls: "buena-sidebar-title-row" });
+    const wordmark = titleRow.createDiv({ cls: "buena-sidebar-wordmark" });
+    wordmark.createSpan({ text: "Buena", cls: "buena-wordmark-text" });
+    wordmark.createSpan({ text: "/", cls: "buena-wordmark-dot" });
+    titleRow.createEl("span", {
+      text: this.currentFile?.basename ?? this.plugin.settings.propertyId ?? "",
       cls: "buena-sidebar-property",
     });
+    
     const syncBtn = header.createEl("button", {
       cls: "buena-sync-btn",
       attr: { "aria-label": "Sync pending from worker" },
@@ -254,28 +255,23 @@ export class BuenaSidebarView extends ItemView {
     const pendingSection = content.createDiv({
       cls: "buena-section buena-section-pending buena-section-fullheight",
     });
-    const pendingHeader = pendingSection.createDiv({
-      cls: "buena-section-header",
-    });
-    const pendingTitle = pendingHeader.createDiv({
-      cls: "buena-section-title",
-    });
-    setIcon(pendingTitle.createSpan({ cls: "buena-section-icon" }), "inbox");
-    pendingTitle.createEl("h4", { text: "Pending queue" });
-    pendingHeader.createEl("span", {
-      text: `${this.pending.length}`,
-      cls: "buena-badge",
-    });
 
     if (this.pending.length > 0) {
-      const filters = pendingSection.createDiv({ cls: "buena-filter-chips" });
+      const subhead = pendingSection.createDiv({ cls: "buena-subhead" });
+      const count = this.pending.length;
+      const noun = count === 1 ? "new update" : "new updates";
+      subhead.createSpan({
+        text: `${count} ${noun}. Extracted in real time.`,
+        cls: "buena-subhead-text",
+      });
+      const filters = subhead.createDiv({ cls: "buena-filter-chips" });
       this.renderChip(filters, "All", "__all__", this.pending.length);
       if (reviewCount > 0) {
         this.renderChip(filters, "Needs review", "__review__", reviewCount);
       }
       for (const u of units) {
-        const count = this.pending.filter((p) => p.unit === u).length;
-        this.renderChip(filters, u, `unit:${u}`, count);
+        const countForUnit = this.pending.filter((p) => p.unit === u).length;
+        this.renderChip(filters, u, `unit:${u}`, countForUnit);
       }
     }
 
@@ -283,17 +279,17 @@ export class BuenaSidebarView extends ItemView {
 
     if (!this.currentFile) {
       pendingBody.createEl("div", {
-        text: "Open a property file to see its pending patches.",
+        text: "Open a property file, for example WEG-Immanuelkirchstrasse-26.md, to see pending patches.",
         cls: "buena-empty",
       });
     } else if (this.pending.length === 0) {
       pendingBody.createEl("div", {
-        text: "No pending patches in this file.",
+        text: "No pending patches for this property right now.",
         cls: "buena-empty",
       });
     } else if (visiblePending.length === 0) {
       pendingBody.createEl("div", {
-        text: `No pending patches match "${this.filterLabel()}".`,
+        text: `No pending patches match \"${this.filterLabel()}\".`,
         cls: "buena-empty",
       });
     } else {
@@ -312,7 +308,7 @@ export class BuenaSidebarView extends ItemView {
 
     if (!this.currentFile) {
       section.createEl("div", {
-        text: "Open a property file to see its change history.",
+        text: "Open a property file, for example WEG-Immanuelkirchstrasse-26.md, to see change history.",
         cls: "buena-empty",
       });
       return;
@@ -325,30 +321,21 @@ export class BuenaSidebarView extends ItemView {
       return;
     }
 
-    // Decision filter chips
-    const filters = section.createDiv({ cls: "buena-filter-chips" });
     const counts = {
       all: this.history.length,
       approved: this.history.filter((h) => h.decision === "approved").length,
       rejected: this.history.filter((h) => h.decision === "rejected").length,
       auto: this.history.filter((h) => h.decision === "auto").length,
     };
+
+    const subhead = section.createDiv({ cls: "buena-subhead buena-subhead-history" });
+    const filters = subhead.createDiv({ cls: "buena-filter-chips buena-filter-chips-history" });
     this.renderHistoryFilterChip(filters, "All", "all", counts.all);
     if (counts.approved > 0) {
-      this.renderHistoryFilterChip(
-        filters,
-        "Approved",
-        "approved",
-        counts.approved
-      );
+      this.renderHistoryFilterChip(filters, "Approved", "approved", counts.approved);
     }
     if (counts.rejected > 0) {
-      this.renderHistoryFilterChip(
-        filters,
-        "Rejected",
-        "rejected",
-        counts.rejected
-      );
+      this.renderHistoryFilterChip(filters, "Rejected", "rejected", counts.rejected);
     }
     if (counts.auto > 0) {
       this.renderHistoryFilterChip(filters, "Auto", "auto", counts.auto);
@@ -404,7 +391,7 @@ export class BuenaSidebarView extends ItemView {
   ) {
     const isActive = this.historyDecisionFilter === value;
     const chip = parent.createEl("button", {
-      cls: `buena-chip${isActive ? " buena-chip-active" : ""}`,
+      cls: `buena-chip buena-history-chip buena-history-chip-${value}${isActive ? " buena-chip-active" : ""}`,
     });
     chip.createSpan({ text: label, cls: "buena-chip-label" });
     chip.createSpan({ text: String(count), cls: "buena-chip-count" });
@@ -536,7 +523,7 @@ export class BuenaSidebarView extends ItemView {
     const isActive = this.filter === value;
     const reviewCls = value === "__review__" ? " buena-chip-review" : "";
     const chip = parent.createEl("button", {
-      cls: `buena-chip${reviewCls}${isActive ? " buena-chip-active" : ""}`,
+      cls: `buena-chip buena-queue-chip${reviewCls}${isActive ? " buena-chip-active" : ""}`,
     });
     const iconName = chipIcon(value);
     if (iconName) {
@@ -572,25 +559,27 @@ export class BuenaSidebarView extends ItemView {
   private renderPendingCard(parent: HTMLElement, p: PendingPatch) {
     const card = parent.createDiv({ cls: "buena-card buena-card-pending" });
 
-    // Top row: section + scope pill (unit / building / provider)
     const top = card.createDiv({ cls: "buena-card-top" });
-    top.createDiv({ text: p.section, cls: "buena-card-section" });
+    const idLine = top.createDiv({ cls: "buena-card-section" });
     const scope = derivePendingScope(p);
     if (scope) {
-      const scopePill = top.createSpan({
+      const scopeSpan = idLine.createSpan({
         text: scope.label,
-        cls: `buena-scope-pill buena-scope-pill-${scope.kind}`,
+        cls: `buena-card-scope buena-card-scope-${scope.kind}`,
       });
-      attachHoverPopover(scopePill, () => [
+      attachHoverPopover(scopeSpan, () => [
         { label: "Scope", value: scope.kind },
         { label: "Value", value: scope.label, mono: true },
         { label: "Section", value: p.section },
       ]);
-      const scopeRow = card.createDiv({ cls: "buena-scope-row" });
-      scopeRow.createSpan({ text: "Scope", cls: "buena-scope-row-label" });
-      scopeRow.createSpan({
-        text: scope.label,
-        cls: `buena-scope-row-value buena-scope-row-value-${scope.kind}`,
+      idLine.createSpan({ text: " · ", cls: "buena-card-sep" });
+    }
+    idLine.createSpan({ text: p.section, cls: "buena-card-section-name" });
+
+    if (p.confidence > 0) {
+      top.createSpan({
+        text: `${(p.confidence * 100).toFixed(0)}% Confidence`,
+        cls: "buena-confidence-pill",
       });
     }
 
@@ -599,33 +588,35 @@ export class BuenaSidebarView extends ItemView {
     }
     card.createDiv({ text: p.newValue, cls: "buena-card-new" });
 
-    const meta = card.createDiv({ cls: "buena-card-meta" });
-    if (p.confidence > 0) {
-      meta.createSpan({
-        text: `${(p.confidence * 100).toFixed(0)}% conf`,
-        cls: "buena-meta-pill",
-      });
-    }
-    meta.createSpan({ text: p.actor, cls: "buena-meta-pill" });
-    if (p.source) {
-      const sourcePill = meta.createSpan({
-        text: shortSource(p.source),
-        cls: "buena-meta-source",
-      });
-      attachHoverPopover(sourcePill, () => {
-        const fields: HoverField[] = [
-          { label: "Source", value: p.source, mono: true },
-          { label: "Confidence", value: `${(p.confidence * 100).toFixed(0)}%` },
-          { label: "Actor", value: p.actor },
-        ];
-        if (p.sourceSnippet) {
-          fields.push({ label: "Snippet", value: p.sourceSnippet });
-        }
-        return fields;
-      });
+    if (p.sourceSnippet || p.source) {
+      const sourceBlock = card.createDiv({ cls: "buena-card-source" });
+      if (p.sourceSnippet) {
+        sourceBlock.createDiv({
+          text: `“${p.sourceSnippet}”`,
+          cls: "buena-card-source-quote",
+        });
+      }
+      if (p.source) {
+        const sourceMeta = sourceBlock.createDiv({ cls: "buena-card-source-meta" });
+        sourceMeta.createSpan({ text: "Source: ", cls: "buena-card-source-label" });
+        const sourceValue = sourceMeta.createSpan({
+          text: shortSource(p.source),
+          cls: "buena-card-source-id",
+        });
+        attachHoverPopover(sourceValue, () => {
+          const fields: HoverField[] = [
+            { label: "Source", value: p.source, mono: true },
+            { label: "Confidence", value: `${(p.confidence * 100).toFixed(0)}%` },
+            { label: "Actor", value: p.actor },
+          ];
+          if (p.sourceSnippet) {
+            fields.push({ label: "Snippet", value: p.sourceSnippet });
+          }
+          return fields;
+        });
+      }
     }
 
-    // Go-to-section pill: only if heading already exists in the file.
     if (p.target_heading && this.currentFile) {
       const goToWrap = card.createDiv({ cls: "buena-goto-wrap" });
       const pill = goToWrap.createEl("button", { cls: "buena-goto-pill" });
@@ -677,14 +668,13 @@ export class BuenaSidebarView extends ItemView {
     host.removeClass("buena-reject-reason-hidden");
     host.empty();
     host.createEl("label", {
-      text: "Why are you rejecting this? (logged for accountability)",
+      text: "Why reject this update?",
       cls: "buena-reject-reason-label",
     });
     const ta = host.createEl("textarea", {
       cls: "buena-reject-reason-input",
       attr: {
-        placeholder:
-          "e.g. wrong unit, duplicate of EH-014 issue, sender unverified...",
+        placeholder: "e.g. Duplicate issue...",
         rows: "2",
       },
     });

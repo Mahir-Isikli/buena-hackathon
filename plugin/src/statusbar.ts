@@ -1,4 +1,3 @@
-import { setIcon } from "obsidian";
 import type BuenaPlugin from "../main";
 
 /**
@@ -72,53 +71,26 @@ export class BuenaStatusBar {
     el.empty();
     el.addClass("buena-statusbar");
 
-    // Left: connection state (dot + label, no pulse).
     const left = el.createDiv({ cls: "buena-statusbar-cluster" });
     const dot = left.createSpan({ cls: "buena-statusbar-dot" });
     dot.toggleClass("buena-statusbar-dot-on", this.connected);
     dot.toggleClass("buena-statusbar-dot-off", !this.connected);
     left.createSpan({
-      text: this.connected ? "Live" : "Offline",
+      text: this.connected ? "Real time." : "Offline.",
       cls: "buena-statusbar-label",
     });
 
-    // Center: streak + queue.
-    const center = el.createDiv({ cls: "buena-statusbar-cluster" });
+    const right = el.createDiv({ cls: "buena-statusbar-cluster buena-statusbar-summary" });
 
     if (this.streakDays > 0) {
-      const streak = center.createSpan({ cls: "buena-statusbar-streak" });
-      setIcon(streak.createSpan({ cls: "buena-statusbar-icon" }), "flame");
-      streak.createSpan({
-        text: `${this.streakDays}d`,
-        cls: "buena-statusbar-num",
-      });
+      const streak = right.createSpan({ cls: "buena-statusbar-streak" });
+      streak.createSpan({ text: "🔥", cls: "buena-statusbar-emoji" });
+      streak.createSpan({ text: `${this.streakDays}d`, cls: "buena-statusbar-num" });
     }
 
-    const queueChip = center.createSpan({ cls: "buena-statusbar-chip" });
-    queueChip.createSpan({
-      text: `${this.pendingCount}`,
-      cls: "buena-statusbar-num",
+    right.createSpan({
+      text: `${this.pendingCount} Queue`,
+      cls: "buena-statusbar-meta buena-statusbar-queue-text",
     });
-    queueChip.createSpan({ text: "queue", cls: "buena-statusbar-meta" });
-
-    // Right: velocity ticker.
-    const right = el.createDiv({ cls: "buena-statusbar-cluster" });
-    const ticker = right.createSpan({ cls: "buena-statusbar-ticker" });
-    ticker.createSpan({
-      text: `${this.velocityToday}`,
-      cls: "buena-statusbar-num",
-    });
-    ticker.createSpan({ text: "today", cls: "buena-statusbar-meta" });
-    if (this.velocityDelta !== 0) {
-      const sign = this.velocityDelta > 0 ? "▲" : "▼";
-      const cls =
-        this.velocityDelta > 0
-          ? "buena-statusbar-delta buena-statusbar-delta-up"
-          : "buena-statusbar-delta buena-statusbar-delta-down";
-      ticker.createSpan({
-        text: `${sign}${Math.abs(this.velocityDelta)}`,
-        cls,
-      });
-    }
   }
 }

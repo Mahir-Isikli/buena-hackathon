@@ -2470,3 +2470,822 @@ button.buena-changed-pill-recent {
 .buena-scope-row-value-unit { color: rgb(145, 90, 10); }
 .buena-scope-row-value-building { color: rgb(80, 80, 95); }
 .buena-scope-row-value-provider { color: rgb(35, 100, 190); }
+
+/* ============================================================
+   SIDEBAR V19 OVERRIDES
+   Source of truth: ui-mockups/interactive-redesign-v19.html
+   Keep these overrides cohesive and prefer editing this block for sidebar UI.
+   ============================================================ */
+
+.buena-sidebar {
+  background: #ffffff;
+  color: #111827;
+}
+
+.buena-edit-overlay {
+  background: #ffffff;
+  box-shadow: -2px 0 0 #f3f4f6;
+}
+
+.buena-sidebar-content,
+.buena-sidebar-content.buena-content-history-expanded {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.buena-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+  color: #111827;
+}
+
+.buena-sidebar-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.buena-sidebar-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  color: #111827;
+  flex-shrink: 0;
+}
+
+.buena-wordmark-text {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-style: italic;
+  line-height: 1;
+  color: #111827;
+}
+
+.buena-wordmark-dot {
+  font-size: 16px;
+  font-weight: 700;
+  color: #d1d5db;
+  line-height: 1;
+}
+
+.buena-sidebar-property {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.buena-sync-btn {
+  appearance: none;
+  border: none;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.08);
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  padding: 0;
+  background: #f9fafb;
+  color: #9ca3af;
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.1s ease;
+}
+
+.buena-sync-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.buena-sync-btn:active {
+  transform: scale(0.96);
+}
+
+.buena-sync-btn .svg-icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.5;
+}
+
+.buena-tabs {
+  display: flex;
+  gap: 24px;
+  padding: 0 24px;
+  margin: 0;
+  background: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.buena-tab {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 12px;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.buena-tab:hover {
+  color: #4b5563;
+}
+
+.buena-tab-active {
+  color: #111827;
+  border-bottom-color: #111827;
+}
+
+.buena-tab-icon {
+  display: none;
+}
+
+.buena-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.buena-tab-active .buena-tab-count {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.buena-section,
+.buena-section-pending,
+.buena-section-history,
+.buena-section-history-full,
+.buena-section-fullheight {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #ffffff;
+  border-top: 0;
+  box-shadow: none;
+}
+
+.buena-section-header {
+  display: none;
+}
+
+.buena-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  background: rgba(249, 250, 251, 0.55);
+  border-bottom: 1px solid #f9fafb;
+}
+
+.buena-subhead-history {
+  justify-content: flex-start;
+}
+
+.buena-subhead-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.buena-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.buena-filter-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.buena-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  letter-spacing: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.buena-chip:hover {
+  color: #111827;
+}
+
+.buena-chip-active {
+  color: #111827;
+  font-weight: 600;
+}
+
+.buena-chip-active:hover {
+  color: #111827;
+}
+
+.buena-chip-label {
+  max-width: none;
+}
+
+.buena-chip-count,
+.buena-chip-icon {
+  display: none;
+}
+
+.buena-queue-chip.buena-chip-review {
+  color: #111827;
+  font-weight: 600;
+}
+
+.buena-history-chip-rejected {
+  color: #f87171;
+}
+
+.buena-history-chip-rejected.buena-chip-active {
+  color: #dc2626;
+}
+
+.buena-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 32px 24px;
+  color: #9ca3af;
+  font-size: 13px;
+  font-style: normal;
+  text-align: center;
+}
+
+.buena-section-body,
+.buena-history-table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #ffffff;
+  scrollbar-width: none;
+}
+
+.buena-section-body::-webkit-scrollbar,
+.buena-history-table-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+.buena-card {
+  background: #ffffff;
+  border: 0;
+  border-bottom: 1px solid #f3f4f6;
+  border-radius: 0;
+  padding: 24px;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease;
+}
+
+.buena-card:hover {
+  background: rgba(249, 250, 251, 0.55);
+}
+
+.buena-card-top {
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.buena-card-top .buena-card-section,
+.buena-card-section {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.buena-card-scope,
+.buena-card-section-name {
+  color: inherit;
+}
+
+.buena-card-sep {
+  margin: 0 6px;
+  opacity: 0.5;
+}
+
+.buena-confidence-pill {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.buena-card-old {
+  margin-bottom: 4px;
+  color: #9ca3af;
+  font-size: 13px;
+  text-decoration: line-through;
+  text-decoration-color: #d1d5db;
+}
+
+.buena-card-new {
+  margin-bottom: 16px;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.buena-card-source {
+  margin-bottom: 20px;
+  padding-left: 16px;
+  border-left: 2px solid #e5e7eb;
+}
+
+.buena-card-source-quote {
+  color: #6b7280;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.buena-card-source-meta {
+  margin-top: 8px;
+  color: #9ca3af;
+  font-size: 10px;
+  font-family: var(--font-monospace);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.buena-card-source-id {
+  cursor: help;
+}
+
+.buena-card-actions,
+.buena-pending-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.buena-btn {
+  appearance: none;
+  flex: 1 1 0%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, color 0.2s ease;
+}
+
+.buena-btn:hover {
+  background: #f9fafb;
+}
+
+.buena-btn:active {
+  transform: scale(0.96);
+}
+
+.buena-btn-primary {
+  background: #111827;
+  border-color: #111827;
+  color: #ffffff;
+}
+
+.buena-btn-primary:hover {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.buena-goto-wrap {
+  margin-top: -4px;
+  margin-bottom: 14px;
+}
+
+.buena-goto-pill {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: #9ca3af;
+  font-size: 12px;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.buena-goto-pill:not(:disabled):hover {
+  background: transparent;
+  border: 0;
+  color: #111827;
+}
+
+.buena-goto-pill:disabled {
+  opacity: 0.45;
+}
+
+.buena-goto-icon .svg-icon {
+  width: 11px;
+  height: 11px;
+}
+
+.buena-reject-reason {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-left: 0;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.buena-reject-reason-hidden {
+  display: none;
+}
+
+.buena-reject-reason-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.buena-reject-reason-input {
+  width: 100%;
+  min-height: 42px;
+  resize: vertical;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.buena-reject-reason-input:focus {
+  outline: none;
+  border-color: #9ca3af;
+}
+
+.buena-reject-reason-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+
+.buena-reject-reason-row .buena-btn {
+  flex: 0 0 auto;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: #6b7280;
+}
+
+.buena-reject-reason-row .buena-btn:hover {
+  background: transparent;
+  color: #1f2937;
+}
+
+.buena-btn-danger,
+.buena-reject-reason-row .buena-btn-danger {
+  color: #dc2626 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.buena-btn-danger:hover:not(:disabled),
+.buena-reject-reason-row .buena-btn-danger:hover:not(:disabled) {
+  filter: none;
+  color: #b91c1c !important;
+}
+
+.buena-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: #ffffff;
+}
+
+.buena-history-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #ffffff;
+}
+
+.buena-th {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.buena-th-sortable:hover {
+  color: #111827;
+}
+
+.buena-th-sort-icon {
+  margin-left: 6px;
+  color: #6b7280;
+}
+
+.buena-th-sort-icon .svg-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.buena-history-row {
+  transition: background-color 0.2s ease;
+}
+
+.buena-history-row:hover {
+  background: rgba(249, 250, 251, 0.55);
+}
+
+.buena-history-row + .buena-history-row .buena-td {
+  border-top: 1px solid #f3f4f6;
+}
+
+.buena-td {
+  padding: 20px 24px;
+  color: #374151;
+  vertical-align: top;
+}
+
+.buena-td-when {
+  color: #6b7280;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.buena-td-what {
+  max-width: 360px;
+}
+
+.buena-td-what-text {
+  line-height: 1.45;
+  color: #374151;
+}
+
+.buena-strike {
+  color: #9ca3af;
+  text-decoration: line-through;
+  text-decoration-color: #d1d5db;
+}
+
+.buena-td-reason {
+  margin-top: 10px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.buena-unit-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  background: #111827;
+  color: #ffffff;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.buena-decision-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.buena-decision-icon .svg-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.buena-decision-approved {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.buena-decision-rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.buena-decision-auto {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.buena-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.buena-mode-auto {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.buena-row-reverse {
+  appearance: none;
+  opacity: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: #6b7280;
+  box-shadow: none;
+}
+
+.buena-history-row:hover .buena-row-reverse {
+  opacity: 1;
+}
+
+.buena-row-reverse:hover {
+  background: transparent;
+  color: #111827;
+}
+
+.buena-row-reverse .svg-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.buena-statusbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+  background: #ffffff;
+  border-top: 1px solid #f3f4f6;
+  color: #6b7280;
+  font-family: inherit;
+  font-size: 11px;
+  min-height: auto;
+}
+
+.buena-statusbar-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.buena-statusbar-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.buena-statusbar-dot-on {
+  background: #10b981;
+  box-shadow: none;
+}
+
+.buena-statusbar-dot-off {
+  background: #d1d5db;
+  border: 0;
+}
+
+.buena-statusbar-label {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.buena-statusbar-summary {
+  gap: 16px;
+  color: #9ca3af;
+}
+
+.buena-statusbar-streak {
+  color: #f97316;
+  gap: 4px;
+}
+
+.buena-statusbar-emoji {
+  line-height: 1;
+}
+
+.buena-statusbar-num {
+  font-weight: 600;
+}
+
+.buena-statusbar-meta,
+.buena-statusbar-queue-text {
+  color: #9ca3af;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+}
+
+.buena-statusbar-chip,
+.buena-statusbar-chip-warn,
+.buena-statusbar-icon,
+.buena-statusbar-ticker,
+.buena-statusbar-delta {
+  display: none;
+}
+
+.buena-sidebar button.buena-tab,
+.buena-sidebar button.buena-chip,
+.buena-sidebar button.buena-btn,
+.buena-sidebar button.buena-sync-btn,
+.buena-sidebar button.buena-goto-pill,
+.buena-sidebar button.buena-row-reverse {
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: none;
+}
