@@ -46,38 +46,6 @@ tags:
 ## 🟡 Pending patches
 
 ```buena-pending
-id: p-004
-unit: HAUS-12
-section: Active issues
-old: ""
-new: "Heizungswartung Termin bestätigt 2026-05-06 10:00"
-source: emails/2026-04-22/EMAIL-13044.eml
-snippet: "Wir bestätigen den Wartungstermin für die Heizungsanlage HAUS-12 am 06.05.2026 um 10:00 Uhr. Bitte Zugang zum Heizungskeller sicherstellen."
-confidence: 0.96
-actor: gemini-flash
-target_heading: "## ⚠️ Active issues"
-new_block: |
-  > [!todo] [[HAUS-12]] — Heizungswartung 2026-05-06
-  > [[DL-007]] bestätigt Wartungstermin **06.05.2026 um 10:00**. Hausmeister muss Zugang zum Heizungskeller sicherstellen. {changed: 2026-04-25 | actor: gemini-flash | src: emails/2026-04-22/EMAIL-13044.eml}
-```
-
-```buena-pending
-id: p-005
-unit: EH-027
-section: Side agreements
-old: ""
-new: "Untermiete-Antrag eingegangen, Genehmigung ausstehend"
-source: emails/2026-04-19/EMAIL-13039.eml
-snippet: "Hiermit beantrage ich die Genehmigung zur Untervermietung meiner Wohnung EH-027 ab dem 01.06.2026 für 9 Monate an Frau Lena Schulz (Studentin, HU Berlin)."
-confidence: 0.89
-actor: gemini-flash
-target_heading: "## 📝 Side agreements"
-new_block: |
-  > [!tip] [[EH-027]] — Untermiete-Antrag offen
-  > [[MIE-009]] beantragt Untervermietung ab 2026-06-01 für 9 Monate. Genehmigung durch Verwalter ausstehend. {changed: 2026-04-25 | actor: gemini-flash | src: emails/2026-04-19/EMAIL-13039.eml}
-```
-
-```buena-pending
 id: p-007
 unit: EH-037
 section: Per-unit notes
@@ -107,6 +75,9 @@ new_block: |
 ---
 
 ## 📝 Side agreements
+
+> [!tip] [[EH-027]] — Untermiete-Antrag offen
+> [[MIE-009]] beantragt Untervermietung ab 2026-06-01 für 9 Monate. Genehmigung durch Verwalter ausstehend. {changed: 2026-04-25 | actor: gemini-flash | src: emails/2026-04-19/EMAIL-13039.eml}
 
 > [!tip] [[EH-008]] — Untermiete genehmigt
 > Untermietvertrag 2025-11 für 6 Monate. Vertrag in `attachments/`.

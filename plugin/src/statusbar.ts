@@ -2,35 +2,30 @@ import { setIcon } from "obsidian";
 import type BuenaPlugin from "../main";
 
 /**
- * Custom status bar that lives at the bottom of the Buena sidebar
- * (NOT in Obsidian's global status bar). Sidebar provides a host
- * element via attach() on every render, this class fills it in.
+ * Custom status bar pinned to the bottom of the Buena sidebar.
+ * Shows three signals tuned for property-manager flow:
+ *   - Streak: consecutive days where the PM processed at least one patch
+ *   - Queue: pending patches waiting on the user
+ *   - Velocity: today's approvals + delta vs yesterday
  */
 export class BuenaStatusBar {
   private plugin: BuenaPlugin;
   private host: HTMLElement | null = null;
   private pendingCount = 0;
-  private reviewCount = 0;
+  private streakDays = 0;
+  private velocityToday = 0;
+  private velocityDelta = 0;
   private connected = true;
-  private lastPatchAt: number | null = null;
-  private tickInterval: number | null = null;
 
   constructor(plugin: BuenaPlugin) {
     this.plugin = plugin;
   }
 
   mount() {
-    // Tick every 30s to update "last patch Xm ago".
-    if (this.tickInterval === null) {
-      this.tickInterval = window.setInterval(() => this.render(), 30_000);
-    }
+    /* nothing periodic for now, render is push-driven */
   }
 
   unmount() {
-    if (this.tickInterval !== null) {
-      window.clearInterval(this.tickInterval);
-      this.tickInterval = null;
-    }
     this.host = null;
   }
 
@@ -47,24 +42,28 @@ export class BuenaStatusBar {
     this.render();
   }
 
-  bumpPendingCount(delta: number) {
-    this.pendingCount = Math.max(0, this.pendingCount + delta);
-    this.render();
-  }
-
   setPendingCount(count: number) {
     this.pendingCount = Math.max(0, count);
     this.render();
   }
 
-  setReviewCount(count: number) {
-    this.reviewCount = Math.max(0, count);
+  setStreak(days: number) {
+    this.streakDays = Math.max(0, days);
     this.render();
   }
 
-  markPatchReceived() {
-    this.lastPatchAt = Date.now();
+  setVelocity(v: { today: number; delta: number }) {
+    this.velocityToday = Math.max(0, v.today);
+    this.velocityDelta = v.delta;
     this.render();
+  }
+
+  // Kept as no-ops so the rest of the codebase keeps compiling without
+  // blowing up if anything still calls these. Safe to remove later.
+  setReviewCount(_count: number) {}
+  markPatchReceived() {}
+  bumpPendingCount(delta: number) {
+    this.setPendingCount(this.pendingCount + delta);
   }
 
   private render() {
@@ -73,7 +72,7 @@ export class BuenaStatusBar {
     el.empty();
     el.addClass("buena-statusbar");
 
-    // Left cluster: connection state.
+    // Left: connection state (dot + label, no pulse).
     const left = el.createDiv({ cls: "buena-statusbar-cluster" });
     const dot = left.createSpan({ cls: "buena-statusbar-dot" });
     dot.toggleClass("buena-statusbar-dot-on", this.connected);
@@ -83,43 +82,43 @@ export class BuenaStatusBar {
       cls: "buena-statusbar-label",
     });
 
-    // Center cluster: counts.
+    // Center: streak + queue.
     const center = el.createDiv({ cls: "buena-statusbar-cluster" });
 
-    const pendingChip = center.createSpan({ cls: "buena-statusbar-chip" });
-    setIcon(pendingChip.createSpan({ cls: "buena-statusbar-icon" }), "inbox");
-    pendingChip.createSpan({ text: `${this.pendingCount}`, cls: "buena-statusbar-num" });
-
-    if (this.reviewCount > 0) {
-      const reviewChip = center.createSpan({
-        cls: "buena-statusbar-chip buena-statusbar-chip-warn",
-      });
-      setIcon(
-        reviewChip.createSpan({ cls: "buena-statusbar-icon" }),
-        "alert-triangle"
-      );
-      reviewChip.createSpan({
-        text: `${this.reviewCount}`,
+    if (this.streakDays > 0) {
+      const streak = center.createSpan({ cls: "buena-statusbar-streak" });
+      setIcon(streak.createSpan({ cls: "buena-statusbar-icon" }), "flame");
+      streak.createSpan({
+        text: `${this.streakDays}d`,
         cls: "buena-statusbar-num",
       });
     }
 
-    // Right cluster: last patch.
-    const right = el.createDiv({ cls: "buena-statusbar-cluster" });
-    setIcon(right.createSpan({ cls: "buena-statusbar-icon" }), "clock");
-    right.createSpan({
-      text: this.lastPatchTimeLabel(),
-      cls: "buena-statusbar-meta",
+    const queueChip = center.createSpan({ cls: "buena-statusbar-chip" });
+    queueChip.createSpan({
+      text: `${this.pendingCount}`,
+      cls: "buena-statusbar-num",
     });
-  }
+    queueChip.createSpan({ text: "queue", cls: "buena-statusbar-meta" });
 
-  private lastPatchTimeLabel(): string {
-    if (!this.lastPatchAt) return "no patches yet";
-    const mins = Math.floor((Date.now() - this.lastPatchAt) / 60_000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
+    // Right: velocity ticker.
+    const right = el.createDiv({ cls: "buena-statusbar-cluster" });
+    const ticker = right.createSpan({ cls: "buena-statusbar-ticker" });
+    ticker.createSpan({
+      text: `${this.velocityToday}`,
+      cls: "buena-statusbar-num",
+    });
+    ticker.createSpan({ text: "today", cls: "buena-statusbar-meta" });
+    if (this.velocityDelta !== 0) {
+      const sign = this.velocityDelta > 0 ? "▲" : "▼";
+      const cls =
+        this.velocityDelta > 0
+          ? "buena-statusbar-delta buena-statusbar-delta-up"
+          : "buena-statusbar-delta buena-statusbar-delta-down";
+      ticker.createSpan({
+        text: `${sign}${Math.abs(this.velocityDelta)}`,
+        cls,
+      });
+    }
   }
 }

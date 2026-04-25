@@ -103,9 +103,8 @@ export class BuenaSidebarView extends ItemView {
       ? await loadHistory(this.plugin, this.currentFile.path)
       : [];
     this.plugin.statusBar.setPendingCount(this.pending.length);
-    this.plugin.statusBar.setReviewCount(
-      this.pending.filter((p) => p.confidence > 0 && p.confidence < 0.85).length
-    );
+    this.plugin.statusBar.setStreak(computeStreak(this.history));
+    this.plugin.statusBar.setVelocity(computeVelocity(this.history));
     this.render();
   }
 
@@ -475,7 +474,7 @@ export class BuenaSidebarView extends ItemView {
         actor: p.actor,
       });
       await revealLineInActiveView(this.app, this.currentFile.path, insertedAt);
-      // refresh() will be triggered by the vault.modify event.
+      await this.refresh();
     } catch (err) {
       console.error("[Buena] approve failed", err);
       new Notice(`[Buena] approve failed: ${err}`);
@@ -502,6 +501,7 @@ export class BuenaSidebarView extends ItemView {
         actor: p.actor,
       });
       new Notice(`[Buena] rejected ${p.id}`);
+      await this.refresh();
     } catch (err) {
       console.error("[Buena] reject failed", err);
       new Notice(`[Buena] reject failed: ${err}`);
@@ -538,6 +538,55 @@ function chipIcon(value: string): string | null {
   if (value === "__review__") return "alert-triangle";
   if (value.startsWith("unit:")) return "home";
   return null;
+}
+
+/**
+ * Streak = consecutive days (counting back from today) where at least one
+ * approve/reject decision was logged. Stops at the first gap day.
+ */
+function computeStreak(history: HistoryEntry[]): number {
+  if (history.length === 0) return 0;
+  const days = new Set<string>();
+  for (const h of history) {
+    const t = new Date(h.timestamp);
+    if (!Number.isFinite(t.getTime())) continue;
+    days.add(dayKey(t));
+  }
+  let streak = 0;
+  const cursor = new Date();
+  // If today has no activity yet, the streak still counts yesterday onward.
+  if (!days.has(dayKey(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  while (days.has(dayKey(cursor))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+function computeVelocity(history: HistoryEntry[]): {
+  today: number;
+  delta: number;
+} {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const todayKey = dayKey(today);
+  const yesterdayKey = dayKey(yesterday);
+  let t = 0;
+  let y = 0;
+  for (const h of history) {
+    if (h.decision !== "approved") continue;
+    const k = dayKey(new Date(h.timestamp));
+    if (k === todayKey) t += 1;
+    else if (k === yesterdayKey) y += 1;
+  }
+  return { today: t, delta: t - y };
+}
+
+function dayKey(d: Date): string {
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
 function uniqueUnits(pending: PendingPatch[]): string[] {
