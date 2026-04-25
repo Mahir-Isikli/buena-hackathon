@@ -9,6 +9,7 @@ import {
 } from "obsidian";
 import type BuenaPlugin from "../main";
 import { attachHoverPopover, HoverField } from "./hover";
+import { openProvenanceSource } from "./provenance-open";
 import {
   addHistoryEntry,
   HistoryEntry,
@@ -16,12 +17,10 @@ import {
   removeHistoryEntry,
 } from "./history";
 import {
-  applyPatchToVault,
   findHeadingLine,
   findPendingBlocks,
   revealLineInActiveView,
   reverseHistoryEntry,
-  stripPendingBlockById,
 } from "./vault-patch";
 import {
   fetchHistory,
@@ -29,7 +28,8 @@ import {
   postDecision,
   RemotePendingPatch,
 } from "./api";
-import { pullPendingOnce, resolvePropertyFile } from "./sync";
+import { pullPendingOnce, resolvePropertyFile, pullPropertySnapshotOnce } from "./sync";
+import { getErpStore } from "./erp";
 
 export const BUENA_SIDEBAR_VIEW_TYPE = "buena-sidebar";
 
@@ -614,22 +614,27 @@ export class BuenaSidebarView extends ItemView {
     const topIndicators = top.createDiv({ cls: "buena-card-indicators" });
 
     if (p.source) {
-      const srcName = shortSource(p.source);
-      const sourcePill = topIndicators.createSpan({
-        text: srcName,
+      const sourcePill = topIndicators.createEl("button", {
+        text: sourceChipLabel(p.source),
         cls: "buena-source-pill",
       });
+      sourcePill.title = sourceSummary(p.source);
       attachHoverPopover(sourcePill, () => {
         const fields: HoverField[] = [
-          { label: "Source", value: srcName, mono: true },
-          { label: "Confidence", value: `${(p.confidence * 100).toFixed(0)}%` },
-          { label: "Actor", value: p.actor },
+          { label: "Source", value: sourceSummary(p.source), mono: true },
         ];
-        if (p.sourceSnippet) {
-          fields.push({ label: "Snippet", value: p.sourceSnippet });
+        if (typeof p.confidence === "number") {
+          fields.push({ label: "Confidence", value: `${(p.confidence * 100).toFixed(0)}%` });
         }
+        fields.push({ label: "Actor", value: p.actor });
+        if (p.sourceSnippet) fields.push({ label: "Snippet", value: p.sourceSnippet });
         return fields;
       });
+      sourcePill.onclick = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        void openProvenanceSource(this.plugin, p.source);
+      };
     }
 
     if (p.confidence > 0) {
@@ -662,11 +667,16 @@ export class BuenaSidebarView extends ItemView {
       const heading = p.target_heading;
       findHeadingLine(this.app, filePath, heading)
         .then((lineIdx) => {
+          pill.disabled = false;
           if (lineIdx === null) {
-            goToWrap.remove();
+            pill.title = `Open property file, ${heading} will be created on approval`;
+            pill.onclick = () => {
+              revealLineInActiveView(this.app, filePath, 0).catch((err) =>
+                console.warn("[Buena] open-property failed", err)
+              );
+            };
             return;
           }
-          pill.disabled = false;
           pill.title = `Jump to ${heading}`;
           pill.onclick = () => {
             revealLineInActiveView(this.app, filePath, lineIdx).catch((err) =>
@@ -674,7 +684,14 @@ export class BuenaSidebarView extends ItemView {
             );
           };
         })
-        .catch(() => goToWrap.remove());
+        .catch(() => {
+          pill.disabled = false;
+          pill.onclick = () => {
+            revealLineInActiveView(this.app, filePath, 0).catch((err) =>
+              console.warn("[Buena] open-property failed", err)
+            );
+          };
+        });
     }
 
     const actions = card.createDiv({ cls: "buena-card-actions" });
@@ -762,30 +779,6 @@ export class BuenaSidebarView extends ItemView {
     }
     try {
       const approvedAt = new Date().toISOString();
-      const annotatedBlock = annotateApprovedBlock(
-        p.new_block,
-        approvedAt,
-        p.actor,
-        p.source,
-        p.confidence
-      );
-      const insertedAt = await applyPatchToVault(
-        this.app,
-        this.currentFile.path,
-        {
-          id: p.id,
-          target_heading: p.target_heading,
-          new_block: annotatedBlock,
-        }
-      );
-      if (insertedAt === null) {
-        new Notice(
-          `[Buena] approve failed: heading "${p.target_heading}" not found`
-        );
-        return;
-      }
-      new Notice(`[Buena] approved ${p.id}, written to vault`);
-      this.plugin.statusBar.markPatchReceived();
       await this.notifyWorker(p.id, "approved", p.actor);
       await addHistoryEntry(this.plugin, this.currentFile.path, {
         id: p.id,
@@ -799,13 +792,23 @@ export class BuenaSidebarView extends ItemView {
         actor: p.actor,
         originalBlock: {
           target_heading: p.target_heading,
-          new_block: annotatedBlock,
+          new_block: p.new_block,
           confidence: p.confidence,
           snippet: p.sourceSnippet,
         },
       });
-      await revealLineInActiveView(this.app, this.currentFile.path, insertedAt);
+      await pullPropertySnapshotOnce(this.plugin);
+      this.plugin.statusBar.markPatchReceived();
+      new Notice(`[Buena] approved ${p.id}`);
+      const lineIdx = await findHeadingLine(
+        this.app,
+        this.currentFile.path,
+        p.target_heading
+      );
       await this.refresh();
+      if (lineIdx !== null) {
+        await revealLineInActiveView(this.app, this.currentFile.path, lineIdx);
+      }
     } catch (err) {
       console.error("[Buena] approve failed", err);
       new Notice(`[Buena] approve failed: ${err}`);
@@ -815,11 +818,7 @@ export class BuenaSidebarView extends ItemView {
   private async handleRejectWithReason(p: PendingPatch, reason: string) {
     if (!this.currentFile) return;
     try {
-      const text = await this.app.vault.read(this.currentFile);
-      const stripped = stripPendingBlockById(text, p.id);
-      if (stripped !== text) {
-        await this.app.vault.modify(this.currentFile, stripped);
-      }
+      await this.notifyWorker(p.id, "rejected", p.actor, reason);
       await addHistoryEntry(this.plugin, this.currentFile.path, {
         id: p.id,
         section: p.section,
@@ -839,7 +838,6 @@ export class BuenaSidebarView extends ItemView {
         },
       });
       new Notice(`[Buena] rejected ${p.id}`);
-      await this.notifyWorker(p.id, "rejected", p.actor, reason);
       await this.refresh();
     } catch (err) {
       console.error("[Buena] reject failed", err);
@@ -889,9 +887,23 @@ export class BuenaSidebarView extends ItemView {
   }
 }
 
-function shortSource(s: string): string {
-  const parts = s.split("/");
-  return parts[parts.length - 1];
+function sourceChipLabel(source: string): string {
+  const summary = sourceSummary(source);
+  const lower = summary.toLowerCase();
+  if (lower.endsWith(".eml")) return "Email";
+  if (lower.endsWith(".pdf")) return "PDF";
+  if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".webp")) {
+    return "Image";
+  }
+  if (lower.endsWith(".docx")) return "DOCX";
+  if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) return "Sheet";
+  return summary.length > 18 ? `${summary.slice(0, 18)}…` : summary;
+}
+
+function sourceSummary(source: string): string {
+  return source
+    .replace(/^r2:\/\/buena-raw\//, "")
+    .trim();
 }
 
 function timeAgo(iso: string): string {
@@ -982,27 +994,30 @@ function uniqueUnits(pending: PendingPatch[]): string[] {
 function derivePendingScope(
   p: Pick<PendingPatch, "unit" | "newValue" | "sourceSnippet" | "new_block">
 ): { kind: "unit" | "building" | "provider"; label: string } | null {
-  if (p.unit) return { kind: "unit", label: p.unit };
-  const hay = [p.newValue, p.sourceSnippet, p.new_block].filter(Boolean).join(" \n ");
-  const building = /\b(HAUS-\d+)\b/i.exec(hay);
-  if (building) return { kind: "building", label: building[1].toUpperCase() };
-  const provider = /\b(DL-\d+)\b/i.exec(hay);
-  if (provider) return { kind: "provider", label: provider[1].toUpperCase() };
-  return null;
-}
+  const store = getErpStore();
 
-function annotateApprovedBlock(
-  block: string,
-  approvedAt: string,
-  actor: string,
-  source?: string,
-  confidence?: number
-): string {
-  const prov = source
-    ? ` {prov: ${source}${typeof confidence === "number" ? ` | conf: ${confidence}` : ""} | actor: ${actor}}`
-    : "";
-  const changed = ` {changed: ${approvedAt} | actor: ${actor}${source ? ` | src: ${source}` : ""}}`;
-  return `${block}${prov}${changed}`;
+  if (p.unit) {
+    const r = store?.resolve(p.unit);
+    return { kind: "unit", label: r ? r.label : p.unit };
+  }
+
+  const hay = [p.newValue, p.sourceSnippet, p.new_block].filter(Boolean).join(" \n ");
+
+  const building = /\b(HAUS-\d+)\b/i.exec(hay);
+  if (building) {
+    const id = building[1].toUpperCase();
+    const r = store?.resolve(id);
+    return { kind: "building", label: r ? r.label : id };
+  }
+
+  const provider = /\b(DL-\d+)\b/i.exec(hay);
+  if (provider) {
+    const id = provider[1].toUpperCase();
+    const r = store?.resolve(id);
+    return { kind: "provider", label: r ? r.label : id };
+  }
+
+  return null;
 }
 
 function mergeHistory(

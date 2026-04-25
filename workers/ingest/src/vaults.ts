@@ -213,11 +213,17 @@ export async function applyApprovedPatchToPropertyMd(
 }
 
 function annotateApprovedBlock(patch: PendingPatch, approvedAt: string): string {
-  const prov = patch.source
-    ? ` {prov: ${patch.source}${typeof patch.confidence === "number" ? ` | conf: ${patch.confidence}` : ""} | actor: ${patch.actor}}`
+  const sourceRef = normalizeSourceRef(patch.source);
+  const prov = sourceRef
+    ? ` {prov: ${sourceRef}${typeof patch.confidence === "number" ? ` | conf: ${patch.confidence}` : ""} | actor: ${patch.actor}}`
     : "";
-  const changed = ` {changed: ${approvedAt} | actor: ${patch.actor}${patch.source ? ` | src: ${patch.source}` : ""}}`;
+  const changed = ` {changed: ${approvedAt} | actor: ${patch.actor}${sourceRef ? ` | src: ${sourceRef}` : ""}}`;
   return `${patch.new_block}${prov}${changed}`;
+}
+
+function normalizeSourceRef(source?: string): string | undefined {
+  if (!source) return undefined;
+  return source.replace(/^r2:\/\/buena-raw\//, "").trim();
 }
 
 export async function readHistory(

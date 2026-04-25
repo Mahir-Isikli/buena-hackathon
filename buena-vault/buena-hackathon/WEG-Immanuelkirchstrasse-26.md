@@ -22,10 +22,10 @@ sanierung: 2008
 > [!note] ERP remains the source of truth for master data. This file keeps the current property briefing, exceptions, and lightweight reference tables.
 
 ## Open issues
-- Der Reparaturtermin für den defekten Aufzug in HAUS-12 wurde vom 28.04.2026 auf den 30.04.2026 verschoben. {prov: r2://buena-raw/emails/CAJ9sWTun9k+NczvRPZvN9RkLhUN9h_8z1UCdozkPszvhZfq-og@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T22:41:04.710Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTun9k+NczvRPZvN9RkLhUN9h_8z1UCdozkPszvhZfq-og@mail.gmail.com.eml}
+- Der Reparaturtermin für den defekten Aufzug in HAUS-12 wurde vom 28.04.2026 auf den 30.04.2026 verschoben. {prov: emails/CAJ9sWTun9k+NczvRPZvN9RkLhUN9h_8z1UCdozkPszvhZfq-og@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T22:41:04.710Z | actor: gemini-3-pro | src: emails/CAJ9sWTun9k+NczvRPZvN9RkLhUN9h_8z1UCdozkPszvhZfq-og@mail.gmail.com.eml}
 
-- EH-029: Heißwasser-Defekt besteht weiterhin, der Mieter mindert seit dem 15.01.2026 die Miete um 10 Prozent. {prov: r2://buena-raw/emails/CAJ9sWTtUYhTymsJ_kK70nm5gAv9O1hgdoNy8EU66UgVoMuwfzQ@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T20:02:04.911Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTtUYhTymsJ_kK70nm5gAv9O1hgdoNy8EU66UgVoMuwfzQ@mail.gmail.com.eml}
-- HAUS-12: Aufzug weiterhin defekt, Reparaturtermin ist für den 28.04.2026 angesetzt. {prov: r2://buena-raw/emails/CAJ9sWTsTxdGW265k2eyT+rkxLAmpfvNqw2Xt=rmPQVFy0dxU0A@mail.gmail.com.eml | conf: 0.95 | actor: gemini-3-pro} {changed: 2026-04-25T19:57:45.199Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTsTxdGW265k2eyT+rkxLAmpfvNqw2Xt=rmPQVFy0dxU0A@mail.gmail.com.eml}
+- EH-029: Heißwasser-Defekt besteht weiterhin, der Mieter mindert seit dem 15.01.2026 die Miete um 10 Prozent. {prov: emails/CAJ9sWTtUYhTymsJ_kK70nm5gAv9O1hgdoNy8EU66UgVoMuwfzQ@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T20:02:04.911Z | actor: gemini-3-pro | src: emails/CAJ9sWTtUYhTymsJ_kK70nm5gAv9O1hgdoNy8EU66UgVoMuwfzQ@mail.gmail.com.eml}
+- HAUS-12: Aufzug weiterhin defekt, Reparaturtermin ist für den 28.04.2026 angesetzt. {prov: emails/CAJ9sWTsTxdGW265k2eyT+rkxLAmpfvNqw2Xt=rmPQVFy0dxU0A@mail.gmail.com.eml | conf: 0.95 | actor: gemini-3-pro} {changed: 2026-04-25T19:57:45.199Z | actor: gemini-3-pro | src: emails/CAJ9sWTsTxdGW265k2eyT+rkxLAmpfvNqw2Xt=rmPQVFy0dxU0A@mail.gmail.com.eml}
 
 ## Side agreements
 > [!info] No tracked side agreements yet.
@@ -189,4 +189,4 @@ _Reference snapshot for routing. Tribal knowledge should stay in the sections ab
 
 ## Service providers
 
-- Die monatlichen Kosten für die Aufzugswartung durch Dienstleister DL-002 steigen ab dem 01.05.2026 von 185 EUR auf 210 EUR. {prov: r2://buena-raw/emails/CAJ9sWTss3c_fSr7FZmh-6TsVB0Ayw+Sv2kHp47=3iKDNdGHy9g@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T22:36:14.136Z | actor: gemini-3-pro | src: r2://buena-raw/emails/CAJ9sWTss3c_fSr7FZmh-6TsVB0Ayw+Sv2kHp47=3iKDNdGHy9g@mail.gmail.com.eml}
+- Die monatlichen Kosten für die Aufzugswartung durch Dienstleister DL-002 steigen ab dem 01.05.2026 von 185 EUR auf 210 EUR. {prov: emails/CAJ9sWTss3c_fSr7FZmh-6TsVB0Ayw+Sv2kHp47=3iKDNdGHy9g@mail.gmail.com.eml | conf: 0.98 | actor: gemini-3-pro} {changed: 2026-04-25T22:36:14.136Z | actor: gemini-3-pro | src: emails/CAJ9sWTss3c_fSr7FZmh-6TsVB0Ayw+Sv2kHp47=3iKDNdGHy9g@mail.gmail.com.eml}

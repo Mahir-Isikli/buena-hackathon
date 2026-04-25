@@ -72,7 +72,9 @@ export async function pullPropertySnapshotOnce(
     return null;
   });
   if (typeof remoteProperty === "string") {
-    const next = ensureTrailingNewline(remoteProperty.trimEnd());
+    const next = ensureTrailingNewline(
+      normalizeInlineSourceRefs(remoteProperty.trimEnd())
+    );
     const local = await plugin.app.vault.read(file);
     if (next !== local) {
       await plugin.app.vault.modify(file, next);
@@ -133,6 +135,12 @@ function stripAllPendingBlocks(text: string): { text: string; removed: number } 
 
 function ensureTrailingNewline(s: string): string {
   return s.endsWith("\n") ? s : `${s}\n`;
+}
+
+function normalizeInlineSourceRefs(text: string): string {
+  return text
+    .replace(/\{prov:\s*r2:\/\/buena-raw\//g, "{prov: ")
+    .replace(/\|\s*src:\s*r2:\/\/buena-raw\//g, "| src: ");
 }
 
 function siblingStatePath(propertyPath: string): string {
