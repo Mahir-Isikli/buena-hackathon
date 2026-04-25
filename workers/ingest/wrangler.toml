@@ -11,6 +11,15 @@ workers_dev = true
 binding = "RAW"
 bucket_name = "buena-raw"
 
+[[r2_buckets]]
+binding = "VAULTS"
+bucket_name = "buena-vaults"
+
 [[queues.producers]]
 binding = "EXTRACT_QUEUE"
 queue = "buena-extract"
+
+[[queues.consumers]]
+queue = "buena-extract"
+max_batch_size = 10
+max_batch_timeout = 5

@@ -2,168 +2,218 @@
 property_id: LIE-001
 name: WEG Immanuelkirchstraße 26
 address: Immanuelkirchstraße 26, 10405 Berlin
-verwalter_id: HUB-001
-units: 52
-owners: 35
-weg_iban: DE02 1001 0010 0123 4567 89
-ruecklage_iban: DE12 1203 0000 0098 7654 32
-beirat:
-  - EIG-001
-  - EIG-003
-  - EIG-004
+verwalter: Huber & Partner Immobilienverwaltung GmbH
 last_updated: 2026-04-25
-tags:
-  - property
-  - WEG
-  - berlin
+baujahr: 1928
+sanierung: 2008
 ---
 
-# 🏠 [[LIE-001]]
+# WEG Immanuelkirchstraße 26
 
-> [!info] Lookup-resolved data
-> All structured data (owners, tenants, units, IBANs, contacts) is resolved at render time via the ERP. Frontmatter and links below are pointers, not duplicates.
->
-> 🔍 [[LIE-001|Open in ERP]] · 📋 [[LIE-001/units|All units (52)]] · 👥 [[LIE-001/owners|All owners (35)]] · 🔧 [[LIE-001/dienstleister|All service providers (16)]]
+## 🏛️ Identity
+- **Address**: Immanuelkirchstraße 26, 10405 Berlin (Prenzlauer Berg)
+- **Baujahr**: 1928 (saniert 2008)
+- **Verwalter**: [[Huber & Partner Immobilienverwaltung GmbH]] ^[src: stammdaten/stammdaten.json · actor: bootstrap · conf: 1.0]
+  - Friedrichstrasse 112, 10117 Berlin
+  - info@huber-partner-verwaltung.de · +49 30 12345-0
+- **Buildings**: `@HAUS-12` (18 units), `@HAUS-14` (20 units), `@HAUS-16` (14 units)
+- **Total units**: 52
 
----
+## 🏢 Buildings
+- `@HAUS-12` Hausnr. 12 · 18 units · 5 floors · ✓ elevator · Baujahr 1928
+- `@HAUS-14` Hausnr. 14 · 20 units · 5 floors · ✓ elevator · Baujahr 1928
+- `@HAUS-16` Hausnr. 16 · 14 units · 4 floors · no elevator · Baujahr 1926
 
-## ⚠️ Active issues
+## 🏦 Bank
+```buena-erp
+layout: bank
+id: LIE-001
+```
+^[src: stammdaten/stammdaten.json · actor: bootstrap · conf: 1.0]
 
-> [!todo] [[EH-014]] — broken hot water
-> Tenant in [[EH-014]] reports **broken hot water**, claims **rent-withholding 10 %** seit 2026-01-15.
-> *Source: `emails/2026-01-15/EMAIL-12891.eml` · confidence 0.83* {changed: 2026-04-25 | actor: gemini-flash | src: emails/2026-01-15/EMAIL-12891.eml}
+## 👥 Owners
+- **Total**: 35 eigentümer
+- **Selbstnutzer**: 15
+- **Beirat**: 3
 
-> [!todo] [[EH-049]] — Kaution-Rückzahlung offen
-> Ehemalige Mieterin [[MIE-003]] ist vor 7 Wochen ausgezogen. Kaution **5.163 €** noch nicht ausgezahlt. Anfrage am 01.01.2026.
-> *Source: `emails/2026-01/EMAIL-06548.eml` · confidence 0.95*
+### Beirat
+```buena-erp
+layout: grid
+ids:
+  - EIG-004
+  - EIG-010
+  - EIG-020
+```
+^[src: erp:eigentuemer · actor: erp · conf: 1.0]
 
-> [!todo] [[LIE-001/weg-konto]] — Wasser-Jahresabrechnung 2025
-> Verbrauch **76.809 m³**, Saldo **5.784 €** ([[DL-010]], 01.01.2026). Auf WEG-Konto buchen.
-> *Source: `emails/2026-01/EMAIL-06549.eml` · confidence 0.92*
-
----
-
-## 🟡 Pending patches
-
-```buena-pending
-id: p-007
-unit: EH-037
-section: Per-unit notes
-old: ""
-new: "Eigentümerwechsel EIG-005 → EIG-012 zum 2026-06-01"
-source: briefe/2026-04-20/BRIEF-00808.pdf
-snippet: "Mit notarieller Urkunde vom 18.04.2026 (UR-Nr. 412/2026) wechselt das Eigentum an EH-037 von Hr. Weber (EIG-005) auf Fr. Mahmoud (EIG-012) zum 01.06.2026."
-confidence: 0.92
-actor: gemini-2.5-pro
-target_heading: "## 🏘️ Per-unit notes"
-new_block: |
-  > [!note]- 🏠 [[EH-037]] · Eigentümerwechsel
-  > [[EIG-005]] → [[EIG-012]] zum **2026-06-01** (Notar UR-Nr. 412/2026). Beirat-Status [[EIG-005]] prüfen. {changed: 2026-04-25 | actor: gemini-2.5-pro | src: briefe/2026-04-20/BRIEF-00808.pdf}
+## 🔧 Service providers
+```buena-erp
+ids:
+  - DL-001
+  - DL-002
+  - DL-003
+  - DL-004
+  - DL-005
+  - DL-006
+  - DL-007
+  - DL-008
+  - DL-009
+  - DL-010
+  - DL-011
+  - DL-012
+  - DL-013
+  - DL-014
+  - DL-015
+  - DL-016
 ```
 
----
+## 🐛 Active issues
+> [!info] No open issues yet — patches from email will land here.
 
 ## 💸 Active Mahnungen
+> [!info] No active dunning notices.
 
-> [!bug] [[EH-021]] — 3. Mahnung, Räumungsklage
-> [[MIE-002]] Rückstand **8.420 €**. Räumungsklage durch Anwalt eingeleitet 2026-04-18. {changed: 2026-04-25 | actor: gemini-2.5-pro | src: briefe/2026-04-18/BRIEF-00802.pdf}
+## 🤝 Side agreements
+> [!info] No tracked side agreements yet.
 
-> [!bug] [[EH-021]] — 2. Mahnung
-> [[MIE-002]] im Rückstand seit Q2 2024. Vergleichsangebot offen.
-> *Source: `briefe/2024-06/20240626_mahnung_LTR-0038.pdf`*
+## 📋 Assembly decisions
+> [!info] No ETV protocols ingested yet.
 
----
+## 🪑 Beirat notes
+> [!info] No beirat notes yet.
 
-## 📝 Side agreements
+## 🚪 Units
+### `@HAUS-12`
+```buena-erp
+layout: units
+ids:
+  - EH-018
+  - EH-001
+  - EH-002
+  - EH-003
+  - EH-004
+  - EH-005
+  - EH-006
+  - EH-007
+  - EH-008
+  - EH-009
+  - EH-010
+  - EH-011
+  - EH-012
+  - EH-013
+  - EH-014
+  - EH-015
+  - EH-016
+  - EH-017
+```
 
-> [!tip] [[EH-027]] — Untermiete-Antrag offen
-> [[MIE-009]] beantragt Untervermietung ab 2026-06-01 für 9 Monate. Genehmigung durch Verwalter ausstehend. {changed: 2026-04-25 | actor: gemini-flash | src: emails/2026-04-19/EMAIL-13039.eml}
+### `@HAUS-14`
+```buena-erp
+layout: units
+ids:
+  - EH-037
+  - EH-038
+  - EH-019
+  - EH-020
+  - EH-021
+  - EH-022
+  - EH-023
+  - EH-024
+  - EH-025
+  - EH-026
+  - EH-027
+  - EH-028
+  - EH-029
+  - EH-030
+  - EH-031
+  - EH-032
+  - EH-033
+  - EH-034
+  - EH-035
+  - EH-036
+```
 
-> [!tip] [[EH-008]] — Untermiete genehmigt
-> Untermietvertrag 2025-11 für 6 Monate. Vertrag in `attachments/`.
-> *Source: `briefe/2025-11/BRIEF-00412.pdf`*
-
----
-
-## 💰 Payment status
-
-- **WEG-Konto balance**: ~76.220 € (as of 2024-01-02)
-  *Source: `bank/kontoauszug_2024_2025.csv` · confidence 0.9*
-- **Last full rent collection**: 2024-01
-- **Hausgeld arrears**: none known as of last bank export
-- **Rücklage**: DE12 1203 0000 0098 7654 32 (balance not in current export)
-
----
-
-## 📅 Events
-
-> [!info] [[ETV-2024-04]] — Eigentümerversammlung (past)
-> 33 Einladungen versandt 2024-04-09 bis 2024-04-19. Meeting date to be extracted from PDF.
-> *Source: `briefe/2024-04/20240409_etv_einladung_LTR-0001.pdf` · confidence 0.9*
-
-> [!info] [[ETV-2024-06-Protokoll]] — Eigentümerversammlung (past, 2024-06-01)
-> Protokoll vorhanden. Beschlüsse siehe Assembly decisions.
-> *Source: `briefe/2024-06/20240601_etv_protokoll_LTR-0037.pdf` · confidence 0.95*
-
----
-
-## 📜 Assembly decisions (ETV)
-
-- ETV 2024-06 Protokoll → [[ETV-2024-06-Protokoll]]
-  - Beschluss: Aufzug HAUS-12 Großwartung 2025
-  - Beschluss: Rücklagen-Erhöhung 0,30 €/m²
-  - *Source: `briefe/2024-06/20240601_etv_protokoll_LTR-0037.pdf`*
-- ETV 2024-04 Einladungen → 33 versendet, [[ETV-2024-04]]
-
----
-
-## 🪪 Beirat notes
-
-> [!quote] [[EIG-001]]
-> Pushes for faster maintenance turnaround. Prefers email contact.
-
-> [!quote] [[EIG-003]]
-> Concerned about Tiefgarage Sicherheit. Mentioned at last ETV.
-
----
-
-## 🏘️ Per-unit notes
-
-> Only units with tribal-knowledge content render here. Empty units are looked up live via the ERP.
-
-> [!note]- 🏠 [[EH-014]] · pending hot-water issue
-> See "Pending patches" above. Awaiting approval.
-
-> [!note]- 🏠 [[EH-049]] · Kaution offen
-> See "Active issues" above. [[MIE-003]] ausgezogen 2025-11.
-
-> [!note]- 🏠 [[EH-021]] · Mahnung läuft
-> See "Active Mahnungen". [[MIE-002]], Vergleichsangebot offen.
-
-> [!note]- 🏠 [[EH-008]] · Untermiete OK
-> See "Side agreements". Untermiete bis 2026-05.
-
----
-
-## 🔧 Service provider contracts
-
-- [[DL-001]] Hausmeister Mueller GmbH — **650 €/Monat** · Slawomir Sölzer
-- [[DL-002]] Aufzug Schindler & Co. — **185 €/Monat** · Paul-Heinz Köhler
-- [[DL-004]] Reinigungsservice Kowalski — **420 €/Monat** · Malte Becker
-- [[DL-005]] Gaertnerei Gruener Daumen — **180 €/Monat** · Ekkehart Wende
-- [[DL-003]] Heiztechnik Berlin — on-call **78 €/h** · Olga Holsten
-- [[DL-007]] Allianz — Gebäudeversicherung · Rolf Schönland
-- [[DL-008]] Vattenfall — Strom Allgemein
-- [[DL-009]] GASAG — Gas
-- [[DL-010]] Berliner Wasserbetriebe — Wasser/Abwasser
-- [[DL-011]] BSR Berliner Stadtreinigung — Müllentsorgung
-*Source: `stammdaten/stammdaten.json` · confidence 1.0*
-
----
+### `@HAUS-16`
+```buena-erp
+layout: units
+ids:
+  - EH-052
+  - EH-039
+  - EH-040
+  - EH-041
+  - EH-042
+  - EH-043
+  - EH-044
+  - EH-045
+  - EH-046
+  - EH-047
+  - EH-048
+  - EH-049
+  - EH-050
+  - EH-051
+```
 
 ## 🔗 Connected pages
-
-- [[HUB-001]] (Verwalter)
-- [[DL-001]] (Hausmeister) · [[DL-002]] (Aufzug) · [[DL-004]] (Reinigung)
-- [[ETV-2024-06-Protokoll]]
-- Beirat: [[EIG-001]] · [[EIG-003]] · [[EIG-004]]
+- ERP lookup: `erp.json` (units, owners, tenants, service providers)
+- State: `state.json` (tribal-knowledge facts + provenance)
+- History: `history/` (immutable change log)
+```buena-pending
+id: CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com-4
+section: Open issues
+unit: EH-014
+new: Die Miete wird seit dem 15.01.2026 wegen eines Heißwasser-Defekts um 10 Prozent gemindert
+source: r2://buena-raw/emails/CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com.eml
+snippet: Mieter EH-014 mindert ab 15.01.2026 weiterhin die Miete um 10 Prozent wegen Heißwasser-Defekt.
+confidence: 0.99
+actor: gemini-3-pro
+target_heading: "## Open issues"
+new_block: "- Die Miete wird seit dem 15.01.2026 wegen eines Heißwasser-Defekts um 10 Prozent gemindert"
+```
+```buena-pending
+id: CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com-3
+section: Open issues
+unit:
+new: Die Reparatur des Aufzugs in HAUS-12 ist für den 28.04.2026 terminiert
+source: r2://buena-raw/emails/CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com.eml
+snippet: wurde beauftragt, Reparatur am 28.04.2026.
+confidence: 0.98
+actor: gemini-3-pro
+target_heading: "## Open issues"
+new_block: "- Die Reparatur des Aufzugs in HAUS-12 ist für den 28.04.2026 terminiert"
+```
+```buena-pending
+id: CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com-2
+section: Service providers
+unit:
+new: DL-002 führt die Aufzugswartung für 185 EUR/Monat durch
+source: r2://buena-raw/emails/CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com.eml
+snippet: DL-002 (Aufzugswartung, 185 EUR/Monat) wurde beauftragt
+confidence: 0.98
+actor: gemini-3-pro
+target_heading: "## Service providers"
+new_block: "- DL-002 führt die Aufzugswartung für 185 EUR/Monat durch"
+```
+```buena-pending
+id: CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com-1
+section: Open issues
+unit: EH-007
+new: Die Mieterin hat sich wegen des defekten Aufzugs beschwert
+source: r2://buena-raw/emails/CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com.eml
+snippet: Mieterin Frau Meier in EH-007 hat sich beschwert.
+confidence: 0.95
+actor: gemini-3-pro
+target_heading: "## Open issues"
+new_block: "- Die Mieterin hat sich wegen des defekten Aufzugs beschwert"
+```
+```buena-pending
+id: CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com-0
+section: Open issues
+unit:
+new: Der Aufzug in HAUS-12 ist seit dem 24.04.2026 defekt
+source: r2://buena-raw/emails/CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com.eml
+snippet: der Aufzug in HAUS-12 ist seit 24.04.2026 defekt.
+confidence: 0.98
+actor: gemini-3-pro
+target_heading: "## Open issues"
+new_block: "- Der Aufzug in HAUS-12 ist seit dem 24.04.2026 defekt"
+```

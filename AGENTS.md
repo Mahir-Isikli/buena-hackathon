@@ -20,12 +20,32 @@ Do not propose, suggest, or fall back to Flash, 2.5 Pro, 2.0, or any other model
 | **Track prize** | €2,500 cash, plus path to €10K finalist prize |
 | **Submission deadline** | Sunday 14:00 |
 | **Required submission** | 2 min Loom, public GitHub repo with README |
-| **Partner techs (3 required)** | Gemini (core), Tavily (enrichment), Pioneer/GLiNER2 (router, optional/stretch). Plus Entire and Aikido as side challenges. |
+| **Partner techs (3 required)** | Gemini (core extraction + routing), Tavily (enrichment), TBD third tech. Pioneer was dropped, see "Pioneer dropped for v1" below. Plus Entire and Aikido as side challenges. |
 | **Team** | Mahir (AI/product), Anwar (automation), Yasin (design) |
 | **Surface** | Obsidian plugin (primary), tiny web page for bulk import only. No iOS, no live web app, no Durable Objects, no Yjs. |
 | **Demo property** | WEG Immanuelkirchstraße 26, 10405 Berlin (the dataset Buena gave us) |
 | **Build priority** | 1. Edit flow in Obsidian (inline approve/reject, hover history, sidebar queue, status bar). 2. Bulk import (drag-and-drop archive). 3. Email-driven incremental updates. |
 | **Storyline** | Homeowner onboarding: a homeowner forwards their old property manager's archive, the engine produces a clean Obsidian vault per property, then keeps it surgically up to date as new emails arrive. |
+
+---
+
+## Pioneer dropped for v1, rationale
+
+We spent a chunk of Saturday training a Pioneer (fastino/gliner2-base-v1) NER model on the Buena dataset. We're shelving it for v1. Honest reasoning, no side-challenge bias:
+
+- **Trained NER F1 was 0.29.** Root cause: we trained on noisy auto-labels from Pioneer's own `label-existing` endpoint, which hallucinated ID strings from surrounding context.
+- **The 4 ID labels (EH-XXX, EIG-XXX, MIE-XXX, DL-XXX) literally do not appear in email text.** A regex scan over 1,200+ inbound emails returned 0 matches for each ID prefix. They're internal admin keys that live only in stammdaten, never in correspondence.
+- **93.7% of emails resolve to ERP IDs deterministically via a sender/recipient email join with stammdaten.** Verified: `mehdi.faust@bsr-berliner-stadtreinigung.de` → DL-011, `lisa.brown@techclean-international.com` → DL-016, `tom.hartmann@icloud.com` → EIG-022 (and his "Wohnung WE 29" maps to EH-029 via `einheit_nr`). 68.4% join via sender alone, 93.7% via sender OR recipient.
+- **For the remaining 6.3%**, the email has no clean ERP match. Those go to the human review queue, same as any other ambiguous routing.
+- **Surface entities** (amount, date, invoice_no, IBAN, Wohnung-Nummer) are handled by Gemini directly during extraction. A SLM doesn't beat Gemini on this for the volumes we have.
+
+**Identity resolution lives in two places:**
+- **Now (hackathon demo):** in-memory join over `partner-files/stammdaten/*.csv`, exposed via the `erp.ts` lookup adapter. Same interface the production system would use.
+- **Later (production):** the same lookup hits Buena's Postgres. The CSV adapter is just a stand-in for the DB.
+
+**Pioneer artifacts kept** (not deleted): trained model `fe8b263b-c2e7-4879-8c81-1705fe9be618`, eval harness in `pipeline/pioneer/`, the Gemini-relabelled NER dataset (`ner_labelled_v2.jsonl`, 1179 rows). If we ever need to drop inference cost at scale, the path back is open. For 24h/Buena's volumes, Gemini + CSV join is the right call.
+
+**Required tech impact:** we still need 3 partner techs. Gemini and Tavily are locked. Replacement for the third slot is TBD, options include Entire (already in for the meta-challenge), or staying at 2 if the rules allow it. Decision parked until Sunday morning.
 
 ---
 
@@ -106,14 +126,15 @@ Stated philosophy: "AI enhances, doesn't replace" property managers. Keep humans
 │  • Which property?                                     │
 │  • Which section?                                      │
 │  • Patch / ignore / escalate?                          │
-│  Pioneer/GLiNER2 SLM is a stretch alt, not default.    │
 └─────────────────┬──────────────────────────────────────┘
                   │
                   ▼
 ┌────────────────────────────────────────────────────────┐
 │  IDENTITY RESOLVER                                     │
-│  Cross-schema clustering: Eigentümer / Kontakt /       │
-│  owner_id, fuzzy name + IBAN + EH-XXX regex            │
+│  Deterministic email join with stammdaten (93.7% hit). │
+│  Sender/recipient email → DL/EIG/MIE id. Fallback:     │
+│  fuzzy name + IBAN. Misses route to human queue.       │
+│  Now: CSV. Later: Postgres. Same interface.            │
 └─────────────────┬──────────────────────────────────────┘
                   │
                   ▼
@@ -256,7 +277,7 @@ A `history/` entry contains: `section`, `oldValue`, `newValue`, `source`, `actor
 ```
 For each candidate fact extracted from an inbound item:
   1. Route it to a property + section + (optional) unit via Gemini 3.1 Pro (high thinking).
-     (Pioneer SLM is a stretch upgrade, not a blocker.)
+     (All routing via Gemini 3.1 Pro high thinking.)
   2. If the property doesn't resolve confidently → human queue (escalate).
   3. If the section doesn't exist yet in the .md → auto-apply with provenance.
   4. If the section exists and the fact is new (no overlap) → auto-apply.
@@ -329,13 +350,14 @@ response = client.models.generate_content(
 
 For lazy enrichment: building permits, contractor reviews, public registry data. Pulled only when the engine wants to add an external fact, never speculatively. Setup: 1,000 free credits per account. Fallback code `TVLY-DLEE5IJU`. Hosted MCP at `https://mcp.tavily.com/mcp/?tavilyApiKey=<key>`.
 
-### 3. Pioneer / Fastino (GLiNER2), structured extraction and intent SLM (stretch)
+### 3. Third partner tech, TBD
 
-**Status**: optional / stretch goal. The core router uses Gemini Flash. Pioneer is the upgrade path if we have time after the edit flow ships.
+Pioneer was the original pick. **Dropped for v1**, see "Pioneer dropped for v1, rationale" near the top of this file. Short version: the 4 ID labels we'd want to extract don't appear in email text, and 93.7% of emails resolve to ERP IDs via a deterministic CSV (later: Postgres) join on sender/recipient email. Gemini handles the surface entities (amount, date, IBAN). A small NER model adds nothing at our volumes.
 
-Schema-driven extraction for property facts plus an intent SLM that routes incoming items to {patch, ignore, escalate, contractor-update, owner-change, ...}. Pioneer fine-tune is trivial: the dataset's `*_index.csv` files have categories like `eigentuemer/rechtlich`, `mieter/kaution`, `versorger/versorger` already labelled. Use those as supervised training data. Targets the **Pioneer side challenge** (€700).
-
-If time-boxed out, swap Pioneer for a third partner tech we already use confidently. Required-tech count must remain at 3.
+**Replacement options** (decide Sunday morning):
+- Lean harder on Tavily (multiple enrichment surfaces).
+- Add Entire formally as the third tech (already in for the meta-challenge).
+- Confirm with the Buena PM that 2 partner techs is acceptable if both are deeply integrated.
 
 ### Side challenges
 
@@ -401,7 +423,7 @@ Order matters: edit flow ships first, then ingestion. The plugin is the demo.
 - [ ] **Routing**: Gemini 3.1 Pro (high thinking) classifier (property + section + unit)
 - [ ] **Patch gate**: implement the 7 rules above
 - [ ] **History log**: every accepted change writes to `history/`
-- [ ] (stretch) Pioneer SLM router fine-tune for side-challenge
+- [x] ~~Pioneer SLM router fine-tune~~ Dropped for v1. See "Pioneer dropped for v1" at top of file.
 
 ### Phase 3b, Plugin polish (hours 16 to 18)
 - [ ] Provenance jump: clicking a `<!-- prov: ... -->` opens the source PDF in Obsidian's native viewer
@@ -425,10 +447,9 @@ Order matters: edit flow ships first, then ingestion. The plugin is the demo.
 - [ ] README with setup instructions
 - [ ] 2 min Loom recording
 - [ ] Aikido scan + screenshot
-- [ ] Pioneer fine-tune documentation
 - [ ] Final commit, public push
 - [ ] Submission form filled
-- [ ] Side challenge submissions (Pioneer, Aikido, Entire)
+- [ ] Side challenge submissions (Aikido, Entire)
 
 ---
 
@@ -445,8 +466,8 @@ Screen: a chaotic folder with mixed file types from `partner-files/`.
 Drag the archive zip onto the bulk-import page. On screen:
 - Files stream through the Cloudflare Worker
 - Gemini extracts entities from PDFs
-- Pioneer SLM routes each item
-- Identity resolver merges duplicates
+- Gemini routes each item to a property + section
+- Identity resolver joins sender email against stammdaten to assign IDs
 - One Obsidian vault file emerges for `WEG Immanuelkirchstraße 26`
 - Cut to Obsidian: graph view explodes with property, owners, tenants, service providers
 
@@ -465,7 +486,7 @@ Show in Obsidian:
 Run days 02 through 05 in fast-forward. Vault keeps updating. No re-processing of the base archive on any new email.
 
 ### 1:50 to 2:00, the close
-> *"Buena's onboarding pain solved in 24 hours, native to their Obsidian workflow. Built with Gemini, Tavily, and a Pioneer-fine-tuned router. Every fact in the vault traces back to its source. Humans always have the final word."*
+> *"Buena's onboarding pain solved in 24 hours, native to their Obsidian workflow. Built with Gemini for extraction and routing, Tavily for enrichment, and a deterministic ERP join for identity. Every fact in the vault traces back to its source. Humans always have the final word."*
 
 End on the Obsidian graph view + sidebar history pane.
 
@@ -480,13 +501,13 @@ buena-hackathon/
 ├── docs/
 │   ├── architecture.md
 │   ├── demo-script.md
-│   └── pioneer-finetune-notes.md
+│   └── identity-join-notes.md
 ├── workers/
 │   ├── wrangler.toml
 │   ├── src/
 │   │   ├── ingest.ts            # email webhook + bulk upload entry
 │   │   ├── extract.ts           # Gemini PDF + text
-│   │   ├── route.ts             # Pioneer SLM call
+│   │   ├── route.ts             # Gemini 3.1 Pro routing call
 │   │   ├── identity.ts          # cross-schema resolver
 │   │   ├── erp.ts               # mocked ERP lookup adapter
 │   │   ├── gate.ts              # 7-rule patch decision
@@ -500,7 +521,7 @@ buena-hackathon/
 │   ├── bootstrap.py             # one-shot full-archive ingestion
 │   ├── replay_incremental.py    # walks day-01 to day-10
 │   ├── csv_query.py             # NL → pandas/duckdb
-│   └── pioneer_finetune.py
+│   └── pioneer/                  # parked, not loaded by v1 pipeline
 ├── plugin/                      # Obsidian plugin
 │   ├── manifest.json
 │   ├── main.ts
@@ -535,12 +556,11 @@ buena-hackathon/
   - [ ] Comprehensive README
   - [ ] Documentation of all APIs and tools
   - [ ] Sufficient technical docs for jury evaluation
-- [ ] At least **3 partner techs** confirmed (Gemini, Tavily, Pioneer)
+- [ ] At least **3 partner techs** confirmed (Gemini, Tavily, third TBD; Pioneer dropped)
 - [ ] Project newly created at this hackathon (boilerplates allowed)
 - [ ] Submitted via the project submission form
 
 ### Side challenge submissions
-- [ ] Pioneer: confirm use, document the GLiNER2 router fine-tune (€700)
 - [ ] Aikido: connect repo, screenshot security report (€1,000)
 - [ ] Entire: confirm use, document the meta-narrative ($1K Apple cards plus Switch 2 plus PS5 plus XBOX)
 
@@ -634,6 +654,7 @@ mcporter call cloudflare-api.execute code='async () => { return cloudflare.reque
 - **Python**: always `uv pip install` and `uv run python ...`.
 - **API keys**: check macOS Keychain first via `security find-generic-password -s "<service>" -w`. `gemini-api-key` is in Keychain and added to `.env.local` as `GEMINI_API_KEY`.
 - **Long-running processes**: use tmux, never `&` or `nohup`.
+- **Tailing the Cloudflare Worker**: always run `./scripts/tail-worker.sh [worker-name]` via the `process` tool. The script wraps `wrangler tail` with a 20s heartbeat so the pi process harness doesn't reap it during silent periods. Don't call `wrangler tail` directly.
 - **Diffity is OFF for this repo.** Override of the global rule in `~/Git/CLAUDE.md`: do NOT run `diffity` before commits or pushes. Hackathon repo, speed over review. Just commit and push.
 
 ---

@@ -14,7 +14,7 @@
               "type": "markdown",
               "state": {
                 "file": "WEG-Immanuelkirchstrasse-26.md",
-                "mode": "source",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
@@ -196,6 +196,8 @@
   },
   "active": "ac57853ea65b0f59",
   "lastOpenFiles": [
+    "state.json",
+    "erp.json",
     "Immanuelkirchstraße 26/WEG-Übersicht.md",
     "Welcome.md",
     "WEG-Immanuelkirchstrasse-26.md",

@@ -39,6 +39,25 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+}
+
+/* Edit pane overlay: floats above the queue inside the sidebar. */
+.buena-edit-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--buena-cream);
+  z-index: 5;
+  box-shadow: -2px 0 0 var(--buena-black);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.buena-edit-pane-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .buena-sidebar-content {
@@ -100,6 +119,42 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+  flex: 1;
+}
+
+.buena-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--buena-beige);
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease;
+  flex-shrink: 0;
+}
+
+.buena-sync-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--buena-white);
+}
+
+.buena-sync-btn .svg-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.buena-sync-btn.buena-syncing .svg-icon {
+  animation: buena-spin 0.9s linear infinite;
+}
+
+@keyframes buena-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .buena-section {
@@ -921,4 +976,1021 @@
 .buena-popover-mono {
   font-family: var(--font-monospace);
   font-size: 0.9em;
+}
+
+/* ============================================================
+   EDIT PATCH PANE (in-sidebar, on-brand)
+   Lives inside .buena-sidebar-content rather than as a modal.
+   ============================================================ */
+.buena-edit-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--buena-cream);
+  color: var(--buena-black);
+  font-family: var(--font-text);
+  height: 100%;
+  overflow-y: auto;
+}
+
+.buena-edit-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--buena-beige-soft);
+  border-bottom: 1px solid var(--buena-black);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.buena-edit-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--buena-black);
+  background: var(--buena-white);
+  color: var(--buena-black);
+  cursor: pointer;
+  border-radius: 0;
+  box-shadow: 2px 2px 0 0 var(--buena-black);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.buena-edit-back:hover {
+  box-shadow: 3px 3px 0 0 var(--buena-black);
+}
+
+.buena-edit-back:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 0 var(--buena-black);
+}
+
+.buena-edit-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.buena-edit-title-text {
+  font-family: var(--font-monospace);
+  font-size: 0.78em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--buena-black);
+}
+
+.buena-edit-shortid {
+  margin-left: auto;
+  font-family: var(--font-monospace);
+  font-size: 0.74em;
+  color: var(--buena-ink-faint);
+  letter-spacing: 0.04em;
+}
+
+.buena-edit-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px 0;
+}
+
+.buena-edit-field,
+.buena-edit-source,
+.buena-edit-advanced {
+  padding: 12px 14px 0;
+}
+
+.buena-edit-label {
+  font-family: var(--font-monospace);
+  font-size: 0.7em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--buena-black);
+  margin-bottom: 4px;
+}
+
+.buena-edit-hint {
+  color: var(--buena-ink-muted);
+  font-size: 0.82em;
+  margin-bottom: 8px;
+}
+
+.buena-edit-input {
+  width: 100%;
+  background: var(--buena-white);
+  color: var(--buena-black);
+  border: 1.5px solid var(--buena-black);
+  border-radius: 0;
+  padding: 10px 12px;
+  font-family: var(--font-text);
+  font-size: 0.95em;
+  line-height: 1.4;
+  resize: vertical;
+  box-shadow: 2px 2px 0 0 var(--buena-black);
+  outline: none;
+  transition: box-shadow 0.08s ease, transform 0.08s ease;
+}
+
+.buena-edit-input:hover {
+  box-shadow: 3px 3px 0 0 var(--buena-black);
+}
+
+.buena-edit-input:focus {
+  border-color: var(--buena-black);
+  box-shadow: 1px 1px 0 0 var(--buena-black);
+  transform: translate(1px, 1px);
+}
+
+.buena-edit-input::placeholder {
+  color: var(--buena-ink-faint);
+  font-style: italic;
+}
+
+.buena-edit-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--buena-black) 50%),
+                    linear-gradient(135deg, var(--buena-black) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
+  cursor: pointer;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+.buena-edit-block {
+  font-family: var(--font-monospace);
+  font-size: 0.88em;
+  background: var(--buena-beige-soft);
+}
+
+.buena-edit-note {
+  font-size: 0.92em;
+}
+
+.buena-edit-source {
+  background: var(--buena-beige-soft);
+  margin: 12px 14px 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--buena-black);
+}
+
+.buena-edit-source-path {
+  font-family: var(--font-monospace);
+  font-size: 0.82em;
+  color: var(--buena-ink-muted);
+  word-break: break-all;
+  margin-bottom: 6px;
+}
+
+.buena-edit-source-snippet {
+  font-size: 0.9em;
+  color: var(--buena-black);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.buena-edit-advanced {
+  margin-top: 4px;
+}
+
+.buena-edit-advanced-summary {
+  cursor: pointer;
+  font-family: var(--font-monospace);
+  font-size: 0.78em;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--buena-ink-muted);
+  padding: 6px 0;
+  list-style: none;
+  user-select: none;
+}
+
+.buena-edit-advanced-summary::-webkit-details-marker {
+  display: none;
+}
+
+.buena-edit-advanced-summary::before {
+  content: "▸ ";
+  color: var(--buena-ink-faint);
+}
+
+.buena-edit-advanced[open] .buena-edit-advanced-summary::before {
+  content: "▾ ";
+}
+
+.buena-edit-advanced-summary:hover {
+  color: var(--buena-black);
+}
+
+.buena-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 14px 16px;
+  margin-top: 14px;
+  border-top: 1px solid var(--buena-gray);
+  position: sticky;
+  bottom: 0;
+  background: var(--buena-cream);
+}
+
+/* ============================================================
+   ERP REFERENCE CHIP  (`@EIG-004`, `@MIE-001`, ...)
+   Inline references rendered as compact tagged pills.
+   ============================================================ */
+.buena-erp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 7px 1px 5px;
+  background: var(--buena-beige-soft);
+  border: 1px solid var(--buena-beige);
+  border-radius: 999px;
+  font-size: 0.86em;
+  line-height: 1.5;
+  color: var(--buena-black);
+  cursor: help;
+  vertical-align: baseline;
+  text-decoration: none;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.buena-erp-chip:hover {
+  background: var(--buena-black);
+  color: var(--buena-beige);
+  border-color: var(--buena-black);
+}
+
+.buena-erp-chip-icon {
+  font-size: 0.92em;
+  opacity: 0.8;
+  flex: 0 0 auto;
+}
+
+.buena-erp-chip-label {
+  font-weight: 500;
+}
+
+.buena-erp-chip-id {
+  font-family: var(--font-monospace);
+  font-size: 0.75em;
+  letter-spacing: 0.04em;
+  color: var(--buena-ink-muted);
+  border-left: 1px solid var(--buena-beige);
+  padding-left: 5px;
+  margin-left: 1px;
+}
+
+.buena-erp-chip:hover .buena-erp-chip-id {
+  color: var(--buena-beige);
+  border-left-color: var(--buena-beige);
+  opacity: 0.85;
+}
+
+/* Per-kind accent stripes (left edge color via box-shadow) */
+.buena-erp-chip-owner    { box-shadow: inset 3px 0 0 0 #6B5B95; }
+.buena-erp-chip-tenant   { box-shadow: inset 3px 0 0 0 #2E7D32; }
+.buena-erp-chip-unit     { box-shadow: inset 3px 0 0 0 #B45309; }
+.buena-erp-chip-provider { box-shadow: inset 3px 0 0 0 #1565C0; }
+.buena-erp-chip-building { box-shadow: inset 3px 0 0 0 #4E4E4E; }
+.buena-erp-chip-property { box-shadow: inset 3px 0 0 0 var(--buena-black); }
+
+.buena-erp-chip-unresolved {
+  background: transparent;
+  color: var(--buena-ink-faint);
+  border-style: dashed;
+  font-family: var(--font-monospace);
+  font-size: 0.78em;
+  padding: 0 6px;
+  cursor: help;
+}
+
+/* ============================================================
+   ERP CARD  (```buena-erp``` codeblock)
+   ============================================================ */
+.buena-erp-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.buena-erp-card {
+  border: 1px solid var(--buena-gray);
+  border-left: 3px solid var(--buena-beige);
+  background: var(--buena-beige-soft);
+  padding: 14px 16px;
+  font-size: 0.92em;
+}
+
+.buena-erp-card-owner    { border-left-color: #6B5B95; }
+.buena-erp-card-tenant   { border-left-color: #2E7D32; }
+.buena-erp-card-unit     { border-left-color: #B45309; }
+.buena-erp-card-provider { border-left-color: #1565C0; }
+.buena-erp-card-building { border-left-color: #4E4E4E; }
+.buena-erp-card-property { border-left-color: var(--buena-black); }
+
+.buena-erp-card-missing {
+  border-left-color: #B71C1C;
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  color: var(--buena-ink-muted);
+}
+
+.buena-erp-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.buena-erp-card-icon {
+  font-size: 1.6em;
+  line-height: 1;
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.buena-erp-card-title-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.buena-erp-card-title {
+  font-weight: 600;
+  font-size: 1.08em;
+  color: var(--buena-black);
+  line-height: 1.3;
+}
+
+.buena-erp-card-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-family: var(--font-monospace);
+  font-size: 0.74em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--buena-ink-muted);
+}
+
+.buena-erp-card-kind {
+  background: var(--buena-black);
+  color: var(--buena-beige);
+  padding: 1px 6px;
+}
+
+.buena-erp-card-id {
+  /* plain mono label */
+}
+
+.buena-erp-card-sub2 {
+  margin-top: 4px;
+  font-size: 0.92em;
+  color: var(--buena-ink-muted);
+}
+
+.buena-erp-card-body {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--buena-beige);
+}
+
+.buena-erp-card-row {
+  display: contents;
+}
+
+.buena-erp-card-row-label {
+  font-family: var(--font-monospace);
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--buena-ink-faint);
+  align-self: center;
+}
+
+.buena-erp-card-row-value {
+  font-size: 0.94em;
+  color: var(--buena-black);
+}
+
+.buena-erp-card-row-value.mono {
+  font-family: var(--font-monospace);
+  font-size: 0.86em;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================
+ * ERP layouts: grid (mini cards), units (rows), bank
+ * ========================================================= */
+
+/* ---- grid: compact head-only cards ----------------------- */
+.buena-erp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.buena-erp-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--buena-paper);
+  border: 1px solid var(--buena-beige);
+  border-left: 3px solid var(--buena-ink-faint);
+  border-radius: 8px;
+  cursor: default;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.buena-erp-mini:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.buena-erp-mini-owner    { border-left-color: #6B5B95; }
+.buena-erp-mini-tenant   { border-left-color: #2E7D32; }
+.buena-erp-mini-unit     { border-left-color: #B45309; }
+.buena-erp-mini-provider { border-left-color: #1565C0; }
+.buena-erp-mini-building { border-left-color: #4E4E4E; }
+.buena-erp-mini-property { border-left-color: #000; }
+
+.buena-erp-mini-missing {
+  border-left-color: #d33;
+  color: #d33;
+  font-style: italic;
+}
+
+.buena-erp-mini-icon {
+  font-size: 1.1em;
+  flex-shrink: 0;
+}
+
+.buena-erp-mini-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.buena-erp-mini-title {
+  font-weight: 600;
+  font-size: 0.92em;
+  color: var(--buena-black);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.buena-erp-mini-sub {
+  font-size: 0.78em;
+  color: var(--buena-ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.buena-erp-mini-id {
+  font-family: var(--font-monospace);
+  font-size: 0.7em;
+  color: var(--buena-ink-faint);
+  letter-spacing: 0.04em;
+}
+
+/* ---- units: row per unit with occupant chip ------------- */
+.buena-erp-units {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.buena-erp-unit-row {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr minmax(220px, max-content);
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--buena-paper);
+  border: 1px solid var(--buena-beige);
+  border-radius: 6px;
+  transition: background 0.12s ease;
+}
+
+.buena-erp-unit-row:hover {
+  background: var(--buena-paper-hover, #fafaf7);
+}
+
+.buena-erp-unit-row-missing {
+  color: #d33;
+  font-style: italic;
+}
+
+.buena-erp-unit-left {
+  display: flex;
+  align-items: center;
+}
+
+.buena-erp-unit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  background: #fff;
+  border: 1px solid var(--buena-beige);
+  border-left: 3px solid #B45309;
+  border-radius: 12px;
+  font-size: 0.88em;
+  font-weight: 600;
+  cursor: default;
+}
+
+.buena-erp-unit-chip-icon {
+  font-size: 0.95em;
+}
+
+.buena-erp-unit-chip-label {
+  font-family: var(--font-monospace);
+  letter-spacing: 0.02em;
+}
+
+.buena-erp-unit-mid {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.86em;
+  color: var(--buena-ink-faint);
+  min-width: 0;
+}
+
+.buena-erp-unit-meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.buena-erp-unit-typ {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75em;
+  font-weight: 500;
+  background: var(--buena-beige);
+  color: var(--buena-ink);
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.buena-erp-unit-typ-wohnung    { background: #e8f0fe; color: #1b46c2; }
+.buena-erp-unit-typ-gewerbe    { background: #fff3e0; color: #b45309; }
+.buena-erp-unit-typ-tg-stellplatz,
+.buena-erp-unit-typ-stellplatz { background: #f0f0f0; color: #555; }
+.buena-erp-unit-typ-keller     { background: #f5f0e8; color: #6b4c2c; }
+
+.buena-erp-unit-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.buena-erp-unit-occ {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  background: #fff;
+  border: 1px solid var(--buena-beige);
+  border-left: 3px solid var(--buena-ink-faint);
+  border-radius: 12px;
+  font-size: 0.84em;
+  cursor: default;
+  transition: transform 0.12s ease;
+}
+
+.buena-erp-unit-occ:hover {
+  transform: translateY(-1px);
+}
+
+.buena-erp-unit-occ-tenant         { border-left-color: #2E7D32; }
+.buena-erp-unit-occ-self_occupied  { border-left-color: #6B5B95; }
+.buena-erp-unit-occ-owner_landlord { border-left-color: #6B5B95; }
+
+.buena-erp-unit-occ-role {
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--buena-ink-faint);
+  font-weight: 600;
+}
+
+.buena-erp-unit-occ-icon {
+  font-size: 0.9em;
+}
+
+.buena-erp-unit-occ-label {
+  font-weight: 600;
+  color: var(--buena-black);
+}
+
+.buena-erp-unit-occ-id {
+  font-family: var(--font-monospace);
+  font-size: 0.78em;
+  color: var(--buena-ink-faint);
+}
+
+.buena-erp-unit-vacant {
+  font-size: 0.84em;
+  font-style: italic;
+  color: var(--buena-ink-faint);
+  padding: 3px 10px;
+  border: 1px dashed var(--buena-beige);
+  border-radius: 12px;
+}
+
+/* ---- bank: IBAN cards ----------------------------------- */
+.buena-erp-bank {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.buena-erp-bank-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--buena-paper);
+  border: 1px solid var(--buena-beige);
+  border-left: 3px solid #1b46c2;
+  border-radius: 8px;
+}
+
+.buena-erp-bank-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.buena-erp-bank-icon {
+  font-size: 1.05em;
+}
+
+.buena-erp-bank-label {
+  font-weight: 600;
+  font-size: 0.95em;
+  color: var(--buena-black);
+}
+
+.buena-erp-bank-bank {
+  font-size: 0.82em;
+  color: var(--buena-ink-faint);
+  margin-left: auto;
+}
+
+.buena-erp-bank-iban {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--buena-beige);
+}
+
+.buena-erp-bank-iban-label {
+  font-family: var(--font-monospace);
+  font-size: 0.7em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--buena-ink-faint);
+}
+
+.buena-erp-bank-iban-value {
+  font-family: var(--font-monospace);
+  font-size: 0.92em;
+  letter-spacing: 0.04em;
+  color: var(--buena-black);
+}
+
+.buena-erp-bank-purpose {
+  font-size: 0.82em;
+  color: var(--buena-ink-faint);
+  font-style: italic;
+}
+
+/* ============================================================
+ * Tabs (Queue / Change history)
+ * ============================================================ */
+.buena-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin-bottom: 8px;
+}
+.buena-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--buena-ink-soft, var(--text-muted));
+  font-size: 0.88em;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 0;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.buena-tab:hover {
+  color: var(--text-normal);
+}
+.buena-tab-active {
+  color: var(--text-normal);
+  border-bottom-color: var(--interactive-accent);
+}
+.buena-tab-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.buena-tab-icon .svg-icon {
+  width: 14px;
+  height: 14px;
+}
+.buena-tab-count {
+  display: inline-block;
+  min-width: 18px;
+  text-align: center;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+  font-size: 0.8em;
+  font-weight: 600;
+}
+.buena-tab-active .buena-tab-count {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+/* Section that should fill the rest of the sidebar (replaces split layout) */
+.buena-section-fullheight {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ============================================================
+ * Go-to-section pill on pending cards
+ * ============================================================ */
+.buena-goto-wrap {
+  margin-top: 6px;
+}
+.buena-goto-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.78em;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.buena-goto-pill:not(:disabled):hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+  border-color: var(--interactive-accent);
+  border-style: solid;
+}
+.buena-goto-pill:disabled {
+  opacity: 0.4;
+  cursor: progress;
+}
+.buena-goto-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.buena-goto-icon .svg-icon {
+  width: 11px;
+  height: 11px;
+}
+
+/* ============================================================
+ * Reject reason (inline expanding form)
+ * ============================================================ */
+.buena-reject-reason {
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  border-left: 3px solid var(--text-error, #d04444);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.buena-reject-reason-hidden {
+  display: none;
+}
+.buena-reject-reason-label {
+  font-size: 0.78em;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.buena-reject-reason-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 48px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 0.85em;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  border-radius: 4px;
+}
+.buena-reject-reason-input:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+.buena-reject-reason-row {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.buena-btn-danger {
+  background: var(--text-error, #d04444) !important;
+  color: white !important;
+  border-color: var(--text-error, #d04444) !important;
+}
+.buena-btn-danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+/* ============================================================
+ * Change history table (Notion-style)
+ * ============================================================ */
+.buena-history-table-wrap {
+  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 8px 8px 8px;
+}
+.buena-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82em;
+}
+.buena-history-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--background-primary);
+  z-index: 1;
+}
+.buena-th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: 0.85em;
+  user-select: none;
+  white-space: nowrap;
+}
+.buena-th-sortable {
+  cursor: pointer;
+}
+.buena-th-sortable:hover {
+  color: var(--text-normal);
+}
+.buena-th-sort-icon {
+  display: inline-flex;
+  margin-left: 3px;
+  vertical-align: middle;
+  color: var(--interactive-accent);
+}
+.buena-th-sort-icon .svg-icon {
+  width: 11px;
+  height: 11px;
+}
+.buena-th-actions {
+  width: 28px;
+}
+.buena-history-row {
+  position: relative;
+  cursor: default;
+  transition: background 120ms ease;
+}
+.buena-history-row:hover {
+  background: var(--background-modifier-hover);
+}
+.buena-history-row + .buena-history-row .buena-td {
+  border-top: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+}
+.buena-td {
+  padding: 6px 8px;
+  vertical-align: top;
+  color: var(--text-normal);
+}
+.buena-td-when {
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.buena-td-unit {
+  white-space: nowrap;
+}
+.buena-td-what {
+  max-width: 320px;
+}
+.buena-td-what-text {
+  line-height: 1.35;
+}
+.buena-strike {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.buena-td-reason {
+  margin-top: 3px;
+  font-size: 0.92em;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.buena-td-decision {
+  white-space: nowrap;
+}
+.buena-decision-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+.buena-decision-icon {
+  display: inline-flex;
+}
+.buena-decision-icon .svg-icon {
+  width: 11px;
+  height: 11px;
+}
+.buena-decision-approved {
+  background: rgba(45, 160, 80, 0.15);
+  color: rgb(45, 160, 80);
+}
+.buena-decision-rejected {
+  background: rgba(208, 68, 68, 0.15);
+  color: rgb(208, 68, 68);
+}
+.buena-decision-auto {
+  background: rgba(120, 120, 200, 0.15);
+  color: rgb(120, 120, 200);
+}
+.buena-td-actions {
+  width: 28px;
+  text-align: right;
+  padding-right: 4px;
+}
+.buena-row-reverse {
+  opacity: 0;
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 3px 5px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
+}
+.buena-history-row:hover .buena-row-reverse {
+  opacity: 1;
+}
+.buena-row-reverse:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.buena-row-reverse .svg-icon {
+  width: 12px;
+  height: 12px;
 }

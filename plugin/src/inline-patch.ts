@@ -1,12 +1,14 @@
-import { Notice, parseYaml, TFile } from "obsidian";
+import { Notice, parseYaml, setIcon, TFile } from "obsidian";
 import type BuenaPlugin from "../main";
 import { attachHoverPopover, HoverField } from "./hover";
 import { addHistoryEntry } from "./history";
 import {
   applyPatchToVault,
+  findHeadingLine,
   revealLineInActiveView,
   stripPendingBlockById,
 } from "./vault-patch";
+import { postDecision } from "./api";
 
 interface PendingPatchSpec {
   id?: string;
@@ -84,6 +86,35 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
         });
       }
 
+      // Go-to-section pill: only shown if the target heading already exists
+      // in this file. New sections can't be jumped to, so we hide the pill.
+      if (spec.target_heading) {
+        const goToWrap = card.createDiv({ cls: "buena-goto-wrap" });
+        const pill = goToWrap.createEl("button", {
+          cls: "buena-goto-pill",
+        });
+        setIcon(pill.createSpan({ cls: "buena-goto-icon" }), "arrow-right");
+        pill.createSpan({ text: "Go to section", cls: "buena-goto-label" });
+        pill.disabled = true;
+        pill.title = "Checking target section...";
+        // Async existence check — hide pill if heading doesn't exist yet.
+        findHeadingLine(plugin.app, ctx.sourcePath, spec.target_heading)
+          .then((lineIdx) => {
+            if (lineIdx === null) {
+              goToWrap.remove();
+              return;
+            }
+            pill.disabled = false;
+            pill.title = `Jump to ${spec.target_heading}`;
+            pill.onclick = () => {
+              revealLineInActiveView(plugin.app, ctx.sourcePath, lineIdx).catch(
+                (err) => console.warn("[Buena] go-to-section failed", err)
+              );
+            };
+          })
+          .catch(() => goToWrap.remove());
+      }
+
       const actions = card.createDiv({ cls: "buena-pending-actions" });
       const approve = actions.createEl("button", {
         text: "Approve",
@@ -112,6 +143,14 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
           new Notice(`[Buena] approved ${spec.id}, written to vault`);
           plugin.statusBar.bumpPendingCount(-1);
           plugin.statusBar.markPatchReceived();
+          if (plugin.settings.workerUrl) {
+            postDecision(
+              plugin.settings,
+              spec.id,
+              "approved",
+              spec.actor ?? "human"
+            ).catch((err) => console.warn("[Buena] postDecision failed", err));
+          }
           await addHistoryEntry(plugin, filePath, {
             id: spec.id,
             section: spec.section ?? "Unsorted",
@@ -122,8 +161,13 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
             decision: "approved",
             timestamp: new Date().toISOString(),
             actor: spec.actor ?? "unknown",
+            originalBlock: {
+              target_heading: spec.target_heading,
+              new_block: spec.new_block,
+              confidence: spec.confidence,
+              snippet: spec.snippet,
+            },
           });
-          // Reveal the inserted block in the editor
           await revealLineInActiveView(plugin.app, filePath, insertedAt);
         } catch (err) {
           console.error("[Buena] apply failed", err);
@@ -132,40 +176,117 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
       };
 
       const reject = actions.createEl("button", { text: "Reject", cls: "buena-btn" });
-      reject.onclick = async () => {
+      // Reject expands an inline reason input. Submitting it commits the
+      // rejection with a logged reason. Cancelling collapses it.
+      const reasonHost = card.createDiv({
+        cls: "buena-reject-reason buena-reject-reason-hidden",
+      });
+      reject.onclick = () => {
         if (!spec.id) {
           new Notice("[Buena] cannot reject: missing id");
           return;
         }
-        const file = plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
-        if (file && file instanceof TFile) {
-          const text = await plugin.app.vault.read(file);
-          const stripped = stripPendingBlockById(text, spec.id);
-          if (stripped !== text) {
-            await plugin.app.vault.modify(file, stripped);
-          }
+        if (!reasonHost.hasClass("buena-reject-reason-hidden")) {
+          reasonHost.addClass("buena-reject-reason-hidden");
+          reasonHost.empty();
+          return;
         }
-        await addHistoryEntry(plugin, ctx.sourcePath, {
-          id: spec.id,
-          section: spec.section ?? "Unsorted",
-          unit: spec.unit,
-          oldValue: spec.old,
-          newValue: spec.new ?? "",
-          source: spec.source,
-          decision: "rejected",
-          timestamp: new Date().toISOString(),
-          actor: spec.actor ?? "unknown",
+        reasonHost.removeClass("buena-reject-reason-hidden");
+        reasonHost.empty();
+        const label = reasonHost.createEl("label", {
+          text: "Why are you rejecting this? (logged for accountability)",
+          cls: "buena-reject-reason-label",
         });
-        new Notice(`[Buena] rejected ${spec.id}`);
-        plugin.statusBar.bumpPendingCount(-1);
-      };
-
-      const edit = actions.createEl("button", { text: "Edit", cls: "buena-btn" });
-      edit.onclick = () => {
-        new Notice("[Buena] inline edit not wired yet");
+        const ta = reasonHost.createEl("textarea", {
+          cls: "buena-reject-reason-input",
+          attr: {
+            placeholder: "e.g. wrong unit, duplicate of EH-014 issue, sender unverified...",
+            rows: "2",
+          },
+        });
+        const row = reasonHost.createDiv({ cls: "buena-reject-reason-row" });
+        const cancel = row.createEl("button", {
+          text: "Cancel",
+          cls: "buena-btn",
+        });
+        cancel.onclick = () => {
+          reasonHost.addClass("buena-reject-reason-hidden");
+          reasonHost.empty();
+        };
+        const confirm = row.createEl("button", {
+          text: "Confirm reject",
+          cls: "buena-btn buena-btn-danger",
+        });
+        const submit = async () => {
+          const reason = ta.value.trim();
+          if (reason.length < 10) {
+            new Notice(
+              "[Buena] please give a real reason (min 10 chars). It is logged for accountability."
+            );
+            ta.focus();
+            return;
+          }
+          confirm.disabled = true;
+          cancel.disabled = true;
+          await commitReject(plugin, ctx.sourcePath, spec, reason);
+          // The codeblock will disappear once the file is rewritten.
+        };
+        confirm.onclick = submit;
+        ta.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) {
+            ev.preventDefault();
+            void submit();
+          }
+        });
+        ta.focus();
       };
     }
   );
+}
+
+async function commitReject(
+  plugin: BuenaPlugin,
+  filePath: string,
+  spec: PendingPatchSpec,
+  reason: string
+) {
+  if (!spec.id) return;
+  const file = plugin.app.vault.getAbstractFileByPath(filePath);
+  if (file && file instanceof TFile) {
+    const text = await plugin.app.vault.read(file);
+    const stripped = stripPendingBlockById(text, spec.id);
+    if (stripped !== text) {
+      await plugin.app.vault.modify(file, stripped);
+    }
+  }
+  await addHistoryEntry(plugin, filePath, {
+    id: spec.id,
+    section: spec.section ?? "Unsorted",
+    unit: spec.unit,
+    oldValue: spec.old,
+    newValue: spec.new ?? "",
+    source: spec.source,
+    decision: "rejected",
+    timestamp: new Date().toISOString(),
+    actor: spec.actor ?? "unknown",
+    rejectionReason: reason,
+    originalBlock: {
+      target_heading: spec.target_heading,
+      new_block: spec.new_block,
+      confidence: spec.confidence,
+      snippet: spec.snippet,
+    },
+  });
+  new Notice(`[Buena] rejected ${spec.id}`);
+  plugin.statusBar.bumpPendingCount(-1);
+  if (plugin.settings.workerUrl) {
+    postDecision(
+      plugin.settings,
+      spec.id,
+      "rejected",
+      spec.actor ?? "human"
+    ).catch((err) => console.warn("[Buena] postDecision failed", err));
+  }
 }
 
 function shortSource(s: string): string {

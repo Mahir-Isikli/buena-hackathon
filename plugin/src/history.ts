@@ -10,6 +10,42 @@ export interface HistoryEntry {
   decision: "auto" | "approved" | "rejected";
   timestamp: string;
   actor: string;
+  /** Required when decision === "rejected". Surfaced in the change history
+   *  table for accountability. Not rendered into the .md. */
+  rejectionReason?: string;
+  /** Original pending block YAML so we can re-queue on reverse. */
+  originalBlock?: {
+    target_heading?: string;
+    new_block?: string;
+    confidence?: number;
+    snippet?: string;
+  };
+}
+
+/**
+ * Find a history entry by id (most-recent-first scan).
+ */
+export async function findHistoryEntry(
+  plugin: BuenaPlugin,
+  filePath: string,
+  id: string
+): Promise<HistoryEntry | undefined> {
+  const list = await loadHistory(plugin, filePath);
+  return list.find((h) => h.id === id);
+}
+
+/**
+ * Remove a history entry by id. Used when a change is reversed and re-queued.
+ */
+export async function removeHistoryEntry(
+  plugin: BuenaPlugin,
+  filePath: string,
+  id: string
+): Promise<void> {
+  const store = await loadStore(plugin);
+  const list = store.byFile[filePath] ?? [];
+  store.byFile[filePath] = list.filter((h) => h.id !== id);
+  await saveStore(plugin, store);
 }
 
 interface HistoryStore {

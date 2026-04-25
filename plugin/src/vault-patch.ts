@@ -160,6 +160,117 @@ export function findPendingBlocks(text: string): string[] {
 }
 
 /**
+ * Find the line index of a given heading (e.g. "## Open issues") in the
+ * file. Returns null if the heading is not present. Used by the
+ * "Go to section" pill on pending cards: when the heading does not exist
+ * the pill is hidden because there is nowhere to jump.
+ */
+export async function findHeadingLine(
+  app: App,
+  filePath: string,
+  heading: string
+): Promise<number | null> {
+  const file = app.vault.getAbstractFileByPath(filePath);
+  if (!(file instanceof TFile)) return null;
+  const text = await app.vault.read(file);
+  const lines = text.split("\n");
+  const target = heading.trim();
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() === target) return i;
+  }
+  return null;
+}
+
+/**
+ * Reverse a previously-applied change: strip its content from the markdown
+ * (best-effort) and re-emit a buena-pending block at the bottom of the
+ * file so it returns to the queue. Returns true when a re-queue block was
+ * appended.
+ *
+ * The strip step is line-based and conservative: we only delete a line if
+ * it matches `new_block` exactly. If the line was edited by a human after
+ * approval, we leave it alone and just re-queue.
+ */
+export async function reverseHistoryEntry(
+  app: App,
+  filePath: string,
+  entry: {
+    id: string;
+    section: string;
+    unit?: string;
+    newValue: string;
+    source?: string;
+    actor: string;
+    originalBlock?: {
+      target_heading?: string;
+      new_block?: string;
+      confidence?: number;
+      snippet?: string;
+    };
+  }
+): Promise<boolean> {
+  const file = app.vault.getAbstractFileByPath(filePath);
+  if (!(file instanceof TFile)) return false;
+
+  const text = await app.vault.read(file);
+  const lines = text.split("\n");
+
+  // 1. Best-effort strip of the originally-inserted block.
+  const block = entry.originalBlock?.new_block ?? "";
+  const blockLines = block.replace(/\n+$/, "").split("\n").filter((l) => l !== "");
+  let stripped = lines;
+  if (blockLines.length > 0) {
+    // Find a contiguous run of lines that matches blockLines exactly.
+    outer: for (let i = 0; i <= lines.length - blockLines.length; i++) {
+      for (let j = 0; j < blockLines.length; j++) {
+        if (lines[i + j] !== blockLines[j]) continue outer;
+      }
+      stripped = [
+        ...lines.slice(0, i),
+        ...lines.slice(i + blockLines.length),
+      ];
+      break;
+    }
+  }
+
+  // 2. Append a buena-pending block so the entry returns to the queue.
+  const yaml = [
+    "```buena-pending",
+    `id: ${entry.id}-reversed`,
+    `section: ${entry.section}`,
+    entry.unit ? `unit: ${entry.unit}` : null,
+    `new: ${jsonString(entry.newValue)}`,
+    entry.source ? `source: ${entry.source}` : null,
+    entry.originalBlock?.snippet
+      ? `snippet: ${jsonString(entry.originalBlock.snippet)}`
+      : null,
+    typeof entry.originalBlock?.confidence === "number"
+      ? `confidence: ${entry.originalBlock.confidence}`
+      : null,
+    `actor: ${entry.actor}`,
+    `reversed: true`,
+    entry.originalBlock?.target_heading
+      ? `target_heading: ${jsonString(entry.originalBlock.target_heading)}`
+      : null,
+    entry.originalBlock?.new_block
+      ? `new_block: ${jsonString(entry.originalBlock.new_block)}`
+      : null,
+    "```",
+    "",
+  ]
+    .filter((l): l is string => l !== null)
+    .join("\n");
+
+  const trailing = stripped[stripped.length - 1] === "" ? "" : "\n";
+  await app.vault.modify(file, stripped.join("\n") + trailing + yaml);
+  return true;
+}
+
+function jsonString(s: string): string {
+  return JSON.stringify(s);
+}
+
+/**
  * Open the file in the active leaf (or focus an existing view) and scroll
  * to the given line.
  */

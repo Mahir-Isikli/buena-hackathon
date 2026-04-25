@@ -2,12 +2,22 @@ import { Plugin, WorkspaceLeaf, Notice } from "obsidian";
 import { BuenaSidebarView, BUENA_SIDEBAR_VIEW_TYPE } from "./src/sidebar";
 import { registerInlinePatchProcessor } from "./src/inline-patch";
 import { registerProvenanceProcessor } from "./src/popover";
+import { registerErpReferenceProcessors } from "./src/erp-references";
+import { initErpStore, watchErpFile } from "./src/erp";
 import { BuenaStatusBar } from "./src/statusbar";
 import { BuenaSettingTab, DEFAULT_SETTINGS, BuenaSettings } from "./src/settings";
+import { connectEvents, EventClient, RemotePendingPatch } from "./src/api";
+import {
+  appendPatchToFile,
+  pullPendingOnce,
+  resolvePropertyFile,
+  stripPatchFromFile,
+} from "./src/sync";
 
 export default class BuenaPlugin extends Plugin {
   settings: BuenaSettings = DEFAULT_SETTINGS;
   statusBar!: BuenaStatusBar;
+  private eventClient: EventClient | null = null;
 
   async onload() {
     console.log("[Buena] loading plugin");
@@ -23,12 +33,24 @@ export default class BuenaPlugin extends Plugin {
     // Status bar
     this.statusBar = new BuenaStatusBar(this);
     this.statusBar.mount();
+    this.statusBar.setConnected(false);
+
+    // ERP store: load erp.json and watch it for changes
+    const erpStore = initErpStore(this.app);
+    await erpStore.load();
+    const unwatch = watchErpFile(this.app, () => {
+      erpStore.load().catch((err) => console.warn("[Buena] erp reload failed", err));
+    });
+    this.register(unwatch);
 
     // Inline pending-patch codeblock processor
     registerInlinePatchProcessor(this);
 
     // Provenance hover popovers
     registerProvenanceProcessor(this);
+
+    // Rich ERP reference rendering: inline `@ID` chips and ```buena-erp``` cards
+    registerErpReferenceProcessors(this);
 
     // Ribbon icon to open the sidebar
     this.addRibbonIcon("landmark", "Buena: open pending queue", async () => {
@@ -55,22 +77,44 @@ export default class BuenaPlugin extends Plugin {
       },
     });
 
+    // Manual pull from worker (works without SSE)
+    this.addCommand({
+      id: "buena-pull-pending",
+      name: "Pull pending from worker",
+      callback: async () => {
+        try {
+          const { added, total } = await pullPendingOnce(this);
+          new Notice(`[Buena] pulled ${total} patches, added ${added}`);
+        } catch (err) {
+          console.error("[Buena] pull failed", err);
+          new Notice(`[Buena] pull failed: ${err}`);
+        }
+      },
+    });
+
+    // Reconnect SSE stream on demand
+    this.addCommand({
+      id: "buena-reconnect",
+      name: "Reconnect live sync",
+      callback: () => this.restartLiveSync(),
+    });
+
     // Settings tab
     this.addSettingTab(new BuenaSettingTab(this.app, this));
 
-    // Dedupe any stale Buena leaves left over from previous reloads.
-    // Obsidian restores workspace state, then hot-reload may add another
-    // leaf, leaving the user with multiple identical tabs. Keep one.
+    // Dedupe any stale Buena leaves and start live sync once layout is ready.
     this.app.workspace.onLayoutReady(() => {
       const leaves = this.app.workspace.getLeavesOfType(BUENA_SIDEBAR_VIEW_TYPE);
       for (let i = 1; i < leaves.length; i++) {
         leaves[i].detach();
       }
+      this.startLiveSync();
     });
   }
 
   async onunload() {
     console.log("[Buena] unloading plugin");
+    this.stopLiveSync();
     this.statusBar?.unmount();
   }
 
@@ -93,5 +137,90 @@ export default class BuenaPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+
+  // ---- Live sync (SSE) ------------------------------------------------
+
+  startLiveSync() {
+    this.stopLiveSync();
+    if (!this.settings.liveSync) {
+      this.statusBar.setConnected(false);
+      return;
+    }
+    if (!this.settings.workerUrl) {
+      this.statusBar.setConnected(false);
+      return;
+    }
+
+    this.eventClient = connectEvents(this.settings, {
+      onOpen: () => {
+        console.log("[Buena] SSE open");
+        this.statusBar.setConnected(true);
+      },
+      onClose: () => {
+        this.statusBar.setConnected(false);
+      },
+      onError: (err) => {
+        console.warn("[Buena] SSE error", err);
+        this.statusBar.setConnected(false);
+      },
+      onReady: (info) => {
+        console.log("[Buena] SSE ready", info);
+      },
+      onPing: () => {
+        // heartbeat, nothing to do
+      },
+      onPatch: async (patch) => {
+        await this.handleIncomingPatch(patch);
+      },
+      onRemoved: async (id) => {
+        await this.handleRemoteRemoval(id);
+      },
+    });
+  }
+
+  stopLiveSync() {
+    this.eventClient?.close();
+    this.eventClient = null;
+  }
+
+  restartLiveSync() {
+    this.startLiveSync();
+  }
+
+  private async handleIncomingPatch(patch: RemotePendingPatch) {
+    try {
+      const file = await resolvePropertyFile(this.app, this);
+      if (!file) {
+        console.warn(
+          "[Buena] no property file matches",
+          this.settings.propertyId,
+          "- patch dropped",
+          patch.id
+        );
+        return;
+      }
+      const wrote = await appendPatchToFile(this.app, file, patch);
+      if (wrote) {
+        this.statusBar.markPatchReceived();
+        this.statusBar.bumpPendingCount(1);
+        new Notice(`[Buena] new patch: ${patch.section}`);
+      }
+    } catch (err) {
+      console.error("[Buena] handleIncomingPatch failed", err);
+    }
+  }
+
+  private async handleRemoteRemoval(id: string) {
+    try {
+      const file = await resolvePropertyFile(this.app, this);
+      if (!file) return;
+      const removed = await stripPatchFromFile(this.app, file, id);
+      if (removed) {
+        this.statusBar.bumpPendingCount(-1);
+      }
+    } catch (err) {
+      console.error("[Buena] handleRemoteRemoval failed", err);
+    }
   }
 }

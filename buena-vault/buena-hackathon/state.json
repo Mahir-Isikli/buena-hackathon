@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "property_id": "LIE-001",
+  "name": "WEG Immanuelkirchstraße 26",
+  "address": "Immanuelkirchstraße 26, 10405 Berlin",
+  "verwalter": "Huber & Partner Immobilienverwaltung GmbH",
+  "last_updated": "2026-04-25T17:01:07.116459+00:00",
+  "human_edited_sections": [],
+  "sections": {
+    "identity": {
+      "facts": [
+        {
+          "text": "WEG Immanuelkirchstraße 26, Immanuelkirchstraße 26, 10405 Berlin",
+          "provenance": "stammdaten/stammdaten.json",
+          "actor": "bootstrap",
+          "confidence": 1.0,
+          "ts": "2026-04-25T17:01:07.116459+00:00"
+        }
+      ]
+    },
+    "buildings": {
+      "facts": []
+    },
+    "units": {
+      "facts": []
+    },
+    "owners": {
+      "facts": []
+    },
+    "service_providers": {
+      "facts": []
+    },
+    "bank": {
+      "facts": [
+        {
+          "text": "WEG-Konto: DE02 1001 0010 0123 4567 89 (Postbank Berlin)",
+          "provenance": "stammdaten/stammdaten.json",
+          "actor": "bootstrap",
+          "confidence": 1.0,
+          "ts": "2026-04-25T17:01:07.116459+00:00"
+        },
+        {
+          "text": "Rücklage: DE12 1203 0000 0098 7654 32",
+          "provenance": "stammdaten/stammdaten.json",
+          "actor": "bootstrap",
+          "confidence": 1.0,
+          "ts": "2026-04-25T17:01:07.116459+00:00"
+        }
+      ]
+    },
+    "active_issues": {
+      "facts": []
+    },
+    "mahnungen": {
+      "facts": []
+    },
+    "side_agreements": {
+      "facts": []
+    },
+    "assembly_decisions": {
+      "facts": []
+    },
+    "per_unit_notes": {},
+    "beirat_notes": {
+      "facts": []
+    }
+  }
+}
