@@ -571,6 +571,49 @@ buena-hackathon/
 
 ---
 
+## Cloudflare infrastructure (provisioned, parked until ingest phase)
+
+Domain, account, and email routing are already provisioned. The Worker code is **not** deployed yet. Do not touch this until we hit Phase 3 (core ingestion). Listing it here so future sessions don't waste time rediscovering the wiring.
+
+### What's live on Cloudflare today
+- **Domain**: `kontext.haus` (registered 2026-04-25, Cloudflare Registrar). Active zone, Free Website plan (zone tier, irrelevant to our needs).
+  - Zone ID: `34c29fb320c85246d499440d103d2dde`
+  - Name servers: `cruz.ns.cloudflare.com`, `huxley.ns.cloudflare.com`
+  - DNS: only Email Routing records present (MX route1/2/3, DKIM `cf2024-1._domainkey`, SPF). No A/CNAME yet.
+- **Email Routing on `kontext.haus`**: status `ready`, enabled. Catch-all rule `*@kontext.haus` routes to a Worker named **`buena-ingest`** that does NOT exist yet. Mail will bounce until the Worker is deployed under that exact name.
+- **Account**: `isiklimahir@gmail.com`, account id `564b8125cf83c4aa38cf87f61f2ac14c`. Workers Paid ($5/mo) is active at the account level (unlocks Browser Rendering, higher CPU).
+- **Existing infra in account** (not ours, but visible): 2 Durable Object namespaces, 1 Queue, lots of unrelated Pages projects. We do not need DOs for this build.
+
+### Tokens in Keychain (never commit token values, references only)
+| Service name | Scope | Use for |
+|---|---|---|
+| `cloudflare-buena-token` | Includes Email Routing on `kontext.haus`. Account-scoped (no `User: Memberships`, so `/user/tokens/verify` returns Invalid, but real API calls succeed). | **Buena hackathon work.** Use this one. |
+| `cloudflare-api-token` | Mahir's general Workers/Pages/R2/D1/DNS token. **Lacks Email Routing.** | Other personal projects, not this repo. |
+| `cloudflare-account-id` | `564b8125cf83c4aa38cf87f61f2ac14c` | Wrangler env var. |
+| `cloudflare-browser-rendering-token` | For the Browser Rendering binding on the cf-browser-worker project. | Not needed here. |
+
+Retrieve via `security find-generic-password -s cloudflare-buena-token -w`. Wrangler invocations should look like:
+```bash
+CLOUDFLARE_API_TOKEN=$(security find-generic-password -s cloudflare-buena-token -w) \
+CLOUDFLARE_ACCOUNT_ID=$(security find-generic-password -s cloudflare-account-id -w) \
+wrangler <command>
+```
+
+### Cloudflare MCP server (Code Mode) is wired up
+MCPorter has a `cloudflare-api` entry that calls the Cloudflare MCP at `https://mcp.cloudflare.com/mcp`. It currently uses `cloudflare-api-token`, which means **Email Routing endpoints are blocked through the MCP**. For Email Routing changes, either:
+- shell directly with the buena token (`curl -H "Authorization: Bearer $(security find-generic-password -s cloudflare-buena-token -w)" ...`), or
+- swap the MCP config to use `cloudflare-buena-token` when we start Phase 3.
+
+The MCP exposes 2 tools: `cloudflare-api.search` (discover endpoints) and `cloudflare-api.execute` (run JS in a sandbox using `cloudflare.request()`, with `accountId` auto-injected). Useful for things wrangler can't do: analytics, security insights, bulk parallel calls, Email Routing rule management.
+
+### When we resume Phase 3 (ingest)
+1. Deploy a Worker named `buena-ingest` (exact name, the catch-all rule already points at it).
+2. Worker reads inbound `email` event, fans attachments into R2 bucket(s) we still need to create.
+3. R2 bucket naming convention: `buena-raw/` (raw inbound), `buena-vaults/` (rendered property.md + state.json + history). Decide before creating.
+4. Add a Pages project for the bulk-import page later, point a subdomain on `kontext.haus` at it.
+
+---
+
 ## Operational rules for the agent
 
 - **No em dashes** in human-facing text. Use commas, periods, semicolons, colons.
