@@ -1,0 +1,10 @@
+{
+  "id": "buena",
+  "name": "Buena Context Engine",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Self-updating context engine for property management. Inline patch approvals, provenance hovers, and a pending-queue sidebar.",
+  "author": "Buena Hackathon Team",
+  "authorUrl": "https://github.com/buena-hackathon",
+  "isDesktopOnly": false
+}

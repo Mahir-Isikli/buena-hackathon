@@ -1,0 +1,307 @@
+/* Buena Context Engine plugin styles */
+
+/* Sidebar */
+.buena-sidebar {
+  padding: 12px;
+  font-size: var(--font-ui-small);
+}
+
+.buena-sidebar-header {
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.buena-sidebar-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.buena-sidebar-title-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-accent);
+}
+
+.buena-sidebar-title {
+  margin: 0;
+  font-size: 1.1em;
+}
+
+.buena-sidebar-subtitle {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.85em;
+  font-family: var(--font-monospace);
+}
+
+.buena-section {
+  margin-bottom: 20px;
+}
+
+.buena-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.buena-section h4 {
+  margin: 0;
+  font-size: 0.9em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.buena-badge {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 0.75em;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.buena-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.buena-card {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.buena-card-pending {
+  border-left: 3px solid var(--color-yellow);
+}
+
+.buena-card-history {
+  border-left: 3px solid var(--background-modifier-border);
+  opacity: 0.85;
+}
+
+.buena-card-section {
+  font-weight: 600;
+  font-size: 0.85em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.buena-card-old {
+  color: var(--text-faint);
+  text-decoration: line-through;
+  font-size: 0.85em;
+  margin-bottom: 2px;
+}
+
+.buena-card-new {
+  color: var(--text-normal);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.buena-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.buena-meta-pill {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.75em;
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+}
+
+.buena-meta-source {
+  color: var(--text-faint);
+  font-size: 0.75em;
+  font-family: var(--font-monospace);
+  word-break: break-all;
+}
+
+.buena-decision-auto {
+  color: var(--color-green);
+}
+.buena-decision-approved {
+  color: var(--color-blue);
+}
+.buena-decision-rejected {
+  color: var(--color-red);
+}
+
+.buena-card-actions,
+.buena-pending-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.buena-btn {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.85em;
+  cursor: pointer;
+  color: var(--text-normal);
+}
+
+.buena-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+.buena-btn-primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.buena-btn-primary:hover {
+  background: var(--interactive-accent-hover);
+}
+
+/* Inline pending callout (rendered from buena-pending codeblock) */
+.buena-pending-card {
+  background: var(--background-secondary);
+  border: 1px solid var(--color-yellow);
+  border-left: 4px solid var(--color-yellow);
+  border-radius: 6px;
+  padding: 12px;
+  margin: 12px 0;
+}
+
+.buena-pending-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.buena-pending-label {
+  background: var(--color-yellow);
+  color: var(--text-on-accent);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.buena-pending-section {
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+}
+
+.buena-pending-body {
+  margin-bottom: 8px;
+}
+
+.buena-pending-old {
+  color: var(--text-faint);
+  text-decoration: line-through;
+  margin-bottom: 4px;
+}
+
+.buena-pending-new {
+  color: var(--text-normal);
+}
+
+.buena-pending-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.buena-pending-approved {
+  opacity: 0.5;
+  border-color: var(--color-green);
+}
+
+.buena-pending-rejected {
+  opacity: 0.5;
+  border-color: var(--color-red);
+}
+
+/* Provenance pill */
+.buena-prov-pill {
+  display: inline-block;
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+  font-size: 0.7em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin: 0 3px;
+  cursor: help;
+  font-family: var(--font-monospace);
+  vertical-align: middle;
+}
+
+.buena-prov-pill:hover {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+/* Status bar */
+.buena-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.buena-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.buena-status-dot-on {
+  background: var(--color-green);
+  box-shadow: 0 0 6px var(--color-green);
+}
+
+.buena-status-dot-off {
+  background: var(--background-modifier-border);
+}
+
+.buena-status-icon {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.7;
+}
+
+.buena-status-text {
+  font-size: 0.9em;
+}
+
+.buena-status-meta {
+  color: var(--text-muted);
+  font-size: 0.85em;
+}
+
+@keyframes buena-pulse {
+  0% { background: transparent; }
+  40% { background: var(--interactive-accent); color: var(--text-on-accent); }
+  100% { background: transparent; }
+}
+
+.buena-status-pulse {
+  animation: buena-pulse 1.2s ease-out;
+  border-radius: 4px;
+  padding: 0 4px;
+}

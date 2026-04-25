@@ -30,3 +30,6 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Local-only Obsidian plugin symlink (each dev symlinks plugin/ here)
+buena-vault/buena-hackathon/.obsidian/plugins/
