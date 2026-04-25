@@ -3,6 +3,7 @@ import {
   MarkdownView,
   Notice,
   parseYaml,
+  setIcon,
   TFile,
   WorkspaceLeaf,
 } from "obsidian";
@@ -42,6 +43,9 @@ export class BuenaSidebarView extends ItemView {
   private pending: PendingPatch[] = [];
   private history: HistoryEntry[] = [];
   private currentFile: TFile | null = null;
+  // Filter modes: "__all__" | "__review__" | "unit:<EH-XXX>"
+  private filter: string = "__all__";
+  private historyExpanded: boolean = false;
 
   constructor(leaf: WorkspaceLeaf, plugin: BuenaPlugin) {
     super(leaf);
@@ -84,12 +88,24 @@ export class BuenaSidebarView extends ItemView {
    */
   async refresh() {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-    this.currentFile = view?.file ?? null;
+    const newFile = view?.file ?? null;
+    // Sticky behavior: only switch when a different markdown file is active.
+    // If the user clicks into settings, graph, canvas, etc., keep the last
+    // property file pinned in the sidebar.
+    if (newFile && newFile !== this.currentFile) {
+      this.currentFile = newFile;
+    } else if (this.currentFile && !this.app.vault.getAbstractFileByPath(this.currentFile.path)) {
+      // The pinned file was deleted/renamed, drop it.
+      this.currentFile = null;
+    }
     this.pending = await this.scanPending(this.currentFile);
     this.history = this.currentFile
       ? await loadHistory(this.plugin, this.currentFile.path)
       : [];
     this.plugin.statusBar.setPendingCount(this.pending.length);
+    this.plugin.statusBar.setReviewCount(
+      this.pending.filter((p) => p.confidence > 0 && p.confidence < 0.85).length
+    );
     this.render();
   }
 
@@ -129,63 +145,188 @@ export class BuenaSidebarView extends ItemView {
     root.empty();
     root.addClass("buena-sidebar");
 
-    // Wordmark header
+    // Compact header: wordmark + property name on one row.
     const header = root.createDiv({ cls: "buena-sidebar-header" });
     const wordmark = header.createDiv({ cls: "buena-sidebar-wordmark" });
     wordmark.createSpan({ text: "buena", cls: "buena-wordmark-text" });
     wordmark.createSpan({ text: "·", cls: "buena-wordmark-dot" });
-    header.createEl("div", {
-      text: "Context Engine",
-      cls: "buena-sidebar-tagline",
-    });
-    header.createEl("div", {
-      text: this.currentFile?.basename ?? this.plugin.settings.propertyId,
-      cls: "buena-sidebar-subtitle",
+    header.createEl("span", {
+      text:
+        this.currentFile?.basename ?? this.plugin.settings.propertyId ?? "",
+      cls: "buena-sidebar-property",
     });
 
-    // Pending queue
-    const pendingSection = root.createDiv({ cls: "buena-section" });
-    const pendingHeader = pendingSection.createDiv({ cls: "buena-section-header" });
-    pendingHeader.createEl("h4", { text: "Pending queue" });
+    // Shared content wrapper so both panes share the same width context.
+    const content = root.createDiv({ cls: "buena-sidebar-content" });
+    if (this.historyExpanded) {
+      content.addClass("buena-content-history-expanded");
+    }
+
+    // Build available unit chips and apply current filter.
+    const units = uniqueUnits(this.pending);
+    const reviewCount = this.pending.filter(
+      (p) => p.confidence > 0 && p.confidence < 0.85
+    ).length;
+    if (this.filter.startsWith("unit:")) {
+      const u = this.filter.slice(5);
+      if (!units.includes(u)) this.filter = "__all__";
+    }
+    const visiblePending = this.applyFilter(this.pending);
+
+    // Pending queue (fills remaining space, scrolls internally)
+    const pendingSection = content.createDiv({
+      cls: "buena-section buena-section-pending",
+    });
+    const pendingHeader = pendingSection.createDiv({
+      cls: "buena-section-header",
+    });
+    const pendingTitle = pendingHeader.createDiv({ cls: "buena-section-title" });
+    setIcon(
+      pendingTitle.createSpan({ cls: "buena-section-icon" }),
+      "inbox"
+    );
+    pendingTitle.createEl("h4", { text: "Pending queue" });
     pendingHeader.createEl("span", {
       text: `${this.pending.length}`,
       cls: "buena-badge",
     });
 
+    if (this.pending.length > 0) {
+      const filters = pendingSection.createDiv({ cls: "buena-filter-chips" });
+      this.renderChip(filters, "All", "__all__", this.pending.length);
+      if (reviewCount > 0) {
+        this.renderChip(filters, "Needs review", "__review__", reviewCount);
+      }
+      for (const u of units) {
+        const count = this.pending.filter((p) => p.unit === u).length;
+        this.renderChip(filters, u, `unit:${u}`, count);
+      }
+    }
+
+    const pendingBody = pendingSection.createDiv({
+      cls: "buena-section-body",
+    });
+
     if (!this.currentFile) {
-      pendingSection.createEl("div", {
+      pendingBody.createEl("div", {
         text: "Open a property file to see its pending patches.",
         cls: "buena-empty",
       });
     } else if (this.pending.length === 0) {
-      pendingSection.createEl("div", {
+      pendingBody.createEl("div", {
         text: "No pending patches in this file.",
         cls: "buena-empty",
       });
+    } else if (visiblePending.length === 0) {
+      pendingBody.createEl("div", {
+        text: `No pending patches match “${this.filterLabel()}”.`,
+        cls: "buena-empty",
+      });
     } else {
-      for (const p of this.pending) {
-        this.renderPendingCard(pendingSection, p);
+      for (const p of visiblePending) {
+        this.renderPendingCard(pendingBody, p);
       }
     }
 
-    // History
-    const historySection = root.createDiv({ cls: "buena-section" });
-    historySection.createEl("h4", { text: "Recent changes" });
+    // Recent changes (pinned to bottom 20%, scrolls internally)
+    const historySection = content.createDiv({
+      cls: "buena-section buena-section-history",
+    });
+    const historyHeader = historySection.createDiv({
+      cls: "buena-section-header",
+    });
+    const historyTitle = historyHeader.createDiv({ cls: "buena-section-title" });
+    setIcon(
+      historyTitle.createSpan({ cls: "buena-section-icon" }),
+      "history"
+    );
+    historyTitle.createEl("h4", { text: "Recent changes" });
+    const historyRight = historyHeader.createDiv({
+      cls: "buena-section-right",
+    });
+    if (this.currentFile && this.history.length > 0) {
+      historyRight.createEl("span", {
+        text: `${this.history.length}`,
+        cls: "buena-badge",
+      });
+    }
+    const expandBtn = historyRight.createEl("button", {
+      cls: "buena-section-toggle",
+      attr: {
+        "aria-label": this.historyExpanded
+          ? "Collapse recent changes"
+          : "Expand recent changes",
+      },
+    });
+    setIcon(expandBtn, this.historyExpanded ? "chevrons-down" : "chevrons-up");
+    expandBtn.onclick = () => {
+      this.historyExpanded = !this.historyExpanded;
+      this.render();
+    };
+    const historyBody = historySection.createDiv({
+      cls: "buena-section-body",
+    });
     if (!this.currentFile) {
-      historySection.createEl("div", {
+      historyBody.createEl("div", {
         text: "Open a property file to see its history.",
         cls: "buena-empty",
       });
     } else if (this.history.length === 0) {
-      historySection.createEl("div", {
+      historyBody.createEl("div", {
         text: "No changes yet. Approve or reject a pending patch to start the log.",
         cls: "buena-empty",
       });
     } else {
       for (const h of this.history) {
-        this.renderHistoryCard(historySection, h);
+        this.renderHistoryCard(historyBody, h);
       }
     }
+
+    // Sticky in-sidebar status bar (always visible, below Recent changes).
+    const statusHost = root.createDiv({ cls: "buena-statusbar" });
+    this.plugin.statusBar.attach(statusHost);
+  }
+
+  private renderChip(
+    parent: HTMLElement,
+    label: string,
+    value: string,
+    count: number
+  ) {
+    const isActive = this.filter === value;
+    const reviewCls = value === "__review__" ? " buena-chip-review" : "";
+    const chip = parent.createEl("button", {
+      cls: `buena-chip${reviewCls}${isActive ? " buena-chip-active" : ""}`,
+    });
+    const iconName = chipIcon(value);
+    if (iconName) {
+      setIcon(chip.createSpan({ cls: "buena-chip-icon" }), iconName);
+    }
+    chip.createSpan({ text: label, cls: "buena-chip-label" });
+    chip.createSpan({ text: String(count), cls: "buena-chip-count" });
+    chip.onclick = () => {
+      this.filter = value;
+      this.render();
+    };
+  }
+
+  private applyFilter(items: PendingPatch[]): PendingPatch[] {
+    if (this.filter === "__all__") return items;
+    if (this.filter === "__review__") {
+      return items.filter((p) => p.confidence > 0 && p.confidence < 0.85);
+    }
+    if (this.filter.startsWith("unit:")) {
+      const u = this.filter.slice(5);
+      return items.filter((p) => p.unit === u);
+    }
+    return items;
+  }
+
+  private filterLabel(): string {
+    if (this.filter === "__all__") return "All";
+    if (this.filter === "__review__") return "Needs review";
+    if (this.filter.startsWith("unit:")) return this.filter.slice(5);
+    return this.filter;
   }
 
   private renderPendingCard(parent: HTMLElement, p: PendingPatch) {
@@ -247,45 +388,50 @@ export class BuenaSidebarView extends ItemView {
   }
 
   private renderHistoryCard(parent: HTMLElement, h: HistoryEntry) {
-    const card = parent.createDiv({ cls: "buena-card buena-card-history" });
-
-    const top = card.createDiv({ cls: "buena-card-top" });
-    top.createDiv({ text: h.section, cls: "buena-card-section" });
-    if (h.unit) {
-      top.createSpan({ text: h.unit, cls: "buena-unit-pill" });
-    }
-    top.createSpan({
-      text: h.decision,
-      cls: `buena-meta-pill buena-decision-${h.decision}`,
+    // Compact log/timeline row: status icon · section · value · time-ago.
+    const row = parent.createDiv({
+      cls: `buena-log-row buena-log-${h.decision}`,
     });
 
-    if (h.oldValue) {
-      card.createDiv({ text: h.oldValue, cls: "buena-card-old" });
-    }
-    card.createDiv({ text: h.newValue, cls: "buena-card-new" });
+    // Status icon based on decision.
+    const icon = row.createSpan({ cls: "buena-log-icon" });
+    const iconName =
+      h.decision === "approved"
+        ? "check"
+        : h.decision === "rejected"
+          ? "x"
+          : "zap";
+    setIcon(icon, iconName);
 
-    const meta = card.createDiv({ cls: "buena-card-meta" });
-    meta.createSpan({ text: h.actor, cls: "buena-meta-pill" });
-    if (h.source) {
-      const src = meta.createSpan({
-        text: shortSource(h.source),
-        cls: "buena-meta-source",
-      });
-      attachHoverPopover(src, () => [
-        { label: "Source", value: h.source ?? "", mono: true },
-        { label: "Actor", value: h.actor },
-        { label: "Decision", value: h.decision },
-        {
-          label: "When",
-          value: new Date(h.timestamp).toLocaleString(),
-        },
-      ]);
-    } else {
-      meta.createSpan({
-        text: new Date(h.timestamp).toLocaleString(),
-        cls: "buena-meta-source",
-      });
+    // Body: section label + value.
+    const body = row.createDiv({ cls: "buena-log-body" });
+    const top = body.createDiv({ cls: "buena-log-top" });
+    top.createSpan({ text: h.section, cls: "buena-log-section" });
+    if (h.unit) {
+      top.createSpan({ text: h.unit, cls: "buena-log-unit" });
     }
+    body.createDiv({ text: h.newValue, cls: "buena-log-value" });
+
+    // Time-ago on the right (full timestamp on hover).
+    const time = row.createSpan({
+      text: timeAgo(h.timestamp),
+      cls: "buena-log-time",
+    });
+    attachHoverPopover(time, () => {
+      const fields: HoverField[] = [
+        { label: "Decision", value: h.decision },
+        { label: "When", value: new Date(h.timestamp).toLocaleString() },
+        { label: "Actor", value: h.actor },
+      ];
+      if (h.source) {
+        fields.push({ label: "Source", value: h.source, mono: true });
+      }
+      if (h.oldValue) {
+        fields.push({ label: "Was", value: h.oldValue });
+      }
+      fields.push({ label: "Now", value: h.newValue });
+      return fields;
+    });
   }
 
   private async handleApprove(p: PendingPatch) {
@@ -370,4 +516,38 @@ export class BuenaSidebarView extends ItemView {
 function shortSource(s: string): string {
   const parts = s.split("/");
   return parts[parts.length - 1];
+}
+
+function timeAgo(iso: string): string {
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return "";
+  const secs = Math.floor((Date.now() - t) / 1000);
+  if (secs < 5) return "now";
+  if (secs < 60) return `${secs}s`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d`;
+  return `${Math.floor(days / 7)}w`;
+}
+
+function chipIcon(value: string): string | null {
+  if (value === "__all__") return "layers";
+  if (value === "__review__") return "alert-triangle";
+  if (value.startsWith("unit:")) return "home";
+  return null;
+}
+
+function uniqueUnits(pending: PendingPatch[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const p of pending) {
+    if (p.unit && !seen.has(p.unit)) {
+      seen.add(p.unit);
+      out.push(p.unit);
+    }
+  }
+  return out.sort();
 }

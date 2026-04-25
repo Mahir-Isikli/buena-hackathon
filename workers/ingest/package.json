@@ -1,0 +1,17 @@
+{
+  "name": "buena-ingest",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0",
+    "@cloudflare/workers-types": "^4.20240909.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "postal-mime": "^2.4.0"
+  }
+}

@@ -46,37 +46,6 @@ tags:
 ## 🟡 Pending patches
 
 ```buena-pending
-id: p-002
-unit: Hausmeister
-section: Service providers
-old: "DL-001: 650 €/Monat"
-new: "DL-001: 720 €/Monat (price increase notice, effective 2026-05-01)"
-source: briefe/2026-04-10/BRIEF-00781.pdf
-snippet: "Aufgrund gestiegener Lohn- und Materialkosten passen wir den Pauschalbetrag ab dem 01.05.2026 von 650 € auf 720 € monatlich an."
-confidence: 0.87
-actor: gemini-2.5-pro
-target_heading: "## 🔗 Connected pages"
-new_block: |
-  - [[DL-001]] Hausmeister cost change: **720 €/Monat** ab 2026-05-01 (was 650 €/Monat) {changed: 2026-04-25 | actor: gemini-2.5-pro | src: briefe/2026-04-10/BRIEF-00781.pdf}
-```
-
-```buena-pending
-id: p-003
-unit: EH-021
-section: Active Mahnungen
-old: "2. Mahnung"
-new: "3. Mahnung — Räumungsklage vorbereitet"
-source: briefe/2026-04-18/BRIEF-00802.pdf
-snippet: "Da die zweite Mahnung vom 26.06.2024 unbeantwortet blieb und der Rückstand inzwischen 8.420 € beträgt, leiten wir die Räumungsklage ein."
-confidence: 0.94
-actor: gemini-2.5-pro
-target_heading: "## 💸 Active Mahnungen"
-new_block: |
-  > [!bug] [[EH-021]] — 3. Mahnung, Räumungsklage
-  > [[MIE-002]] Rückstand **8.420 €**. Räumungsklage durch Anwalt eingeleitet 2026-04-18. {changed: 2026-04-25 | actor: gemini-2.5-pro | src: briefe/2026-04-18/BRIEF-00802.pdf}
-```
-
-```buena-pending
 id: p-004
 unit: HAUS-12
 section: Active issues
@@ -109,21 +78,6 @@ new_block: |
 ```
 
 ```buena-pending
-id: p-006
-unit: LIE-001
-section: Assembly decisions
-old: ""
-new: "ETV 2026-05 Einladungen versandt"
-source: briefe/2026-04-15/BRIEF-00795.pdf
-snippet: "Einladung zur ordentlichen Eigentümerversammlung am 22.05.2026, 18:30 Uhr, im Gemeinschaftsraum HAUS-14. 35 Einladungen versandt am 15.04.2026."
-confidence: 0.97
-actor: gemini-2.5-pro
-target_heading: "## 📜 Assembly decisions (ETV)"
-new_block: |
-  - ETV 2026-05 Einladungen → 35 versendet 2026-04-15, Termin **22.05.2026 18:30** (Gemeinschaftsraum HAUS-14) {changed: 2026-04-25 | actor: gemini-2.5-pro | src: briefe/2026-04-15/BRIEF-00795.pdf}
-```
-
-```buena-pending
 id: p-007
 unit: EH-037
 section: Per-unit notes
@@ -142,6 +96,9 @@ new_block: |
 ---
 
 ## 💸 Active Mahnungen
+
+> [!bug] [[EH-021]] — 3. Mahnung, Räumungsklage
+> [[MIE-002]] Rückstand **8.420 €**. Räumungsklage durch Anwalt eingeleitet 2026-04-18. {changed: 2026-04-25 | actor: gemini-2.5-pro | src: briefe/2026-04-18/BRIEF-00802.pdf}
 
 > [!bug] [[EH-021]] — 2. Mahnung
 > [[MIE-002]] im Rückstand seit Q2 2024. Vergleichsangebot offen.

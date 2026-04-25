@@ -1,0 +1,16 @@
+name = "buena-ingest"
+main = "src/email.ts"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+account_id = "564b8125cf83c4aa38cf87f61f2ac14c"
+
+# HTTP trigger for bulk-import POSTs and health checks
+workers_dev = true
+
+[[r2_buckets]]
+binding = "RAW"
+bucket_name = "buena-raw"
+
+[[queues.producers]]
+binding = "EXTRACT_QUEUE"
+queue = "buena-extract"
