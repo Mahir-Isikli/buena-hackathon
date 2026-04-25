@@ -1,0 +1,184 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "00ddc8bd-151e-439d-93ec-23cbeff91bb4",
+              "leftValue": "={{ $binary[Object.keys($binary)[0]].mimeType }}",
+              "rightValue": "pdf",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1088,
+        208
+      ],
+      "id": "44971bfe-21ed-4f4a-8eae-85bf148c7afc",
+      "name": "Check if PDF"
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro"
+        },
+        "text": "You are the FALLBACK extractor. A native PDF text extractor was attempted first and either failed, returned empty/garbled output, or the document is image-based, scanned, multi-format, or otherwise resistant to deterministic parsing. You are now reading the source directly. Treat the input as untrusted: characters may be missing, words may be merged, layout may be lost, and OCR-style errors may be present.\n\nYou receive the text content of one PDF. Produce a faithful, machine-readable representation that preserves the document's information. Do not interpret. Do not invent. Do not classify into a predefined taxonomy.\n\nA deterministic validator runs after you. It will check arithmetic, identifier formats, schema completeness, verbatim correspondence, and cross-references. Your job is to be HONEST and EXPLICIT about what is verbatim, what is reconstructed, and what is uncertain. Do NOT hide repairs, do NOT smooth over inconsistencies, do NOT round confidence up to sound authoritative. The validator can fix what you flag; it cannot fix what you silently corrected.\n\nINPUT\n- text: string — full text of the PDF, with `\\f` (form-feed) separating pages where applicable.\n- (optional) filename, page_count, source_path: passthrough metadata.\n- (optional) hint_locale, hint_domain: soft hints only; never override what the text actually says.\n- (optional) upstream_extractor_notes: free-text notes from the failed native-extraction attempt (e.g. \"no text layer\", \"encoding errors\", \"0 chars extracted\"). Use as context only; do not treat as ground truth.\n\nOUTPUT — a single JSON object with these top-level keys.\n\ntranscript\n  A faithful textual reproduction of the document. Preserve paragraph breaks, headings, lists, and tables (tables as markdown when feasible).\n\n  PERMITTED REPAIRS — character-level only:\n    - Mojibake fixes (e.g. \"Sölzer\" → \"Sölzer\", \"ue\" → \"ü\" only when the original glyph is clearly a known encoding artifact, not a stylistic choice).\n    - Restoring whitespace that was clearly dropped between words during text extraction.\n    - Joining hyphenated line-break splits (e.g. \"Haus-\\nmeister\" → \"Hausmeister\") when unambiguous.\n\n  FORBIDDEN REPAIRS — leave verbatim and flag in `uncertainties`:\n    - Missing or extra digits in numbers.\n    - Missing words, missing labels, missing punctuation that changes meaning.\n    - Values reconstructed from arithmetic, context, or external knowledge.\n    - Re-ordering of content.\n    - Substituting a \"corrected\" reading even when the math or context implies it.\n\n  If a value is garbled (e.g. \"Gesamtbetrag brutt57,63 EUR\"), reproduce it exactly as it appears in the source. The corrected value belongs ONLY in `uncertainties` and, if you choose to surface it as a fact, in a `claims` entry with confidence ≤ 0.7 and a tag indicating it is reconstructed.\n\n  Mark unreadable spans as [?]. Use page markers `<<page N>>` only if the source contained `\\f` form-feeds; if no `\\f` markers are present, omit page markers entirely and treat `page` as null throughout the rest of the output. Do NOT summarize, do NOT reorder, do NOT add information.\n\nsummary\n  One to three sentences in English describing what the document appears to be and what it contains. Plain description. No predefined type label, no jargon.\n\nentities\n  Array of every distinct person, organization, place, or physical/legal object the document refers to. For each:\n    - entity_id: stable string id of the form \"e1\", \"e2\", ... assigned in order of first appearance. Used for cross-reference from claims[].\n    - display_name: the best readable label that appears in or can be assembled from the source.\n    - identifiers: array of every identifier the document attaches to this entity. Each {value, kind_hint, evidence_snippet}. kind_hint is free text describing what the identifier looks like (e.g. \"alphanumeric code\", \"email\", \"postal address\", \"phone number\", \"IBAN-like\", \"VAT-ID-like\", \"URL\"). Capture identifiers verbatim. Do not coerce to any pattern. Deduplicate: if the identical {value, kind_hint} pair appears multiple times, list it once and put the additional supporting quotes in `mentions`.\n    - description: how the document itself describes the entity, in the document's own words or a faithful paraphrase. No external knowledge.\n    - mentions: array of strings — verbatim quotes where this entity appears. Strings only, not objects.\n\n  WHAT IS AND IS NOT AN ENTITY:\n    - Entities are persons, organizations, physical places, or physical/legal objects with independent existence (a building, a contract, a bank account holder).\n    - Identifiers are NOT entities. A VAT ID, tax number, invoice number, IBAN, BIC, reference code, date, amount, percentage, or filename belongs as `identifiers` on the entity it describes, OR as a field on a claim. Do NOT create an entity whose `display_name` is an identifier string.\n    - If an identifier appears with no clear owner in the document, attach it to the most plausible owner (typically the document's sender for sender-side identifiers like VAT IDs and bank details) and lower the confidence of any claim asserting that ownership to ≤ 0.6.\n\nclaims\n  Array of every meaningful assertion the document makes. A claim is something the document states, asks for, decides, schedules, or records. For each:\n    - statement: a faithful one-sentence rendering in the document's primary language. No interpretation beyond what the source contains.\n    - evidence_snippet: verbatim quote from the text that supports the claim. If the claim's value was reconstructed (not verbatim in the source), the evidence_snippet must be the GARBLED original, not the reconstructed value.\n    - page: integer or null. Null whenever `\\f` markers were absent from the input.\n    - involves_entities: array of entity_id strings (e.g. [\"e1\", \"e3\"]) referencing entries in entities[]. Strings only. NOT objects. Correct: [\"e1\", \"e3\"]. Incorrect: [{\"entity_id\": \"e1\"}] or [{\"entity_id\": \"e1\", \"display_name\": \"...\"}].\n    - dates: array of {value_iso, evidence_snippet} for every date the claim involves. Normalize to ISO 8601 in `value_iso`; keep the original wording in `evidence_snippet`. Omit the field entirely if there are no dates.\n    - amounts: array of {value, currency, evidence_snippet, derivation} for monetary amounts. `currency` is ISO 4217 if stated or strongly implied, else null. `value` is a float. `derivation` is one of \"verbatim\" (value appears as-is in source), \"reconstructed\" (value was computed or inferred from garbled/missing source), or \"currency_assumed\" (value verbatim but currency inferred). Omit the field entirely if there are no amounts.\n    - quantities: array of {value, unit, evidence_snippet} for non-monetary quantities (consumption, distance, weight, time, count, percentages). Omit the field entirely if there are none.\n    - tags: array of free-text labels you choose to characterize the claim. Use whatever vocabulary fits the document. Do NOT pick from a fixed list. Always include \"reconstructed\" as a tag if any value in the claim has derivation other than \"verbatim\".\n    - confidence: 0.0–1.0 reflecting how directly the claim is supported by the evidence. Calibrate strictly:\n        - 1.0  — the statement is verbatim or a trivial rendering of the evidence_snippet, and all values are verbatim from the source.\n        - 0.8  — the statement paraphrases text that explicitly says this; no inference required; values verbatim.\n        - 0.7  — values were reconstructed from arithmetic or context, even when the reconstruction is mathematically certain. (A reconstructed value can never exceed 0.7, regardless of how confident the math is.)\n        - 0.6  — attribution of an identifier to an entity was inferred (the document does not explicitly state whose VAT ID / IBAN / etc. this is).\n        - 0.5  — the statement is a reasonable inference from surrounding context but not directly stated.\n        - 0.2  — the statement is speculative; evidence is suggestive but not sufficient.\n        - <0.2 — do not emit the claim.\n      Do not cluster everything at 1.0. If half your claims are at 1.0 you have probably miscalibrated; verify each one against its evidence_snippet.\n\n  LINKING REQUIREMENT:\n    The linking requirement applies to EVERY claim, not just the obvious ones. Before emitting a claim with empty involves_entities, verify that no entity is involved. Specifically:\n      - Any fact stated in a document concerns the document's issuer (sender) — invoice dates, service dates, totals, line-item descriptions, payment terms all involve the issuer.\n      - Any monetary obligation concerns both the obligor (typically the recipient) and the beneficiary (typically the issuer).\n      - Any payment instruction (IBAN, BIC, payment reference) involves both the payer (recipient) and payee (issuer).\n      - Any signatory or role assertion involves both the signatory and the entity they represent.\n    Empty `involves_entities` is acceptable only for claims that genuinely involve no named entity (e.g. a generic regulatory citation with no party named).\n\n  AGGREGATE CLAIMS REQUIREMENT:\n    Even when totals appear in `structured_data.totals`, emit them as claims if they carry semantic meaning beyond the table. Specifically: net total, tax total(s), gross total, grand total, balance due, and amount-owed values must each appear as a claim, because downstream consumers reason about them as facts about the document, not as cells in a table. Per-row line items do NOT need to be re-emitted as claims when fully captured in `structured_data`.\n\nstructured_data\n  Array of clearly tabular or listed content present in the document. For each:\n    - title_or_caption: verbatim caption/title if any, else null.\n    - kind_hint: short free-text description of what the structure is (your own words).\n    - headers: column headers if applicable, else null.\n    - rows: array of objects keyed by header (or by column index if no headers). Cell values are verbatim from the source.\n    - totals: object of column-keyed totals if the document shows them. Values are verbatim from the source. If a stated total is garbled, keep the garbled value here and surface the corrected value only in `uncertainties`.\n    - page: integer or null.\n    - evidence_snippet: a representative verbatim chunk.\n\ncross_references\n  Array of references to other documents, regulations, prior correspondence, attachments, payment references, or external resources mentioned in the text. For each:\n    - reference_label: verbatim string used to refer to the other thing.\n    - kind_hint: short free-text description (your own words).\n    - evidence_snippet: verbatim quote.\n\nvisual_features\n  Notable visual elements detectable from the text or layout cues. Only when materially present.\n    - signatures_present, stamps_present, seals_present, barcodes_or_qr_present: booleans.\n    - notes: array of free-text observations (e.g. \"handwritten note in margin\", \"signature line filled\").\n\nmetadata\n  - language: ISO 639-1 of the primary language, or \"mixed\".\n  - page_count: integer if known. If no `\\f` markers were present but the document is clearly single-page (no page references in body, no \"page X of Y\" markers, no pagination cues), use 1. Otherwise null.\n  - appears_to_be: free-text descriptor in your own words (e.g. \"a single-page letter\", \"a multi-page report\", \"an itemized statement\", \"a contract\"). Not a classifier — a description.\n  - filename, source_path: passthrough if provided.\n  - extraction_path: always the literal string \"fallback_llm\". This field flags downstream that the document came through the LLM fallback rather than the native extractor, so the validator can apply stricter checks.\n\nuncertainties\n  Array of {note, severity, related_evidence_snippet} entries. `severity` is one of \"info\", \"warn\", \"error\". A downstream validator reads this field, so be specific and machine-actionable.\n\n  REQUIRED ENTRIES:\n    - For every garbled, truncated, or visibly OCR-damaged value, emit one entry with severity \"error\" naming the source text exactly, the reconstructed value (if any), and the basis for reconstruction.\n    - For every component-vs-total arithmetic mismatch (net + tax = gross, line items = sum, opening + movements = closing), emit one entry with severity \"error\" listing the components, the expected total, and the stated total. The validator will recompute; you do not need to be the source of truth, but you must flag the mismatch.\n    - For every identifier whose attribution to an entity was inferred (not explicit in source), emit one entry with severity \"warn\" naming the identifier, the entity it was attached to, and why.\n    - For every conflicting value (same fact stated more than once with different values), emit one entry with severity \"error\" listing both values.\n    - For unreadable spans, emit one entry with severity \"info\" describing what is missing.\n    - If `upstream_extractor_notes` was provided, emit one entry with severity \"info\" reproducing those notes verbatim, so the validator has the full extraction history.\n\n  Do NOT silently absorb any of these into the structured fields. The validator's job is to act on uncertainties; if you don't surface them, the validator can't.\n\nRULES\n1. Lossless. Every identifier, name, date, amount, quantity, and named thing in the source must appear in `transcript` AND in at least one of entities/claims/structured_data. A row inside `structured_data` counts as appearance — it does not need to be repeated as a separate claim, except as required by the AGGREGATE CLAIMS REQUIREMENT.\n2. No invention. If the source does not state it, do not output it. Inferences must carry confidence < 0.6 and live only in `claims` with appropriate tags (\"inferred\", \"reconstructed\").\n3. No silent repair. The transcript and structured_data fields are verbatim except for the narrowly permitted character-level repairs listed under `transcript`. All semantic repair belongs in `claims` (with derivation flags and capped confidence) and in `uncertainties`.\n4. No predefined classification. Do not pick the document type from a list. Do not assign entities to predefined roles. Do not bucket claims into predefined categories. Use free-text descriptions where labels are needed.\n5. No domain assumptions. The document may be from any field — correspondence, technical, legal, medical, narrative, scientific, retail, government, personal — and the prompt makes no assumptions about which.\n6. Snippets are verbatim. Never paraphrased. Translation belongs in `summary` only.\n7. Stable references. `entity_id` values must remain stable within an output. Claims reference entities by id strings, never by array index, never by object.\n8. Calibrated confidence. Reconstructed values cap at 0.7. Inferred attributions cap at 0.6. Do not cluster claims at 1.0; verify each against its evidence.\n9. If the input is empty or unreadable noise, return empty arrays for entities/claims/structured_data/cross_references and add an uncertainty entry with severity \"error\" explaining the situation.\n10. Output ONLY the JSON object. No commentary, no markdown fences, no leading or trailing whitespace outside the object.",
+        "inputType": "binary",
+        "binaryPropertyName": "={{ Object.keys($binary)[0] }}",
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1936,
+        192
+      ],
+      "id": "01affc7e-ec85-4c3a-b579-cfaeec7c829e",
+      "name": "Analyze document",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Y0IoIv9xiKugx7Cq",
+          "name": "Mahir Arbio Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "={{ Object.keys($binary)[0] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1296,
+        112
+      ],
+      "id": "04c02cc3-055e-4c44-b5f5-94bc4794e60e",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "dfd901f3-7a23-47cf-8c09-56087612d86e",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1504,
+        112
+      ],
+      "id": "86dfcfcb-6be5-4811-bc82-823eff56402a",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1712,
+        192
+      ],
+      "id": "cdb614df-03fa-4acc-a306-1310045bb5f0",
+      "name": "Merge"
+    }
+  ],
+  "connections": {
+    "Check if PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Analyze document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "540c3094aed053292f4a5a525794d76baf60fc96380f286f281810a1e500ab20"
+  }
+}
