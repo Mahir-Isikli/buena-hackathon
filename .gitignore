@@ -33,3 +33,6 @@ Thumbs.db
 
 # Local-only Obsidian plugin symlink (each dev symlinks plugin/ here)
 buena-vault/buena-hackathon/.obsidian/plugins/
+
+# Local notes
+TODO.md
