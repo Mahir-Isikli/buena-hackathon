@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buena Sidebar - Light Mode V8 (Both Tabs Populated)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+        
+        :root {
+            --bg-app: #fafaf9;
+            --bg-base: #ffffff;
+            --bg-surface: #ffffff;
+            --bg-subtle: #f5f5f4;
+            --border-dim: #e7e5e4;
+            --border-strong: #d6d3d1;
+            
+            --text-main: #1c1917;
+            --text-muted: #78716c;
+            --text-faint: #a8a29e;
+            
+            --accent-green: #398957;
+            --accent-green-bg: #ebfdf3;
+            
+            --btn-primary-bg: #1c1917;
+            --btn-primary-text: #ffffff;
+            --btn-outline-bg: #ffffff;
+            --btn-outline-border: #d6d3d1;
+            --btn-outline-text: #1c1917;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-app); 
+            color: var(--text-main);
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            letter-spacing: -0.3px;
+        }
+
+        h1, h2, h3, .brand-font {
+            font-family: 'Inter Tight', sans-serif;
+            letter-spacing: -0.6px;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; flex-direction: column; flex: 1 1 0%; min-height: 0; }
+        
+        .has-tooltip:hover .tooltip { display: block; z-index: 50; }
+        
+        /* Inline revert button */
+        .revert-btn { opacity: 0; transition: opacity 0.15s ease; }
+        .history-row:hover .revert-btn { opacity: 1; }
+    </style>
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('text-[var(--text-main)]', 'border-[var(--text-main)]');
+                el.classList.add('text-[var(--text-muted)]', 'border-transparent');
+            });
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.remove('text-[var(--text-muted)]', 'border-transparent');
+            activeBtn.classList.add('text-[var(--text-main)]', 'border-[var(--text-main)]');
+        }
+        
+        function toggleRejectReason(id) {
+            const el = document.getElementById('reason-' + id);
+            el.classList.toggle('hidden');
+        }
+    </script>
+</head>
+<body>
+
+<div class="w-[420px] h-[90vh] max-h-[900px] bg-[var(--bg-base)] flex flex-col overflow-hidden border border-[var(--border-dim)] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+    
+    <!-- Header -->
+    <header class="px-5 py-4 flex items-center justify-between border-b border-[var(--border-dim)] z-20 shrink-0 bg-[var(--bg-base)]">
+        <div class="flex items-baseline gap-2 min-w-0">
+            <span class="font-bold text-[18px] tracking-tight text-[var(--text-main)] brand-font italic">Buena</span>
+            <span class="text-[var(--border-strong)] font-bold">/</span>
+            <span class="text-[12px] font-medium text-[var(--text-muted)] tracking-wide truncate uppercase">Immanuelkirchstrasse</span>
+        </div>
+        <button class="text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-subtle)] transition-colors p-1.5 rounded">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>
+        </button>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <div class="px-5 pt-2 z-20 shrink-0 border-b border-[var(--border-dim)] bg-[var(--bg-base)]">
+        <div class="flex gap-6">
+            <!-- Set Queue as default active -->
+            <button id="btn-tab-queue" onclick="switchTab('tab-queue')" class="nav-tab pb-3 text-[14px] font-medium text-[var(--text-main)] border-b-2 border-[var(--text-main)] transition-colors relative flex items-center gap-2">
+                Queue
+                <span class="bg-[var(--bg-subtle)] border border-[var(--border-dim)] text-[var(--text-main)] py-[2px] px-2.5 rounded-full text-[10px] font-bold">8</span>
+            </button>
+            <button id="btn-tab-history" onclick="switchTab('tab-history')" class="nav-tab pb-3 text-[14px] font-medium text-[var(--text-muted)] border-b-2 border-transparent transition-colors relative flex items-center gap-2">
+                Change history
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 1: PENDING QUEUE                                      -->
+    <!-- ========================================================= -->
+    <!-- Added active class so it shows up on load -->
+    <div id="tab-queue" class="tab-content active bg-[var(--bg-subtle)]">
+        <div class="px-5 py-4 flex gap-2 overflow-x-auto hide-scrollbar shrink-0 border-b border-[var(--border-dim)] bg-[var(--bg-base)]">
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-[var(--text-main)] text-[var(--bg-base)] border border-[var(--text-main)] rounded-full flex items-center gap-1.5 transition-colors shadow-sm">
+                All <span class="text-[var(--text-faint)] opacity-80">8</span>
+            </button>
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-strong)] hover:bg-[var(--bg-subtle)] rounded-full flex items-center gap-1.5 transition-colors">
+                EH-007 <span class="text-[var(--text-faint)]">1</span>
+            </button>
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-strong)] hover:bg-[var(--bg-subtle)] rounded-full flex items-center gap-1.5 transition-colors">
+                EH-014 <span class="text-[var(--text-faint)]">2</span>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar p-5 space-y-4">
+            <!-- Card 1 -->
+            <div class="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-dim)] shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-5 hover:border-[var(--border-strong)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="text-[12px] font-medium tracking-wide text-[var(--text-muted)] uppercase brand-font">Open issues</div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[var(--accent-green)] bg-[var(--accent-green-bg)] font-mono text-[10px] font-bold px-1.5 py-0.5 rounded tracking-widest border border-[var(--accent-green)]/20">99%</span>
+                        <div class="bg-[var(--bg-subtle)] text-[var(--text-main)] font-mono text-[11px] font-medium px-2 py-0.5 rounded border border-[var(--border-dim)] shadow-sm">EH-014</div>
+                    </div>
+                </div>
+                <p class="text-[15px] text-[var(--text-main)] font-medium leading-[1.6] mb-5 tracking-tight">
+                    Die Miete wird seit dem 15.01.2026 wegen eines Heißwasser-Defekts um 10 Prozent gemindert
+                </p>
+                <div class="flex justify-between items-center pt-4 border-t border-[var(--border-dim)]">
+                    <div class="flex gap-2">
+                        <button class="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[13px] font-semibold px-4 py-2 rounded-full shadow-sm hover:opacity-90 transition-opacity">Approve</button>
+                        <button onclick="toggleRejectReason('1')" class="bg-[var(--btn-outline-bg)] text-[var(--btn-outline-text)] border border-[var(--btn-outline-border)] text-[13px] font-semibold px-4 py-2 rounded-full hover:bg-[var(--bg-subtle)] shadow-sm transition-colors">Reject</button>
+                    </div>
+                    <div class="relative has-tooltip">
+                        <button class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-[12px] font-medium flex items-center gap-1.5 transition-colors p-1">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            Source
+                        </button>
+                        <div class="tooltip hidden absolute bottom-full right-0 mb-2 w-64 p-4 bg-[var(--text-main)] text-[var(--bg-base)] text-[12px] rounded-xl shadow-xl z-50">
+                            <div class="font-mono text-gray-300 mb-2 break-all text-[11px] leading-relaxed">CAJ9sWTsUv0Th4b6m8QzUhDB...</div>
+                            <div class="flex items-center gap-1.5 font-medium text-white">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"></path></svg>
+                                gemini-3-pro
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="reason-1" class="hidden mt-4 p-4 bg-red-50 border border-red-100 rounded-xl shadow-inner">
+                    <label class="text-[11px] font-medium text-red-800 uppercase tracking-wide block mb-2">Rejection Reason</label>
+                    <textarea class="w-full text-[13px] p-3 bg-white text-[var(--text-main)] border border-red-200 rounded-lg focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 mb-3 transition-shadow resize-none placeholder-red-300" rows="2" placeholder="Logged for accountability..."></textarea>
+                    <div class="flex justify-end gap-3 items-center">
+                        <button onclick="toggleRejectReason('1')" class="text-[12px] font-medium text-red-800/70 hover:text-red-900 transition-colors">Cancel</button>
+                        <button class="bg-[#e03131] text-white text-[12px] font-semibold px-3.5 py-1.5 rounded-full shadow-sm hover:bg-[#c92a2a] transition-colors">Confirm</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-dim)] shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-5 hover:border-[var(--border-strong)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="text-[12px] font-medium tracking-wide text-[var(--text-muted)] uppercase brand-font">Service providers</div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[var(--accent-green)] bg-[var(--accent-green-bg)] font-mono text-[10px] font-bold px-1.5 py-0.5 rounded tracking-widest border border-[var(--accent-green)]/20">98%</span>
+                    </div>
+                </div>
+                <p class="text-[15px] text-[var(--text-main)] font-medium leading-[1.6] mb-5 tracking-tight">
+                    DL-002 führt die Aufzugswartung für 185 EUR/Monat durch
+                </p>
+                <div class="flex justify-between items-center pt-4 border-t border-[var(--border-dim)]">
+                    <div class="flex gap-2">
+                        <button class="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[13px] font-semibold px-4 py-2 rounded-full shadow-sm hover:opacity-90 transition-opacity">Approve</button>
+                        <button class="bg-[var(--btn-outline-bg)] text-[var(--btn-outline-text)] border border-[var(--btn-outline-border)] text-[13px] font-semibold px-4 py-2 rounded-full hover:bg-[var(--bg-subtle)] shadow-sm transition-colors">Reject</button>
+                    </div>
+                    <div class="relative has-tooltip">
+                        <button class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-[12px] font-medium flex items-center gap-1.5 transition-colors p-1">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            Source
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 2: CHANGE HISTORY                                     -->
+    <!-- ========================================================= -->
+    <!-- Removed active class from history so it's hidden by default -->
+    <div id="tab-history" class="tab-content bg-[var(--bg-base)]">
+        <div class="px-5 py-3 flex gap-2 overflow-x-auto hide-scrollbar shrink-0 border-b border-[var(--border-dim)] bg-[var(--bg-base)]">
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-[var(--bg-base)] text-[var(--text-main)] border border-[var(--border-strong)] rounded-full flex items-center gap-1.5 shadow-sm">
+                All <span class="text-[var(--text-muted)]">21</span>
+            </button>
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-[var(--bg-base)] text-[var(--text-muted)] border border-transparent hover:bg-[var(--bg-subtle)] rounded-full flex items-center gap-1.5">
+                Approved <span class="text-[var(--text-faint)]">5</span>
+            </button>
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-red-50 text-red-700 border border-red-100 rounded-full flex items-center gap-1.5">
+                Rejected <span class="text-red-400">16</span>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar px-5 py-4 space-y-6">
+            <!-- Feed Item: Approved -->
+            <div class="history-row flex gap-3.5 group relative">
+                <div class="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-[var(--accent-green-bg)] flex items-center justify-center border border-[var(--accent-green)]/20 shadow-sm">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="flex-1 min-w-0 pb-5 border-b border-[var(--border-dim)] flex flex-col justify-center">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wide brand-font">Open issues</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-bold text-[var(--text-muted)] bg-[var(--bg-subtle)] border border-[var(--border-dim)] px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Manual</span>
+                            <span class="text-[11px] text-[var(--text-faint)] font-mono">7m</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-[13.5px] text-[var(--text-main)] font-medium leading-relaxed">
+                            Smoke test writeback line
+                        </p>
+                        <button class="revert-btn shrink-0 text-[var(--text-muted)] hover:text-[var(--text-main)] bg-[var(--bg-subtle)] hover:bg-[var(--border-dim)] px-2 py-1.5 rounded transition-colors" title="Revert to Queue">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feed Item: Rejected -->
+            <div class="history-row flex gap-3.5 group relative">
+                <div class="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-red-50 flex items-center justify-center border border-red-100 shadow-sm">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </div>
+                <div class="flex-1 min-w-0 pb-5 border-b border-[var(--border-dim)]">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-[var(--bg-subtle)] border border-[var(--border-dim)] text-[var(--text-main)] font-mono text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm">EH-029</span>
+                            <span class="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wide brand-font">Open issues</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-bold text-[var(--text-muted)] bg-[var(--bg-subtle)] border border-[var(--border-dim)] px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Manual</span>
+                            <span class="text-[11px] text-[var(--text-faint)] font-mono">17m</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <p class="text-[13.5px] text-[var(--text-muted)] font-medium leading-relaxed opacity-90">
+                            Der Bewohner mindert die Miete weiterhin um 10 Prozent wegen Problemen mit dem Heißwasser.
+                        </p>
+                        <button class="revert-btn shrink-0 text-[var(--text-muted)] hover:text-[var(--text-main)] bg-[var(--bg-subtle)] hover:bg-[var(--border-dim)] px-2 py-1.5 rounded transition-colors" title="Revert to Queue">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path></svg>
+                        </button>
+                    </div>
+                    <div class="bg-[var(--bg-subtle)] rounded-lg border border-[var(--border-dim)] p-2.5 text-[11px] text-[var(--text-muted)] flex gap-2 items-start shadow-sm">
+                        <svg class="flex-shrink-0 mt-0.5 text-[var(--text-faint)]" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        <span class="leading-relaxed"><span class="font-semibold text-[var(--text-main)]">Reason:</span> Synthetic email attachment smoke test, cleanup after verification.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- STATUS BAR (Bottom) - FIXED IN PLACE                      -->
+    <!-- ========================================================= -->
+    <div class="border-t border-[var(--border-dim)] bg-[var(--bg-base)] px-5 py-4 flex justify-between items-center shrink-0 z-20">
+        <div class="flex items-center gap-2.5">
+            <span class="w-2 h-2 rounded-full bg-[var(--accent-green)] shadow-[0_0_8px_rgba(57,137,87,0.5)]"></span>
+            <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-[0.15em] brand-font">Live</span>
+        </div>
+        <div class="flex items-center gap-3 text-[var(--text-muted)] text-[11px] font-mono tracking-wide">
+            <span class="flex items-center gap-1.5"><span class="text-[#f59f00]">🔥 1d</span></span>
+            <span class="px-2">8 QUEUE</span>
+            <span class="px-2 border-l border-[var(--border-strong)] text-[var(--text-faint)]">5 TODAY <span class="text-[var(--accent-green)] ml-0.5 font-bold">▲5</span></span>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

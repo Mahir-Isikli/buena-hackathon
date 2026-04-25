@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buena Sidebar - V14 (Inspiration Applied)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+        
+        :root {
+            --bg-app: #e5e5e5;
+            --bg-base: #ffffff;
+            --bg-canvas: #f9f9f9; /* The soft background behind cards */
+            --bg-pill: #f6f6f6; /* The soft inner containers from the inspiration */
+            --border-card: #f0f0f0;
+            --border-pill: #ffffff; /* Almost invisible */
+            
+            --text-main: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #6b7280;
+            --text-faint: #9ca3af;
+            
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f59e0b;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-app); 
+            display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; 
+            letter-spacing: -0.2px;
+        }
+        .brand-font { font-family: 'Inter Tight', sans-serif; letter-spacing: -0.4px; }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; flex-direction: column; flex: 1 1 0%; min-height: 0; animation: fadeIn 0.2s ease-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Checkbox styling */
+        .buena-checkbox {
+            appearance: none; width: 16px; height: 16px; border: 1.5px solid #d1d5db;
+            border-radius: 4px; outline: none; cursor: pointer; transition: all 0.15s;
+            position: relative; background: #fff; margin-top: 2px;
+        }
+        .buena-checkbox:checked {
+            background-color: var(--text-main); border-color: var(--text-main);
+        }
+        .buena-checkbox:checked::after {
+            content: ''; position: absolute; left: 4.5px; top: 1.5px; width: 4px; height: 8px;
+            border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg);
+        }
+        
+        /* Focus styles for the new inspiration grid */
+        .data-pill {
+            background-color: var(--bg-pill);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .data-pill-left {
+            justify-content: flex-start;
+        }
+    </style>
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('text-[var(--text-main)]', 'border-[var(--text-main)]');
+                el.classList.add('text-[var(--text-faint)]', 'border-transparent');
+            });
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.remove('text-[var(--text-faint)]', 'border-transparent');
+            activeBtn.classList.add('text-[var(--text-main)]', 'border-[var(--text-main)]');
+        }
+        function toggleRejectReason(id) {
+            const el = document.getElementById('reason-' + id);
+            el.classList.toggle('hidden');
+        }
+    </script>
+</head>
+<body>
+
+<div class="w-[420px] h-[90vh] max-h-[900px] bg-[var(--bg-base)] flex flex-col overflow-hidden rounded-[24px] shadow-2xl border border-black/5">
+    
+    <!-- HEADER (Cleaner, more app-like) -->
+    <header class="px-5 pt-6 pb-2 shrink-0 bg-[var(--bg-base)] z-20">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="w-6 h-6 bg-gray-900 text-white flex items-center justify-center rounded-md">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>
+                </div>
+                <span class="font-bold text-[18px] tracking-tight text-[var(--text-main)] brand-font">Immanuelkirchstr. 26</span>
+            </div>
+            <button class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </button>
+        </div>
+        
+        <div class="flex gap-6 border-b border-gray-100">
+            <button id="btn-tab-queue" onclick="switchTab('tab-queue')" class="nav-tab pb-2 text-[14px] font-semibold text-[var(--text-main)] border-b-2 border-[var(--text-main)] transition-colors flex items-center gap-1.5">
+                Open Queue <span class="text-[11px] font-medium text-gray-500 ml-0.5">8</span>
+            </button>
+            <button id="btn-tab-history" onclick="switchTab('tab-history')" class="nav-tab pb-2 text-[14px] font-semibold text-[var(--text-faint)] border-b-2 border-transparent transition-colors flex items-center gap-1.5">
+                History <span class="text-[11px] font-medium text-gray-400 ml-0.5">21</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ========================================================= -->
+    <!-- TAB 1: PENDING QUEUE (Inspiration styling)                -->
+    <!-- ========================================================= -->
+    <div id="tab-queue" class="tab-content active bg-[var(--bg-canvas)]">
+        
+        <!-- Batch Actions -->
+        <div class="px-5 py-3 flex items-center justify-between shrink-0 bg-[var(--bg-canvas)] z-10 border-b border-gray-100/50">
+            <label class="flex items-center gap-2.5 cursor-pointer text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-main)]">
+                <input type="checkbox" class="buena-checkbox">
+                Select All
+            </label>
+            <div class="flex gap-2">
+                <button class="px-3 py-1.5 text-[11px] font-semibold bg-white text-gray-600 rounded-full border border-gray-200 shadow-sm">All</button>
+                <button class="px-3 py-1.5 text-[11px] font-semibold bg-white text-gray-400 rounded-full border border-transparent hover:border-gray-200">EH-014</button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar px-4 pt-3 pb-6 space-y-4">
+            
+            <!-- QUEUE CARD 1 -->
+            <div class="bg-white rounded-[20px] p-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-[var(--border-card)]">
+                <div class="flex items-start gap-3">
+                    <input type="checkbox" class="buena-checkbox shrink-0 mt-1">
+                    <div class="flex-1 min-w-0">
+                        <!-- Main Content First -->
+                        <div class="flex gap-2 mb-2 text-gray-400">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        </div>
+                        <h3 class="text-[14.5px] text-gray-900 font-medium leading-[1.4] mb-4 tracking-tight">
+                            Die Miete wird seit dem 15.01.2026 wegen eines Heißwasser-Defekts um 10 Prozent gemindert
+                        </h3>
+
+                        <!-- Inspiration Grid for Metadata -->
+                        <div class="grid grid-cols-2 gap-2 mb-4">
+                            <div class="data-pill">
+                                <span class="w-2 h-2 rounded-full bg-blue-500"></span> Unit EH-014
+                            </div>
+                            <div class="data-pill">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                                Open issues
+                            </div>
+                            <div class="data-pill">
+                                <span class="text-green-600 font-bold">99%</span> Confidence
+                            </div>
+                            <div class="data-pill truncate border-b border-dashed border-gray-300 rounded-none bg-transparent px-0 text-gray-400" title="Source: EMAIL-12891.eml (Gemini 3.1 Pro)">
+                                gemini-3.1-pro
+                            </div>
+                            
+                            <!-- Source Snippet (Spans 2 columns) -->
+                            <div class="data-pill data-pill-left col-span-2 items-start mt-1 bg-blue-50/50 border border-blue-100/50">
+                                <div class="shrink-0 pt-0.5 text-blue-400">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                </div>
+                                <span class="italic text-gray-500 leading-snug">"Guten Tag, da das Heißwasser immer noch nicht geht, werde ich ab 15.01. die Miete um 10% mindern."</span>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-2">
+                            <button class="flex-1 bg-gray-900 text-white text-[13px] font-medium py-2.5 rounded-xl hover:bg-gray-800 transition-colors">Approve</button>
+                            <button onclick="toggleRejectReason('1')" class="flex-1 bg-[var(--bg-pill)] text-gray-700 text-[13px] font-medium py-2.5 rounded-xl hover:bg-gray-200 transition-colors">Reject</button>
+                        </div>
+
+                        <!-- Hidden Reject Reason -->
+                        <div id="reason-1" class="hidden mt-3 p-3 bg-red-50 border border-red-100 rounded-xl">
+                            <textarea class="w-full text-[13px] p-2 bg-white border border-red-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-400 mb-2 resize-none" rows="2" placeholder="Rejection reason..."></textarea>
+                            <div class="flex justify-end gap-2">
+                                <button onclick="toggleRejectReason('1')" class="text-[12px] font-medium text-red-800/60 px-2 py-1">Cancel</button>
+                                <button class="bg-red-600 text-white text-[12px] font-medium px-3 py-1.5 rounded-lg shadow-sm">Confirm</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUEUE CARD 2 (Modification) -->
+            <div class="bg-white rounded-[20px] p-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-[var(--border-card)]">
+                <div class="flex items-start gap-3">
+                    <input type="checkbox" class="buena-checkbox shrink-0 mt-1">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex gap-2 mb-2 text-gray-400">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </div>
+                        
+                        <!-- Old/New Content -->
+                        <div class="mb-4">
+                            <p class="text-[13px] text-gray-400 line-through decoration-gray-300 mb-1">
+                                Eigentümerwechsel EIG-005 → EIG-012 zum 2024-01-01
+                            </p>
+                            <h3 class="text-[14.5px] text-gray-900 font-medium leading-[1.4] tracking-tight">
+                                Eigentümerwechsel EIG-005 → EIG-012 zum 2026-06-01
+                            </h3>
+                        </div>
+
+                        <!-- Inspiration Grid for Metadata -->
+                        <div class="grid grid-cols-2 gap-2 mb-4">
+                            <div class="data-pill">
+                                <span class="w-2 h-2 rounded-full bg-orange-400"></span> Unit EH-037
+                            </div>
+                            <div class="data-pill">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                                Per-unit notes
+                            </div>
+                            <div class="data-pill">
+                                <span class="text-green-600 font-bold">90%</span> Confidence
+                            </div>
+                            <div class="data-pill data-pill-left col-span-2 items-start bg-gray-50 border border-gray-100">
+                                <div class="shrink-0 pt-0.5 text-gray-400">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                                </div>
+                                <span class="italic text-gray-500 leading-snug">"Kaufvertrag bestätigt. Nutzen-/Lastenwechsel erfolgt zum 01.06.2026."</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button class="flex-1 bg-gray-900 text-white text-[13px] font-medium py-2.5 rounded-xl hover:bg-gray-800 transition-colors">Approve</button>
+                            <button class="flex-1 bg-[var(--bg-pill)] text-gray-700 text-[13px] font-medium py-2.5 rounded-xl hover:bg-gray-200 transition-colors">Reject</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 2: CHANGE HISTORY (Matching Card Style)               -->
+    <!-- ========================================================= -->
+    <div id="tab-history" class="tab-content bg-[var(--bg-canvas)]">
+        
+        <div class="px-5 py-3 flex items-center justify-between shrink-0 bg-[var(--bg-canvas)] z-10 border-b border-gray-100/50">
+            <div class="flex gap-2 overflow-x-auto hide-scrollbar">
+                <button class="px-3 py-1.5 text-[11px] font-semibold bg-white text-gray-600 rounded-full border border-gray-200 shadow-sm">All <span class="text-gray-400 font-normal ml-0.5">21</span></button>
+                <button class="px-3 py-1.5 text-[11px] font-semibold bg-transparent text-gray-500 rounded-full hover:bg-white transition-colors">Approved</button>
+                <button class="px-3 py-1.5 text-[11px] font-semibold bg-transparent text-red-500 rounded-full hover:bg-red-50 transition-colors">Rejected</button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar px-4 pt-3 pb-6 space-y-4">
+            
+            <!-- HISTORY CARD: Rejected -->
+            <div class="bg-white rounded-[20px] p-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-[var(--border-card)] relative group">
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-[14px] text-gray-500 font-medium leading-[1.4] mb-4 tracking-tight line-through decoration-gray-300">
+                        Der Bewohner mindert die Miete weiterhin um 10 Prozent wegen Problemen mit dem Heißwasser.
+                    </h3>
+
+                    <!-- Inspiration Grid -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="data-pill text-red-600 bg-red-50">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            Rejected
+                        </div>
+                        <div class="data-pill">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span> Unit EH-029
+                        </div>
+                        <div class="data-pill data-pill-left col-span-2 items-start bg-red-50/50 border border-red-100/50">
+                            <div class="shrink-0 pt-0.5 text-red-400">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            </div>
+                            <span class="text-gray-600 leading-snug">Synthetic email attachment smoke test.</span>
+                        </div>
+                        <div class="data-pill truncate border-b border-dashed border-gray-300 rounded-none bg-transparent px-0 text-gray-400 col-span-2 mt-1" title="Source: EMAIL-12891.eml (Gemini 3.1 Pro)">
+                            17m ago · Manual
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revert Button Hover -->
+                <button class="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 text-gray-600 p-2 rounded-xl shadow-sm hover:bg-gray-50 flex items-center justify-center" title="Revert to Queue">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path></svg>
+                </button>
+            </div>
+
+            <!-- HISTORY CARD: Approved -->
+            <div class="bg-white rounded-[20px] p-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-[var(--border-card)] relative group">
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-[14.5px] text-gray-900 font-medium leading-[1.4] mb-4 tracking-tight">
+                        Smoke test writeback line successfully applied to the vault.
+                    </h3>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="data-pill text-green-600 bg-green-50">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            Approved
+                        </div>
+                        <div class="data-pill">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                            Open issues
+                        </div>
+                        <div class="data-pill truncate border-b border-dashed border-gray-300 rounded-none bg-transparent px-0 text-gray-400 col-span-2 mt-1" title="Source: EMAIL-12891.eml (Gemini 3.1 Pro)">
+                            7m ago · Manual
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revert Button Hover -->
+                <button class="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 text-gray-600 p-2 rounded-xl shadow-sm hover:bg-gray-50 flex items-center justify-center" title="Revert to Queue">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path></svg>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- STATUS BAR (Bottom)                                       -->
+    <!-- ========================================================= -->
+    <div class="border-t border-gray-100 bg-white px-5 py-4 flex justify-between items-center shrink-0 z-20">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-green-500"></span>
+            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.1em] brand-font">Live Sync</span>
+        </div>
+        <div class="flex items-center gap-4 text-gray-400 text-[11px] font-medium">
+            <span class="flex items-center gap-1.5"><span class="text-orange-400">🔥 1d</span></span>
+            <span>8 Queue</span>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

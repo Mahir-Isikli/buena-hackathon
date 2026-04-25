@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased text-gray-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buena Sidebar - Accurate Redesign</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://rsms.me/inter/inter.css');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Smooth tab transitions */
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; flex-direction: column; }
+    </style>
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            // Update tab button styles
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('text-gray-900', 'border-gray-900');
+                el.classList.add('text-gray-500', 'border-transparent');
+            });
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.remove('text-gray-500', 'border-transparent');
+            activeBtn.classList.add('text-gray-900', 'border-gray-900');
+        }
+        
+        function toggleRejectReason(id) {
+            const el = document.getElementById('reason-' + id);
+            el.classList.toggle('hidden');
+        }
+    </script>
+</head>
+<body>
+
+<!-- Mocking the 400px Obsidian Sidebar accurately -->
+<div class="w-[440px] h-[90vh] max-h-[1000px] bg-white shadow-2xl rounded-xl flex flex-col overflow-hidden border border-gray-200 ring-1 ring-black/5">
+    
+    <!-- 1. Header (Wordmark + Property Name + Refresh) -->
+    <header class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-[#fafaf9]">
+        <div class="flex items-baseline gap-2 min-w-0">
+            <span class="font-bold tracking-tight text-gray-900 italic pr-1">buena</span>
+            <span class="text-gray-300 font-bold">·</span>
+            <span class="text-[10px] font-mono font-semibold text-gray-500 tracking-wide truncate">WEG-IMMANUELKIRCHSTRASSE-26</span>
+        </div>
+        <button class="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-md hover:bg-gray-200">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>
+        </button>
+    </header>
+
+    <!-- 2. Main Navigation Tabs -->
+    <div class="px-5 pt-3 bg-[#fafaf9]">
+        <div class="flex gap-6 border-b border-gray-200">
+            <button id="btn-tab-queue" onclick="switchTab('tab-queue')" class="nav-tab pb-2.5 text-[13px] font-semibold text-gray-900 border-b-2 border-gray-900 transition-colors relative flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
+                Queue
+                <span class="bg-gray-100/80 text-gray-600 py-0.5 px-2 rounded-full text-[10px] font-bold shadow-sm ring-1 ring-inset ring-gray-200">8</span>
+            </button>
+            <button id="btn-tab-history" onclick="switchTab('tab-history')" class="nav-tab pb-2.5 text-[13px] font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 transition-colors relative flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Change history
+                <span class="bg-gray-100/80 text-gray-600 py-0.5 px-2 rounded-full text-[10px] font-bold shadow-sm ring-1 ring-inset ring-gray-200">21</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 1: PENDING QUEUE                                      -->
+    <!-- ========================================================= -->
+    <div id="tab-queue" class="tab-content active flex-1 overflow-hidden">
+        
+        <!-- Queue Sub-header & Filters -->
+        <div class="px-5 py-3 border-b border-gray-100 bg-white z-10 flex flex-col gap-3">
+            <div class="flex justify-between items-center">
+                <span class="text-[10px] font-bold tracking-widest text-gray-400 uppercase">Pending Queue</span>
+                <span class="bg-gray-900 text-white text-[10px] font-bold px-1.5 py-0.5">8</span>
+            </div>
+            
+            <div class="flex gap-2">
+                <button class="px-3 py-1 text-[11px] font-medium bg-white text-gray-900 rounded border border-gray-300 shadow-sm flex items-center gap-1.5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                    All <span class="text-gray-400 font-semibold bg-gray-100 px-1 rounded-sm">8</span>
+                </button>
+                <button class="px-3 py-1 text-[11px] font-medium bg-[#fafaf9] text-gray-500 hover:text-gray-900 rounded border border-gray-200 flex items-center gap-1.5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    EH-007 <span class="text-gray-400 font-semibold bg-gray-100 px-1 rounded-sm">1</span>
+                </button>
+                <button class="px-3 py-1 text-[11px] font-medium bg-[#fafaf9] text-gray-500 hover:text-gray-900 rounded border border-gray-200 flex items-center gap-1.5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    EH-014 <span class="text-gray-400 font-semibold bg-gray-100 px-1 rounded-sm">2</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Queue Cards List -->
+        <div class="flex-1 overflow-y-auto hide-scrollbar p-5 space-y-5 bg-[#fafaf9]">
+            
+            <!-- Card 1 -->
+            <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:border-gray-300 transition-colors">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="font-mono text-xs font-semibold tracking-wide text-gray-500">Open issues</div>
+                    <div class="bg-gray-900 text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-sm">EH-014</div>
+                </div>
+                
+                <p class="text-[13px] text-gray-900 font-medium leading-relaxed mb-4">
+                    Die Miete wird seit dem 15.01.2026 wegen eines Heißwasser-Defekts um 10 Prozent gemindert
+                </p>
+                
+                <div class="flex flex-wrap items-center gap-1.5 mb-4">
+                    <span class="bg-[#fafaf9] border border-gray-200 text-gray-500 text-[10px] font-mono px-1.5 py-0.5 rounded-sm">99% conf</span>
+                    <span class="bg-[#fafaf9] border border-gray-200 text-gray-500 text-[10px] font-mono px-1.5 py-0.5 rounded-sm">gemini-3-pro</span>
+                    <span class="text-gray-400 text-[10px] font-mono truncate max-w-[140px]" title="CAJ9sWTsUv0Th4b6m8QzUhDB_c-2hQpnni2tv=pqwPYMy5VeL=Q@mail.gmail.com.eml">CAJ9sWTsUv0Th...mail.gmail.com.eml</span>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button class="bg-gray-900 text-white text-xs font-semibold px-4 py-1.5 rounded shadow-sm hover:bg-gray-800 transition-colors border border-gray-900">Approve</button>
+                    <button onclick="toggleRejectReason('1')" class="bg-white text-gray-700 text-xs font-semibold px-4 py-1.5 rounded shadow-sm border border-gray-300 hover:bg-gray-50 transition-colors">Reject</button>
+                </div>
+
+                <!-- Hidden Reject Reason -->
+                <div id="reason-1" class="hidden mt-3 p-3 bg-red-50/50 border border-red-100 rounded-md">
+                    <label class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Why are you rejecting this? (logged)</label>
+                    <textarea class="w-full text-xs p-2 border border-red-200 rounded bg-white shadow-inner focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 mb-2" rows="2" placeholder="e.g. wrong unit, duplicate..."></textarea>
+                    <div class="flex justify-end gap-2">
+                        <button onclick="toggleRejectReason('1')" class="text-xs font-medium text-gray-500 hover:text-gray-700">Cancel</button>
+                        <button class="bg-red-600 text-white text-xs font-medium px-3 py-1 rounded shadow-sm">Confirm reject</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:border-gray-300 transition-colors">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="font-mono text-xs font-semibold tracking-wide text-gray-500">Service providers</div>
+                </div>
+                
+                <p class="text-[13px] text-gray-900 font-medium leading-relaxed mb-4">
+                    DL-002 führt die Aufzugswartung für 185 EUR/Monat durch
+                </p>
+                
+                <div class="flex flex-wrap items-center gap-1.5 mb-4">
+                    <span class="bg-[#fafaf9] border border-gray-200 text-gray-500 text-[10px] font-mono px-1.5 py-0.5 rounded-sm">98% conf</span>
+                    <span class="bg-[#fafaf9] border border-gray-200 text-gray-500 text-[10px] font-mono px-1.5 py-0.5 rounded-sm">gemini-3-pro</span>
+                    <span class="text-gray-400 text-[10px] font-mono truncate max-w-[140px]">CAJ9sWTsUv0Th...</span>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button class="bg-gray-900 text-white text-xs font-semibold px-4 py-1.5 rounded shadow-sm hover:bg-gray-800 transition-colors border border-gray-900">Approve</button>
+                    <button class="bg-white text-gray-700 text-xs font-semibold px-4 py-1.5 rounded shadow-sm border border-gray-300 hover:bg-gray-50 transition-colors">Reject</button>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:border-gray-300 transition-colors">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="font-mono text-xs font-semibold tracking-wide text-gray-500">Open issues</div>
+                    <div class="bg-gray-900 text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-sm">EH-007</div>
+                </div>
+                
+                <p class="text-[13px] text-gray-900 font-medium leading-relaxed mb-4">
+                    Die Mieterin hat sich wegen des defekten Aufzugs beschwert
+                </p>
+                
+                <div class="flex flex-wrap items-center gap-1.5 mb-4">
+                    <span class="bg-[#fafaf9] border border-gray-200 text-gray-500 text-[10px] font-mono px-1.5 py-0.5 rounded-sm">95% conf</span>
+                    <span class="bg-[#fafaf9] border border-gray-200 text-gray-500 text-[10px] font-mono px-1.5 py-0.5 rounded-sm">gemini-3-pro</span>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button class="bg-gray-900 text-white text-xs font-semibold px-4 py-1.5 rounded shadow-sm hover:bg-gray-800 transition-colors border border-gray-900">Approve</button>
+                    <button class="bg-white text-gray-700 text-xs font-semibold px-4 py-1.5 rounded shadow-sm border border-gray-300 hover:bg-gray-50 transition-colors">Reject</button>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 2: CHANGE HISTORY                                     -->
+    <!-- ========================================================= -->
+    <div id="tab-history" class="tab-content flex-1 overflow-hidden">
+        
+        <!-- History Sub-header & Filters -->
+        <div class="px-5 py-3 border-b border-gray-100 bg-white z-10 flex flex-col gap-3">
+            <div class="flex gap-2">
+                <button class="px-3 py-1 text-[11px] font-medium bg-white text-gray-900 rounded border border-gray-300 shadow-sm flex items-center gap-1.5">
+                    All <span class="text-gray-400 font-semibold bg-gray-100 px-1 rounded-sm">21</span>
+                </button>
+                <button class="px-3 py-1 text-[11px] font-medium bg-[#fafaf9] text-gray-500 hover:text-gray-900 rounded border border-gray-200 flex items-center gap-1.5">
+                    Approved <span class="text-gray-400 font-semibold bg-gray-100 px-1 rounded-sm">5</span>
+                </button>
+                <button class="px-3 py-1 text-[11px] font-medium bg-[#fafaf9] text-red-600 hover:text-red-700 rounded border border-red-100 flex items-center gap-1.5">
+                    Rejected <span class="text-red-400 font-semibold bg-red-50 px-1 rounded-sm">16</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- History Vertical Feed (Replacing the table) -->
+        <div class="flex-1 overflow-y-auto hide-scrollbar px-5 py-4 space-y-5 bg-white">
+            
+            <!-- Feed Item: Approved -->
+            <div class="relative flex gap-3.5 group">
+                <!-- Icon column -->
+                <div class="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-200">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <!-- Content column -->
+                <div class="flex-1 min-w-0 pb-4 border-b border-gray-100">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-mono text-gray-400 font-semibold uppercase tracking-wide">Open issues</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Manual</span>
+                            <span class="text-[11px] text-gray-400 font-mono">7m</span>
+                        </div>
+                    </div>
+                    <p class="text-[13px] text-gray-900 font-medium leading-relaxed">
+                        Smoke test writeback line
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feed Item: Rejected (Replacing ugly red strikethrough) -->
+            <div class="relative flex gap-3.5 group">
+                <div class="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-red-50 flex items-center justify-center border border-red-200">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </div>
+                <div class="flex-1 min-w-0 pb-4 border-b border-gray-100">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-gray-100 border border-gray-200 text-gray-800 font-mono text-[10px] px-1.5 py-0.5 rounded shadow-sm">EH-029</span>
+                            <span class="text-[11px] font-mono text-gray-400 font-semibold uppercase tracking-wide">Open issues</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Manual</span>
+                            <span class="text-[11px] text-gray-400 font-mono">17m</span>
+                        </div>
+                    </div>
+                    <!-- Text opacity dropped instead of strikethrough for readability -->
+                    <p class="text-[13px] text-gray-500 font-medium leading-relaxed mb-2 opacity-90">
+                        Der Bewohner mindert die Miete weiterhin um 10 Prozent wegen Problemen mit dem Heißwasser.
+                    </p>
+                    <!-- Reason styled beautifully as a sub-comment -->
+                    <div class="bg-[#fafaf9] rounded-md border border-gray-200 p-2 text-[11px] text-gray-500 flex gap-2 items-start shadow-sm">
+                        <svg class="flex-shrink-0 mt-0.5 text-gray-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        <span><span class="font-semibold text-gray-600">Reason:</span> Synthetic email attachment smoke test, cleanup after verification.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feed Item: Rejected 2 -->
+            <div class="relative flex gap-3.5 group">
+                <div class="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-red-50 flex items-center justify-center border border-red-200">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </div>
+                <div class="flex-1 min-w-0 pb-4 border-b border-gray-100">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-gray-100 border border-gray-200 text-gray-800 font-mono text-[10px] px-1.5 py-0.5 rounded shadow-sm">EH-029</span>
+                            <span class="text-[11px] font-mono text-gray-400 font-semibold uppercase tracking-wide">Open issues</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Manual</span>
+                            <span class="text-[11px] text-gray-400 font-mono">27m</span>
+                        </div>
+                    </div>
+                    <p class="text-[13px] text-gray-500 font-medium leading-relaxed mb-2 opacity-90">
+                        Es besteht eine Mietminderung von 10 Prozent seit dem 15.01.2026
+                    </p>
+                    <div class="bg-[#fafaf9] rounded-md border border-gray-200 p-2 text-[11px] text-gray-500 flex gap-2 items-start shadow-sm">
+                        <svg class="flex-shrink-0 mt-0.5 text-gray-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        <span><span class="font-semibold text-gray-600">Reason:</span> Synthetic zip smoke test upload, cleanup after verification.</span>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Feed Item: Rejected 3 -->
+             <div class="relative flex gap-3.5 group">
+                <div class="mt-0.5 flex-shrink-0 w-6 h-6 rounded-full bg-red-50 flex items-center justify-center border border-red-200">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </div>
+                <div class="flex-1 min-w-0 pb-4 border-b border-gray-100">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-gray-100 border border-gray-200 text-gray-800 font-mono text-[10px] px-1.5 py-0.5 rounded shadow-sm">EH-037</span>
+                            <span class="text-[11px] font-mono text-gray-400 font-semibold uppercase tracking-wide">Per-unit notes</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Manual</span>
+                            <span class="text-[11px] text-gray-400 font-mono">3h</span>
+                        </div>
+                    </div>
+                    <p class="text-[13px] text-gray-500 font-medium leading-relaxed opacity-90">
+                        Eigentümerwechsel EIG-005 → EIG-012 zum 2026-06-01
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- STATUS BAR (Bottom)                                       -->
+    <!-- ========================================================= -->
+    <div class="border-t border-gray-900 bg-gray-900 px-4 py-2 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"></span>
+            <span class="text-[10px] font-bold text-gray-100 uppercase tracking-[0.15em]">Live</span>
+        </div>
+        <div class="flex items-center gap-4 text-gray-400 text-[10px] font-mono">
+            <span class="flex items-center gap-1.5"><span class="text-amber-400">🔥 1d</span></span>
+            <span class="border border-gray-700 bg-gray-800 px-1.5 py-0.5">8 QUEUE</span>
+            <span class="border border-gray-700 bg-gray-800 px-1.5 py-0.5 text-gray-300">5 TODAY <span class="text-emerald-400 ml-0.5">▲5</span></span>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buena Sidebar - V15 (The Perfect Balance)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+        
+        :root {
+            --bg-app: #fafaf9;
+            --bg-base: #ffffff;
+            --bg-surface: #ffffff;
+            --bg-subtle: #f9fafb;
+            --border-dim: #f3f4f6;
+            --border-strong: #e5e7eb;
+            
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --text-faint: #9ca3af;
+            
+            --accent-green: #059669;
+            --accent-green-bg: #ecfdf5;
+            --accent-red: #dc2626;
+            --accent-red-bg: #fef2f2;
+            --accent-blue: #2563eb;
+            --accent-blue-bg: #eff6ff;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-app); 
+            display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; 
+            letter-spacing: -0.3px;
+        }
+        .brand-font { font-family: 'Inter Tight', sans-serif; letter-spacing: -0.5px; }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; flex-direction: column; flex: 1 1 0%; min-height: 0; animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(8px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .timeline-line {
+            position: absolute; left: 11px; top: 24px; bottom: -12px; width: 2px;
+            background: var(--border-dim); z-index: 0;
+        }
+        .history-row:last-child .timeline-line { display: none; }
+
+        .history-content { transition: max-height 0.3s ease, opacity 0.3s ease; max-height: 48px; overflow: hidden; position: relative; }
+        .history-content::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 24px;
+            background: linear-gradient(to bottom, transparent, var(--bg-base));
+            transition: opacity 0.2s; pointer-events: none;
+        }
+        .history-row:hover .history-content { max-height: 400px; }
+        .history-row:hover .history-content::after { opacity: 0; }
+
+        .quick-actions { opacity: 0; transform: translateX(10px); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+        .history-row:hover .quick-actions { opacity: 1; transform: translateX(0); }
+        
+        .has-tooltip:hover .tooltip { display: block; z-index: 50; }
+    </style>
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('text-[var(--text-main)]', 'border-[var(--text-main)]');
+                el.classList.add('text-[var(--text-muted)]', 'border-transparent');
+            });
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.remove('text-[var(--text-muted)]', 'border-transparent');
+            activeBtn.classList.add('text-[var(--text-main)]', 'border-[var(--text-main)]');
+        }
+        function toggleRejectReason(id) {
+            const el = document.getElementById('reason-' + id);
+            el.classList.toggle('hidden');
+        }
+    </script>
+</head>
+<body>
+
+<div class="w-[420px] h-[90vh] max-h-[900px] bg-[var(--bg-base)] flex flex-col overflow-hidden border border-black/[0.08] rounded-[24px] shadow-2xl">
+    
+    <!-- ========================================================= -->
+    <!-- HIGH-LEVEL STICKY HEADER AREA                             -->
+    <!-- ========================================================= -->
+    <div class="shrink-0 flex flex-col z-20 bg-[var(--bg-base)] border-b border-[var(--border-dim)] shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
+        
+        <!-- Header: Property & Sync -->
+        <header class="px-5 pt-6 pb-4 flex items-center justify-between">
+            <div class="flex items-baseline gap-2 min-w-0">
+                <span class="font-bold text-[18px] tracking-tight text-[var(--text-main)] brand-font italic pr-0.5">Buena</span>
+                <span class="text-[var(--border-strong)] font-bold">/</span>
+                <span class="text-[13px] font-semibold text-[var(--text-muted)] tracking-wide truncate uppercase">Immanuelkirchstrasse</span>
+            </div>
+            <!-- Sync/Refresh Button -->
+            <button class="text-[var(--text-faint)] hover:text-[var(--text-main)] bg-[var(--bg-subtle)] hover:bg-[var(--border-dim)] p-2 rounded-full transition-colors shadow-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+            </button>
+        </header>
+        
+        <!-- Navigation Tabs -->
+        <div class="px-5 flex gap-6">
+            <button id="btn-tab-queue" onclick="switchTab('tab-queue')" class="nav-tab pb-3 text-[14px] font-semibold text-[var(--text-main)] border-b-2 border-[var(--text-main)] transition-colors relative flex items-center gap-1.5">
+                Open Queue
+                <span class="bg-[var(--bg-subtle)] border border-[var(--border-dim)] text-[var(--text-main)] py-[2px] px-2 rounded-full text-[10px] font-bold">8</span>
+            </button>
+            <button id="btn-tab-history" onclick="switchTab('tab-history')" class="nav-tab pb-3 text-[14px] font-semibold text-[var(--text-muted)] border-b-2 border-transparent transition-colors relative flex items-center gap-1.5">
+                History
+                <span class="bg-[var(--bg-subtle)] text-[var(--text-muted)] py-[2px] px-2 rounded-full text-[10px] font-bold">21</span>
+            </button>
+        </div>
+
+    </div> <!-- End of completely sticky top block -->
+
+    <!-- ========================================================= -->
+    <!-- TAB 1: PENDING QUEUE                                      -->
+    <!-- ========================================================= -->
+    <div id="tab-queue" class="tab-content active bg-[var(--bg-subtle)]">
+        
+        <!-- Sticky Filters for Queue -->
+        <div class="px-5 py-3 flex gap-2 overflow-x-auto hide-scrollbar shrink-0 border-b border-[var(--border-dim)] bg-[var(--bg-base)]">
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-[var(--text-main)] text-[var(--bg-base)] rounded-full flex items-center shadow-sm">
+                All <span class="text-[var(--text-faint)] opacity-80 ml-1.5">8</span>
+            </button>
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-strong)] hover:bg-[var(--bg-subtle)] rounded-full flex items-center transition-colors">
+                EH-007 <span class="text-[var(--text-faint)] ml-1.5">1</span>
+            </button>
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-strong)] hover:bg-[var(--bg-subtle)] rounded-full flex items-center transition-colors">
+                EH-014 <span class="text-[var(--text-faint)] ml-1.5">2</span>
+            </button>
+        </div>
+
+        <!-- Scrollable Cards Area -->
+        <div class="flex-1 overflow-y-auto hide-scrollbar p-5 space-y-5">
+            
+            <!-- QUEUE CARD 1 -->
+            <div class="bg-[var(--bg-surface)] rounded-[16px] border border-[var(--border-dim)] shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 hover:border-[var(--border-strong)] transition-all">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-bold text-[var(--text-main)] uppercase tracking-wider brand-font">EH-014</span>
+                        <span class="w-1 h-1 rounded-full bg-gray-300"></span>
+                        <span class="text-[11px] font-medium text-[var(--text-muted)]">Open issues</span>
+                    </div>
+                    <span class="text-[var(--accent-green)] bg-[var(--accent-green-bg)] font-mono text-[10px] font-bold px-1.5 py-0.5 rounded tracking-widest border border-[var(--accent-green)]/20">99%</span>
+                </div>
+                
+                <p class="text-[14px] text-[var(--text-main)] font-medium leading-[1.5] mb-3">
+                    Die Miete wird seit dem 15.01.2026 wegen eines Heißwasser-Defekts um 10 Prozent gemindert
+                </p>
+
+                <!-- Clean, Text-based Source Context (No heavy icons) -->
+                <div class="mb-4 pl-3 py-1 border-l-2 border-[var(--border-strong)]">
+                    <div class="text-[10px] font-bold text-[var(--text-faint)] uppercase tracking-wider mb-1">Source Context</div>
+                    <p class="text-[12px] text-[var(--text-muted)] italic leading-relaxed">
+                        "Guten Tag, da das Heißwasser immer noch nicht geht, werde ich ab 15.01. die Miete um 10% mindern."
+                    </p>
+                </div>
+                
+                <div class="flex justify-between items-center pt-3 border-t border-[var(--border-dim)]">
+                    <div class="flex gap-2">
+                        <button class="bg-[var(--text-main)] text-[var(--bg-base)] text-[12px] font-bold px-3.5 py-2 rounded-lg shadow-sm hover:opacity-90 transition-opacity">Approve</button>
+                        <button onclick="toggleRejectReason('1')" class="bg-[var(--bg-base)] border border-[var(--border-strong)] text-[var(--text-main)] text-[12px] font-bold px-3.5 py-2 rounded-lg hover:bg-[var(--bg-subtle)] transition-colors shadow-sm">Reject</button>
+                    </div>
+                    <div class="text-[11px] font-mono text-[var(--text-faint)]">
+                        EMAIL-12891
+                    </div>
+                </div>
+
+                <div id="reason-1" class="hidden mt-3 p-3 bg-red-50 border border-red-100 rounded-xl">
+                    <textarea class="w-full text-[13px] p-2 bg-white border border-red-200 rounded-lg focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 mb-2 resize-none placeholder-red-300" rows="2" placeholder="Rejection reason..."></textarea>
+                    <div class="flex justify-end gap-2 items-center">
+                        <button onclick="toggleRejectReason('1')" class="text-[11px] font-bold text-red-800/60 hover:text-red-900 transition-colors">Cancel</button>
+                        <button class="bg-[#dc2626] text-white text-[11px] font-bold px-3.5 py-1.5 rounded-lg shadow-sm hover:bg-[#b91c1c] transition-colors">Confirm</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- QUEUE CARD 2 -->
+            <div class="bg-[var(--bg-surface)] rounded-[16px] border border-[var(--border-dim)] shadow-[0_2px_8px_rgba(0,0,0,0.03)] p-4 hover:border-[var(--border-strong)] transition-all">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-bold text-[var(--text-main)] uppercase tracking-wider brand-font">EH-037</span>
+                        <span class="w-1 h-1 rounded-full bg-gray-300"></span>
+                        <span class="text-[11px] font-medium text-[var(--text-muted)]">Per-unit notes</span>
+                    </div>
+                    <span class="text-[var(--accent-green)] bg-[var(--accent-green-bg)] font-mono text-[10px] font-bold px-1.5 py-0.5 rounded tracking-widest border border-[var(--accent-green)]/20">90%</span>
+                </div>
+                
+                <div class="mb-3">
+                    <p class="text-[13px] text-[var(--text-faint)] line-through decoration-[var(--border-strong)] mb-1">
+                        Eigentümerwechsel EIG-005 → EIG-012 zum 2024-01-01
+                    </p>
+                    <p class="text-[14px] text-[var(--text-main)] font-medium leading-[1.5]">
+                        Eigentümerwechsel EIG-005 → EIG-012 zum 2026-06-01
+                    </p>
+                </div>
+
+                <div class="mb-4 pl-3 py-1 border-l-2 border-[var(--border-strong)]">
+                    <div class="text-[10px] font-bold text-[var(--text-faint)] uppercase tracking-wider mb-1">Source Context</div>
+                    <p class="text-[12px] text-[var(--text-muted)] italic leading-relaxed">
+                        "Kaufvertrag bestätigt. Nutzen-/Lastenwechsel erfolgt zum 01.06.2026."
+                    </p>
+                </div>
+                
+                <div class="flex justify-between items-center pt-3 border-t border-[var(--border-dim)]">
+                    <div class="flex gap-2">
+                        <button class="bg-[var(--text-main)] text-[var(--bg-base)] text-[12px] font-bold px-3.5 py-2 rounded-lg shadow-sm hover:opacity-90 transition-opacity">Approve</button>
+                        <button class="bg-[var(--bg-base)] border border-[var(--border-strong)] text-[var(--text-main)] text-[12px] font-bold px-3.5 py-2 rounded-lg hover:bg-[var(--bg-subtle)] transition-colors shadow-sm">Reject</button>
+                    </div>
+                    <div class="text-[11px] font-mono text-[var(--text-faint)]">
+                        PDF-9921
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 2: CHANGE HISTORY                                     -->
+    <!-- ========================================================= -->
+    <div id="tab-history" class="tab-content bg-[var(--bg-base)]">
+        
+        <!-- Sticky Filters for History -->
+        <div class="px-5 py-3 flex gap-2 overflow-x-auto hide-scrollbar shrink-0 border-b border-[var(--border-dim)] bg-[var(--bg-base)] z-10">
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-[var(--text-main)] text-[var(--bg-base)] rounded-full flex items-center shadow-sm">
+                All <span class="text-[var(--text-faint)] opacity-80 ml-1.5">21</span>
+            </button>
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-strong)] hover:bg-[var(--bg-subtle)] rounded-full flex items-center transition-colors">
+                Approved
+            </button>
+            <button class="px-3.5 py-1.5 text-[12px] font-medium bg-[var(--accent-red-bg)] border border-red-100 text-red-600 rounded-full transition-colors">
+                Rejected
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar px-5 pt-4 pb-6 space-y-6">
+            
+            <!-- Feed Item: Rejected -->
+            <div class="history-row relative flex gap-4 group" style="animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.05s backwards;">
+                <div class="timeline-line"></div>
+                <div class="mt-1 shrink-0 w-6 h-6 rounded-full bg-red-50 flex items-center justify-center border border-red-100 shadow-sm z-10">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </div>
+                <div class="flex-1 min-w-0 pt-0.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[10px] font-bold text-[var(--text-main)] uppercase tracking-wider brand-font">EH-029</span>
+                            <span class="w-1 h-1 rounded-full bg-gray-300"></span>
+                            <span class="text-[11px] font-medium text-[var(--text-muted)]">Open issues</span>
+                        </div>
+                        <span class="text-[10px] text-[var(--text-faint)] font-mono">17m</span>
+                    </div>
+                    
+                    <div class="history-content group-hover:pb-2">
+                        <p class="text-[13px] text-[var(--text-muted)] leading-[1.5] mb-2 line-through decoration-[var(--border-strong)]">
+                            Der Bewohner mindert die Miete weiterhin um 10 Prozent wegen Problemen mit dem Heißwasser.
+                        </p>
+                        
+                        <div class="pl-3 py-1 border-l-2 border-red-200 mt-2">
+                            <div class="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1">Rejected by PM</div>
+                            <p class="text-[12px] text-[var(--text-muted)] leading-snug">
+                                Synthetic email attachment smoke test.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="quick-actions absolute right-0 top-6 flex gap-1">
+                        <button class="bg-[var(--bg-base)] border border-[var(--border-strong)] text-[var(--text-muted)] hover:text-[var(--text-main)] p-1.5 rounded shadow-sm hover:bg-[var(--bg-subtle)]" title="Revert to Queue">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feed Item: Approved -->
+            <div class="history-row relative flex gap-4 group" style="animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;">
+                <div class="timeline-line"></div>
+                <div class="mt-1 shrink-0 w-6 h-6 rounded-full bg-[var(--accent-green-bg)] flex items-center justify-center border border-[var(--accent-green)]/20 shadow-sm z-10">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="flex-1 min-w-0 pt-0.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wide brand-font">Open Issues</span>
+                        </div>
+                        <span class="text-[10px] text-[var(--text-faint)] font-mono">3h</span>
+                    </div>
+                    <div class="history-content text-[13px] text-[var(--text-main)] font-medium leading-[1.5]">
+                        Smoke test writeback line successfully applied to the vault.
+                    </div>
+                    <div class="quick-actions absolute right-0 top-5 flex gap-1">
+                        <button class="bg-[var(--bg-base)] border border-[var(--border-strong)] text-[var(--text-muted)] hover:text-[var(--text-main)] p-1.5 rounded shadow-sm hover:bg-[var(--bg-subtle)]" title="Revert to Queue">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- STATUS BAR (Bottom sticky)                                -->
+    <!-- ========================================================= -->
+    <div class="border-t border-[var(--border-dim)] bg-[var(--bg-base)] px-5 py-3.5 flex justify-between items-center shrink-0 z-20">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-[var(--accent-green)] shadow-[0_0_6px_rgba(57,137,87,0.6)]"></span>
+            <span class="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-[0.15em] brand-font">Live Sync</span>
+        </div>
+        <div class="flex items-center gap-3 text-[var(--text-faint)] text-[11px] font-mono tracking-wide">
+            <span class="flex items-center gap-1 text-[var(--text-main)]"><span class="text-[#f59f00]">🔥</span> 1d</span>
+            <span>8 Queue</span>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

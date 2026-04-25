@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buena Sidebar - V19 (Brand Voice Applied)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f4f4f5; 
+            display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; 
+            letter-spacing: -0.01em;
+        }
+        
+        .brand-font { font-family: 'Inter Tight', sans-serif; letter-spacing: -0.02em; }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; flex-direction: column; flex: 1 1 0%; min-height: 0; animation: fadeIn 0.2s ease-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(2px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-press { transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s; }
+        .btn-press:active { transform: scale(0.96); }
+        
+        .expandable { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); max-height: 0; opacity: 0; overflow: hidden; }
+        .expandable.open { max-height: 150px; opacity: 1; margin-top: 12px; }
+    </style>
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('text-gray-900', 'border-gray-900');
+                el.classList.add('text-gray-400', 'border-transparent');
+            });
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.remove('text-gray-400', 'border-transparent');
+            activeBtn.classList.add('text-gray-900', 'border-gray-900');
+        }
+        function toggleRejectReason(id) {
+            const el = document.getElementById('reason-' + id);
+            el.classList.toggle('open');
+        }
+    </script>
+</head>
+<body>
+
+<div class="w-[400px] h-[90vh] max-h-[900px] bg-white flex flex-col overflow-hidden border border-gray-200 shadow-2xl rounded-xl">
+    
+    <!-- ========================================================= -->
+    <!-- HIGH-LEVEL STICKY HEADER AREA                             -->
+    <!-- ========================================================= -->
+    <div class="shrink-0 flex flex-col z-20 bg-white border-b border-gray-100">
+        
+        <header class="px-6 pt-6 pb-4 flex items-center justify-between">
+            <div class="flex items-baseline gap-2 min-w-0">
+                <span class="font-bold text-[18px] tracking-tight text-gray-900 brand-font italic pr-0.5">Buena</span>
+                <span class="text-gray-300 font-bold">/</span>
+                <span class="text-[13px] font-semibold text-gray-500 tracking-wide truncate uppercase brand-font">Immanuelkirchstr. 26</span>
+            </div>
+            <!-- Sync/Refresh Button -->
+            <button class="text-gray-400 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition-colors shadow-sm btn-press">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+            </button>
+        </header>
+        
+        <!-- Navigation Tabs (With Counts) -->
+        <div class="px-6 flex gap-6">
+            <button id="btn-tab-queue" onclick="switchTab('tab-queue')" class="nav-tab pb-3 text-[14px] font-semibold text-gray-900 border-b-2 border-gray-900 transition-colors flex items-center gap-1.5">
+                Queue <span class="bg-gray-100 text-gray-600 py-[2px] px-2 rounded-full text-[10px] font-bold">8</span>
+            </button>
+            <button id="btn-tab-history" onclick="switchTab('tab-history')" class="nav-tab pb-3 text-[14px] font-semibold text-gray-400 border-b-2 border-transparent hover:text-gray-600 transition-colors flex items-center gap-1.5">
+                History <span class="bg-gray-50 text-gray-400 py-[2px] px-2 rounded-full text-[10px] font-bold">21</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 1: PENDING QUEUE                                      -->
+    <!-- ========================================================= -->
+    <div id="tab-queue" class="tab-content active bg-white">
+        
+        <!-- Buena's direct voice: "Every update — visible to you in real time" -->
+        <div class="px-6 py-3 bg-gray-50/50 border-b border-gray-50 flex items-center justify-between">
+            <span class="text-[12px] font-medium text-gray-500">8 new updates. Extracted in real time.</span>
+            <div class="flex gap-3">
+                <button class="text-[12px] font-semibold text-gray-900 transition-colors">All</button>
+                <button class="text-[12px] font-medium text-gray-400 hover:text-gray-900 transition-colors">EH-007</button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar">
+            
+            <!-- QUEUE ITEM 1 -->
+            <div class="px-6 py-6 border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                <div class="flex justify-between items-start mb-2.5">
+                    <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest brand-font">
+                        EH-014 <span class="mx-1.5 opacity-50">·</span> Open Issues
+                    </div>
+                    <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-sm">99% Confidence</span>
+                </div>
+                
+                <p class="text-[15px] text-gray-900 font-medium leading-snug mb-4">
+                    Die Miete wird seit dem 15.01.2026 wegen eines Heißwasser-Defekts um 10 Prozent gemindert.
+                </p>
+
+                <div class="mb-5 pl-4 border-l-2 border-gray-200">
+                    <p class="text-[13px] text-gray-500 italic leading-relaxed">
+                        "Guten Tag, da das Heißwasser immer noch nicht geht, werde ich ab 15.01. die Miete um 10% mindern."
+                    </p>
+                    <p class="text-[10px] text-gray-400 mt-2 font-mono uppercase tracking-wide">Source: EMAIL-12891</p>
+                </div>
+                
+                <div class="flex gap-2.5">
+                    <button class="flex-1 bg-gray-900 text-white text-[13px] font-medium py-2 rounded-lg btn-press">Approve</button>
+                    <button onclick="toggleRejectReason('1')" class="flex-1 bg-white border border-gray-200 text-gray-700 text-[13px] font-medium py-2 rounded-lg hover:bg-gray-50 btn-press">Reject</button>
+                </div>
+
+                <!-- Rejection Input (Direct and functional voice) -->
+                <div id="reason-1" class="expandable bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <label class="text-[11px] font-medium text-gray-500 block mb-2">Why reject this update?</label>
+                    <input type="text" class="w-full text-[13px] p-2.5 bg-white border border-gray-200 rounded-md focus:outline-none focus:border-gray-400 mb-2" placeholder="e.g. Duplicate issue...">
+                    <div class="flex justify-end gap-3 items-center mt-1">
+                        <button onclick="toggleRejectReason('1')" class="text-[12px] font-medium text-gray-500 hover:text-gray-800">Cancel</button>
+                        <button class="text-[12px] font-medium text-red-600 hover:text-red-700">Confirm reject</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- QUEUE ITEM 2 -->
+            <div class="px-6 py-6 border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                <div class="flex justify-between items-start mb-2.5">
+                    <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest brand-font">
+                        EH-037 <span class="mx-1.5 opacity-50">·</span> Per-unit notes
+                    </div>
+                    <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-sm">90% Confidence</span>
+                </div>
+                
+                <div class="mb-4">
+                    <p class="text-[13px] text-gray-400 line-through decoration-gray-300 mb-1">
+                        Eigentümerwechsel EIG-005 → EIG-012 zum 2024-01-01
+                    </p>
+                    <p class="text-[15px] text-gray-900 font-medium leading-snug">
+                        Eigentümerwechsel EIG-005 → EIG-012 zum 2026-06-01
+                    </p>
+                </div>
+
+                <div class="mb-5 pl-4 border-l-2 border-gray-200">
+                    <p class="text-[13px] text-gray-500 italic leading-relaxed">
+                        "Kaufvertrag bestätigt. Nutzen-/Lastenwechsel erfolgt zum 01.06.2026."
+                    </p>
+                    <p class="text-[10px] text-gray-400 mt-2 font-mono uppercase tracking-wide">Source: PDF-9921</p>
+                </div>
+                
+                <div class="flex gap-2.5">
+                    <button class="flex-1 bg-gray-900 text-white text-[13px] font-medium py-2 rounded-lg btn-press">Approve</button>
+                    <button class="flex-1 bg-white border border-gray-200 text-gray-700 text-[13px] font-medium py-2 rounded-lg hover:bg-gray-50 btn-press">Reject</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 2: CHANGE HISTORY                                     -->
+    <!-- ========================================================= -->
+    <div id="tab-history" class="tab-content bg-white">
+        
+        <div class="px-6 py-3 flex gap-4 overflow-x-auto hide-scrollbar shrink-0 border-b border-gray-50 bg-gray-50/50">
+            <button class="text-[12px] font-semibold text-gray-900 transition-colors">All</button>
+            <button class="text-[12px] font-medium text-gray-400 hover:text-gray-900 transition-colors">Approved</button>
+            <button class="text-[12px] font-medium text-red-400 hover:text-red-600 transition-colors">Rejected</button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar">
+            
+            <!-- HISTORY ITEM: Rejected -->
+            <div class="px-6 py-5 border-b border-gray-100 hover:bg-gray-50/50 transition-colors group relative flex flex-col">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest brand-font">
+                        EH-029 <span class="mx-1.5 opacity-50">·</span> Open issues
+                    </div>
+                    <span class="text-[11px] text-gray-400">17m ago</span>
+                </div>
+                
+                <p class="text-[14px] text-gray-500 leading-snug mb-3 opacity-90 line-through decoration-gray-300">
+                    Der Bewohner mindert die Miete weiterhin um 10 Prozent wegen Problemen mit dem Heißwasser.
+                </p>
+                
+                <div class="bg-red-50 text-red-800 text-[12px] px-3 py-2.5 rounded-md">
+                    <span class="font-semibold">Rejected:</span> Synthetic email attachment smoke test.
+                </div>
+                
+                <!-- Fixed Revert Button: Bottom right, visible on hover -->
+                <div class="flex justify-end mt-3 h-[20px]">
+                    <button class="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-semibold text-gray-500 hover:text-gray-900 underline underline-offset-2">
+                        Restore to queue
+                    </button>
+                </div>
+            </div>
+
+            <!-- HISTORY ITEM: Approved -->
+            <div class="px-6 py-5 border-b border-gray-100 hover:bg-gray-50/50 transition-colors group relative flex flex-col">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest brand-font">
+                        Open Issues
+                    </div>
+                    <span class="text-[11px] text-gray-400">3h ago</span>
+                </div>
+                
+                <p class="text-[14px] text-gray-900 font-medium leading-snug">
+                    Smoke test writeback line successfully applied to the vault.
+                </p>
+
+                <div class="mt-2.5">
+                    <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-sm">Approved</span>
+                </div>
+                
+                <!-- Fixed Revert Button -->
+                <div class="flex justify-end mt-3 h-[20px]">
+                    <button class="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-semibold text-gray-500 hover:text-gray-900 underline underline-offset-2">
+                        Undo approval
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- STATUS BAR (Bottom sticky)                                -->
+    <!-- ========================================================= -->
+    <div class="border-t border-gray-100 bg-white px-6 py-3.5 flex justify-between items-center shrink-0 z-20">
+        <div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.05em] brand-font">Real time.</span>
+        </div>
+        <div class="flex items-center gap-4 text-gray-400 text-[11px] font-medium">
+            <span class="flex items-center gap-1.5"><span class="text-orange-500">🔥 1d</span></span>
+            <span>8 Queue</span>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
