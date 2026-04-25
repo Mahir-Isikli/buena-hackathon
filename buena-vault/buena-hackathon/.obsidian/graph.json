@@ -5,47 +5,18 @@
   "showAttachments": false,
   "hideUnresolved": false,
   "showOrphans": true,
-  "collapse-color-groups": false,
-  "colorGroups": [
-    {
-      "query": "file:\"HAUS-\"",
-      "color": {
-        "a": 1,
-        "rgb": 3771735
-      }
-    },
-    {
-      "query": "file:\"WEG-\"",
-      "color": {
-        "a": 1,
-        "rgb": 3773271
-      }
-    },
-    {
-      "query": "path:\"Dienstleister\"",
-      "color": {
-        "a": 1,
-        "rgb": 16565504
-      }
-    },
-    {
-      "query": "path:\"Protokolle\"",
-      "color": {
-        "a": 1,
-        "rgb": 11053224
-      }
-    }
-  ],
+  "collapse-color-groups": true,
+  "colorGroups": [],
   "collapse-display": true,
-  "showArrow": true,
+  "showArrow": false,
   "textFadeMultiplier": 0,
-  "nodeSizeMultiplier": 1.4,
-  "lineSizeMultiplier": 1.2,
+  "nodeSizeMultiplier": 1,
+  "lineSizeMultiplier": 1,
   "collapse-forces": true,
   "centerStrength": 0.518713248970312,
-  "repelStrength": 14,
+  "repelStrength": 10,
   "linkStrength": 1,
-  "linkDistance": 180,
-  "scale": 1.2,
+  "linkDistance": 250,
+  "scale": 1,
   "close": true
 }
