@@ -1,1 +1,6 @@
-{}
+{
+  "enabledCssSnippets": [
+    "buena-theme"
+  ],
+  "cssTheme": "Baseline"
+}

@@ -1,0 +1,91 @@
+/* Buena Context Engine — Brand overlay for Baseline theme */
+/* Only overrides accent + adds plugin-specific components  */
+/* Source: buena.com production CSS, resolved April 2026    */
+
+/* ─── Buena brand on top of Baseline ─────────────────────*/
+body {
+  --interactive-accent:          #398957;
+  --interactive-accent-hover:    #2d7047;
+  --interactive-accent-rgb:      57, 137, 87;
+
+  --link-color:                  #398957;
+  --link-color-hover:            #2d7047;
+
+  /* status */
+  --buena-warm:                  #fdc700;
+  --buena-green:                 #00c950;
+  --buena-red:                   #fb2c36;
+
+  /* provenance chips */
+  --buena-chip-high-bg:          #b9f8cf;
+  --buena-chip-high-text:        #016630;
+  --buena-chip-mid-bg:           #fefce8;
+  --buena-chip-mid-text:         #854d0e;
+  --buena-chip-human-bg:         #e7e5e4;
+  --buena-chip-human-text:       #57534d;
+
+  /* patch flash */
+  --buena-patch-flash:           rgba(253, 199, 0, 0.35);
+  --buena-patch-settle:          rgba(253, 199, 0, 0.10);
+}
+
+/* ─── Provenance chips (rendered by plugin) ───────────── */
+.buena-prov-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-family: var(--font-monospace);
+  font-weight: 500;
+  padding: 1px 7px;
+  border-radius: 99px;
+  margin-left: 6px;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  text-decoration: none;
+}
+.buena-prov-chip:hover { opacity: 0.7; }
+
+.buena-prov-chip.high {
+  background: var(--buena-chip-high-bg);
+  color:      var(--buena-chip-high-text);
+}
+.buena-prov-chip.mid {
+  background: var(--buena-chip-mid-bg);
+  color:      var(--buena-chip-mid-text);
+}
+.buena-prov-chip.human {
+  background: var(--buena-chip-human-bg);
+  color:      var(--buena-chip-human-text);
+}
+
+/* ─── Patch animation ─────────────────────────────────── */
+@keyframes buena-patch {
+  0%   { background: var(--buena-patch-flash); }
+  60%  { background: var(--buena-patch-settle); }
+  100% { background: transparent; }
+}
+.buena-patched {
+  animation: buena-patch 2s ease-out forwards;
+  border-radius: 3px;
+}
+
+/* ─── Active file in sidebar ──────────────────────────── */
+.nav-file-title.is-active {
+  color: var(--interactive-accent) !important;
+}
+
+/* ─── Callout colour overrides to match Buena palette ─── */
+.callout[data-callout="danger"] {
+  --callout-color: 251, 44, 54;
+}
+.callout[data-callout="warning"] {
+  --callout-color: 253, 199, 0;
+}
+.callout[data-callout="info"] {
+  --callout-color: 57, 137, 87;
+}
+.callout[data-callout="note"] {
+  --callout-color: 166, 160, 155;
+}

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "WEG-Immanuelkirchstrasse-26.md",
+                "file": "Immanuelkirchstraße 26/HAUS-14.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "WEG-Immanuelkirchstrasse-26"
+              "title": "HAUS-14"
             }
           }
         ]
@@ -94,8 +94,8 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "WEG-Immanuelkirchstrasse-26.md",
-                "collapseAll": false,
+                "file": "Immanuelkirchstraße 26/HAUS-14.md",
+                "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
                 "showSearch": false,
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for WEG-Immanuelkirchstrasse-26"
+              "title": "Backlinks for HAUS-14"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "WEG-Immanuelkirchstrasse-26.md",
+                "file": "Immanuelkirchstraße 26/HAUS-14.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from WEG-Immanuelkirchstrasse-26"
+              "title": "Outgoing links from HAUS-14"
             }
           },
           {
@@ -156,31 +156,20 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "WEG-Immanuelkirchstrasse-26.md",
-                "followCursor": true,
+                "file": "Immanuelkirchstraße 26/HAUS-14.md",
+                "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of WEG-Immanuelkirchstrasse-26"
-            }
-          },
-          {
-            "id": "acefd6079a3ebf3c",
-            "type": "leaf",
-            "state": {
-              "type": "buena-sidebar",
-              "state": {},
-              "icon": "inbox",
-              "title": "Buena"
+              "title": "Outline of HAUS-14"
             }
           }
-        ],
-        "currentTab": 5
+        ]
       }
     ],
     "direction": "horizontal",
-    "width": 577.5
+    "width": 300
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -190,13 +179,24 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false,
-      "buena:Buena: open pending queue": false
+      "bases:Create new base": false
     }
   },
-  "active": "acefd6079a3ebf3c",
+  "active": "ac57853ea65b0f59",
   "lastOpenFiles": [
+    "Immanuelkirchstraße 26/HAUS-16.md",
+    "Immanuelkirchstraße 26/HAUS-14.md",
+    "Immanuelkirchstraße 26/HAUS-12.md",
+    "Immanuelkirchstraße 26/Dienstleister/Übersicht.md",
+    "Immanuelkirchstraße 26/Protokolle/ETV-2025-11-15.md",
+    "Untitled.canvas",
+    "2026-04-25.md",
+    "Immanuelkirchstraße 26/WEG-Übersicht.md",
+    "Immanuelkirchstraße 26/Portfolio-Übersicht.canvas",
     "Welcome.md",
-    "WEG-Immanuelkirchstrasse-26.md"
+    "WEG-Immanuelkirchstrasse-26.md",
+    "Immanuelkirchstraße 26/Protokolle",
+    "Immanuelkirchstraße 26/Dienstleister",
+    "Immanuelkirchstraße 26"
   ]
 }
