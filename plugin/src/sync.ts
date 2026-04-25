@@ -1,18 +1,15 @@
 /**
- * Bridge between worker-pushed patches and the local Obsidian vault.
+ * Bridge between worker state and the local Obsidian vault.
  *
  * - Resolves the target file from settings.propertyFile, then by frontmatter
  *   `property_id`, then by basename match.
- * - Appends each new patch as a fenced ```buena-pending``` block at the end
- *   of the file, idempotent on patch.id.
  * - Pulls property.md + state.json on connect.
+ * - Keeps pending patches out of markdown. The queue lives in the sidebar.
  */
 
-import { App, Notice, TFile, normalizePath, stringifyYaml } from "obsidian";
+import { App, Notice, TFile, normalizePath } from "obsidian";
 import type BuenaPlugin from "../main";
-import type { RemotePendingPatch } from "./api";
 import { fetchPropertyMd, fetchStateJson, fetchPending } from "./api";
-import { findPendingBlocks } from "./vault-patch";
 
 export async function resolvePropertyFile(
   app: App,
@@ -54,10 +51,9 @@ export async function ensurePropertyFile(
 
 /**
  * Pull property.md + state.json from the worker and write them into the vault.
- * Remote is treated as canonical here: stale local buena-pending blocks are NOT
- * preserved. After this snapshot pull, `pullPendingOnce()` re-appends only the
- * current remote pending queue. This keeps the local file aligned with remote
- * state instead of accumulating stale local pending blocks.
+ * Remote is treated as canonical here. Any stale local `buena-pending` blocks
+ * are stripped so the markdown stays focused on the property briefing while the
+ * queue lives in the sidebar.
  */
 export async function pullPropertySnapshotOnce(
   plugin: BuenaPlugin
@@ -106,83 +102,6 @@ export async function pullPropertySnapshotOnce(
   return { propertyPulled, statePulled };
 }
 
-export async function appendPatchToFile(
-  app: App,
-  file: TFile,
-  patch: RemotePendingPatch
-): Promise<boolean> {
-  const text = await app.vault.read(file);
-
-  const existing = findPendingBlocks(text);
-  for (const yaml of existing) {
-    if (new RegExp(`(^|\\n)\\s*id:\\s*${escapeRegex(patch.id)}\\s*(\\n|$)`).test(yaml)) {
-      return false;
-    }
-  }
-
-  const yamlBody = stringifyYaml({
-    id: patch.id,
-    section: patch.section,
-    unit: patch.unit,
-    old: patch.old,
-    new: patch.new,
-    source: patch.source,
-    snippet: patch.snippet,
-    confidence: patch.confidence,
-    actor: patch.actor,
-    target_heading: patch.target_heading,
-    new_block: patch.new_block,
-  }).trimEnd();
-
-  const block = `\n\n\`\`\`buena-pending\n${yamlBody}\n\`\`\`\n`;
-  const next = text.endsWith("\n") ? text + block.trimStart() : text + block;
-  await app.vault.modify(file, next);
-  return true;
-}
-
-export async function stripPatchFromFile(
-  app: App,
-  file: TFile,
-  patchId: string
-): Promise<boolean> {
-  const text = await app.vault.read(file);
-  const stripped = stripPendingBlockByIdLocal(text, patchId);
-  if (stripped === text) return false;
-  await app.vault.modify(file, stripped);
-  return true;
-}
-
-function stripPendingBlockByIdLocal(text: string, patchId: string): string {
-  const lines = text.split("\n");
-  const out: string[] = [];
-  let i = 0;
-  while (i < lines.length) {
-    if (/^```buena-pending\s*$/.test(lines[i])) {
-      let j = i + 1;
-      let foundId = false;
-      while (j < lines.length && !/^```\s*$/.test(lines[j])) {
-        if (lines[j].trim().startsWith("id:")) {
-          const v = lines[j].split(":").slice(1).join(":").trim();
-          if (v === patchId) foundId = true;
-        }
-        j += 1;
-      }
-      if (foundId) {
-        i = j + 1;
-        if (out.length && out[out.length - 1] === "" && lines[i] === "") i += 1;
-        continue;
-      }
-    }
-    out.push(lines[i]);
-    i += 1;
-  }
-  return out.join("\n");
-}
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 export async function pullPendingOnce(plugin: BuenaPlugin): Promise<{
   added: number;
   total: number;
@@ -198,21 +117,7 @@ export async function pullPendingOnce(plugin: BuenaPlugin): Promise<{
   if (stripped !== local) {
     await plugin.app.vault.modify(file, ensureTrailingNewline(stripped));
   }
-  let added = 0;
-  for (const p of remote) {
-    if (await appendPatchToFile(plugin.app, file, p)) added += 1;
-  }
-  return { added, total: remote.length };
-}
-
-function extractRawPendingBlocks(text: string): string[] {
-  const out: string[] = [];
-  const re = /```buena-pending\n([\s\S]*?)\n```/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    out.push(`\`\`\`buena-pending\n${m[1]}\n\`\`\``);
-  }
-  return out;
+  return { added: 0, total: remote.length };
 }
 
 function stripAllPendingBlocks(text: string): string {

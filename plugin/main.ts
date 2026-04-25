@@ -1,6 +1,5 @@
 import { Plugin, WorkspaceLeaf, Notice } from "obsidian";
 import { BuenaSidebarView, BUENA_SIDEBAR_VIEW_TYPE } from "./src/sidebar";
-import { registerInlinePatchProcessor } from "./src/inline-patch";
 import { registerProvenanceProcessor } from "./src/popover";
 import { registerErpReferenceProcessors } from "./src/erp-references";
 import { registerPropertyHeaderProcessor } from "./src/property-header";
@@ -10,13 +9,7 @@ import { initErpStore, watchErpFile } from "./src/erp";
 import { BuenaStatusBar } from "./src/statusbar";
 import { BuenaSettingTab, DEFAULT_SETTINGS, BuenaSettings } from "./src/settings";
 import { connectEvents, EventClient, RemotePendingPatch } from "./src/api";
-import {
-  appendPatchToFile,
-  pullPendingOnce,
-  pullPropertySnapshotOnce,
-  resolvePropertyFile,
-  stripPatchFromFile,
-} from "./src/sync";
+import { pullPendingOnce, pullPropertySnapshotOnce } from "./src/sync";
 
 export default class BuenaPlugin extends Plugin {
   settings: BuenaSettings = DEFAULT_SETTINGS;
@@ -46,9 +39,6 @@ export default class BuenaPlugin extends Plugin {
       erpStore.load().catch((err) => console.warn("[Buena] erp reload failed", err));
     });
     this.register(unwatch);
-
-    // Inline pending-patch codeblock processor
-    registerInlinePatchProcessor(this);
 
     // Provenance hover popovers
     registerProvenanceProcessor(this);
@@ -97,8 +87,10 @@ export default class BuenaPlugin extends Plugin {
       callback: async () => {
         try {
           await pullPropertySnapshotOnce(this);
-          const { added, total } = await pullPendingOnce(this);
-          new Notice(`[Buena] synced property + state, then pulled ${total} pending (${added} added)`);
+          const { total } = await pullPendingOnce(this);
+          this.statusBar.setPendingCount(total);
+          await this.refreshSidebarViews();
+          new Notice(`[Buena] synced property + state, queue refreshed (${total} pending)`);
         } catch (err) {
           console.error("[Buena] pull failed", err);
           new Notice(`[Buena] pull failed: ${err}`);
@@ -125,7 +117,9 @@ export default class BuenaPlugin extends Plugin {
       void (async () => {
         try {
           await pullPropertySnapshotOnce(this);
-          await pullPendingOnce(this);
+          const { total } = await pullPendingOnce(this);
+          this.statusBar.setPendingCount(total);
+          await this.refreshSidebarViews();
         } catch (err) {
           console.warn("[Buena] initial pull failed", err);
         } finally {
@@ -189,6 +183,8 @@ export default class BuenaPlugin extends Plugin {
       },
       onReady: (info) => {
         console.log("[Buena] SSE ready", info);
+        this.statusBar.setPendingCount(info.count);
+        void this.refreshSidebarViews();
       },
       onPing: () => {
         // heartbeat, nothing to do
@@ -213,37 +209,33 @@ export default class BuenaPlugin extends Plugin {
 
   private async handleIncomingPatch(patch: RemotePendingPatch) {
     try {
-      const file = await resolvePropertyFile(this.app, this);
-      if (!file) {
-        console.warn(
-          "[Buena] no property file matches",
-          this.settings.propertyId,
-          "- patch dropped",
-          patch.id
-        );
-        return;
-      }
-      const wrote = await appendPatchToFile(this.app, file, patch);
-      if (wrote) {
-        this.statusBar.markPatchReceived();
-        this.statusBar.bumpPendingCount(1);
-        new Notice(`[Buena] new patch: ${patch.section}`);
-      }
+      this.statusBar.markPatchReceived();
+      this.statusBar.bumpPendingCount(1);
+      new Notice(`[Buena] new patch: ${patch.section}`);
+      await this.refreshSidebarViews();
     } catch (err) {
       console.error("[Buena] handleIncomingPatch failed", err);
     }
   }
 
-  private async handleRemoteRemoval(id: string) {
+  private async handleRemoteRemoval(_id: string) {
     try {
-      const file = await resolvePropertyFile(this.app, this);
-      if (!file) return;
-      const removed = await stripPatchFromFile(this.app, file, id);
-      if (removed) {
-        this.statusBar.bumpPendingCount(-1);
-      }
+      this.statusBar.bumpPendingCount(-1);
+      await this.refreshSidebarViews();
     } catch (err) {
       console.error("[Buena] handleRemoteRemoval failed", err);
     }
+  }
+
+  private async refreshSidebarViews() {
+    const leaves = this.app.workspace.getLeavesOfType(BUENA_SIDEBAR_VIEW_TYPE);
+    await Promise.all(
+      leaves.map(async (leaf) => {
+        const view = leaf.view;
+        if (view instanceof BuenaSidebarView) {
+          await view.refresh();
+        }
+      })
+    );
   }
 }

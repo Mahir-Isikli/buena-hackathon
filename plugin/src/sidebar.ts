@@ -469,10 +469,10 @@ export class BuenaSidebarView extends ItemView {
       pill.createSpan({ cls: "buena-decision-icon" }),
       h.decision === "approved" ? "check" : h.decision === "rejected" ? "x" : "zap"
     );
-    if (h.decision === "auto") {
-      pill.createSpan({ text: "auto", cls: "buena-decision-label" });
-    }
-    pill.title = h.decision;
+    pill.createSpan({ 
+      text: h.decision.charAt(0).toUpperCase() + h.decision.slice(1), 
+      cls: "buena-decision-label" 
+    });
 
     // Actions (hover-only)
     const actionsTd = tr.createEl("td", { cls: "buena-td buena-td-actions" });

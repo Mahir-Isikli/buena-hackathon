@@ -163,6 +163,16 @@ A redesign that scores 8/8 is the kind Din retweets. Anything below 6/8 is a com
 
 ---
 
+## Brand Style Guide (Extracted from buena.com)
+
+We've pulled the exact design tokens and styling from Buena's live website to ensure consistency across the hackathon. See the full breakdown in **`HSMD.md`** (Hackathon Style Markdown Document), which includes:
+- **Typography:** `Inter`, `Inter Tight`, `Inter Display Medium`, and `Signifier` (for display/editorial).
+- **Brand Colors:** Signature Forest Green (`#0d7835`), warm stone whites (`#fafaf9`), and deep blacks (`#010105`).
+- **Domain Colors:** WEG (`#d6dbd5`) and Mietverwaltung (`#cdbda3`).
+- **Geometry & Motion:** Soft pill radii (`0.5rem` to `1rem`), fluid `cubic-bezier(.4, 0, .2, 1)` easing, and subtle shadows (`#0000001a`).
+
+---
+
 ## Where to Apply It First (suggested order)
 
 1. **Owner Statement.** Highest-frequency, lowest-design-attention surface in the industry. A redesigned monthly statement that an owner *enjoys* opening is a category-defining artifact, and it's mailed/emailed to thousands every month — so brand reach is enormous.

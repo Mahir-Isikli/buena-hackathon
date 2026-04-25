@@ -166,21 +166,64 @@ def render_markdown(erp: dict[str, Any], state: dict[str, Any]) -> str:
     tenants = erp["tenants"]
     providers = erp["service_providers"]
 
-    # Map of unit_id -> tenant
     unit_tenant = {t["einheit_id"]: t for t in tenants.values() if t.get("einheit_id")}
-    # Map of unit_id -> owner
     unit_owner: dict[str, dict[str, Any]] = {}
-    for o in owners.values():
-        for uid in o["einheit_ids"]:
-            unit_owner[uid] = o
+    for owner in owners.values():
+        for unit_id in owner["einheit_ids"]:
+            unit_owner[unit_id] = owner
 
     beirat = [o for o in owners.values() if o.get("beirat")]
     selbstnutzer = [o for o in owners.values() if o.get("selbstnutzer")]
+    total_units = sum(b["einheiten"] for b in buildings.values())
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     lines: list[str] = []
 
-    # Frontmatter
+    def esc(value: Any) -> str:
+        return str(value).replace("|", "\\|")
+
+    def add_table(headers: list[str], rows: list[list[Any]]) -> None:
+        lines.append("| " + " | ".join(headers) + " |")
+        lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
+        for row in rows:
+            lines.append("| " + " | ".join(esc(cell) for cell in row) + " |")
+        lines.append("")
+
+    def owner_label(owner: dict[str, Any]) -> str:
+        if owner.get("firma"):
+            return owner["firma"]
+        return f"{owner.get('vorname', '')} {owner.get('nachname', '')}".strip() or owner["id"]
+
+    def provider_contract(provider: dict[str, Any]) -> str:
+        monthly = provider.get("vertrag_monatlich")
+        hourly = provider.get("stundensatz")
+        if monthly:
+            return f"€{monthly:,.0f}/mo"
+        if hourly:
+            return f"€{hourly:,.0f}/h"
+        return "On demand"
+
+    def owner_role(owner: dict[str, Any]) -> str:
+        tags: list[str] = []
+        if owner.get("beirat"):
+            tags.append("Beirat")
+        if owner.get("selbstnutzer"):
+            tags.append("Selbstnutzer")
+        if owner.get("sev_mandat"):
+            tags.append("SEV")
+        return ", ".join(tags) if tags else "Eigentümer"
+
+    def occupant_label(unit_id: str) -> str:
+        tenant = unit_tenant.get(unit_id)
+        owner = unit_owner.get(unit_id)
+        if tenant:
+            return f"Tenant {tenant['id']}"
+        if owner and owner.get("selbstnutzer"):
+            return f"Owner occupied {owner['id']}"
+        if owner:
+            return f"Owner {owner['id']}"
+        return "Vacant"
+
     lines.append("---")
     lines.append(f"property_id: {PROPERTY_ID}")
     lines.append(f"name: {prop['name']}")
@@ -194,130 +237,123 @@ def render_markdown(erp: dict[str, Any], state: dict[str, Any]) -> str:
     lines.append(f"# {prop['name']}")
     lines.append("")
 
-    # Identity
-    lines.append("## 🏛️ Identity")
-    lines.append(f"- **Address**: {prop['strasse']}, {prop['plz']} {prop['ort']} (Prenzlauer Berg)")
-    lines.append(f"- **Baujahr**: {prop['baujahr']} (saniert {prop['sanierung']})")
-    lines.append(
-        f"- **Verwalter**: [[{prop['verwalter']}]] {fn('stammdaten/stammdaten.json', 'bootstrap', 1.0)}"
-    )
-    lines.append(
-        f"  - {prop['verwalter_strasse']}, {prop['verwalter_plz']} {prop['verwalter_ort']}"
-    )
-    lines.append(f"  - {prop['verwalter_email']} · {prop['verwalter_telefon']}")
-    total_units = sum(b["einheiten"] for b in buildings.values())
-    lines.append(
-        "- **Buildings**: "
-        + ", ".join(f"`@{b['id']}` ({b['einheiten']} units)" for b in buildings.values())
-    )
+    lines.append("## Summary")
+    lines.append(f"- **Address**: {prop['strasse']}, {prop['plz']} {prop['ort']} {fn('stammdaten/stammdaten.json', 'bootstrap', 1.0)}")
+    lines.append(f"- **Verwalter**: {prop['verwalter']}")
+    lines.append(f"- **Built / renovated**: {prop['baujahr']} / {prop['sanierung']}")
+    lines.append(f"- **Buildings**: {len(buildings)}")
     lines.append(f"- **Total units**: {total_units}")
+    lines.append("- **Master data lookup**: `erp.json`")
+    lines.append("- **Context state**: `state.json`, `history/`")
+    lines.append("")
+    lines.append("> [!note] ERP remains the source of truth for master data. This file keeps the current property briefing, exceptions, and lightweight reference tables.")
     lines.append("")
 
-    # Buildings
-    lines.append("## 🏢 Buildings")
-    for b in buildings.values():
-        fahrstuhl = "✓ elevator" if b.get("fahrstuhl") else "no elevator"
-        lines.append(
-            f"- `@{b['id']}` Hausnr. {b['hausnr']} · {b['einheiten']} units · {b['etagen']} floors · {fahrstuhl} · Baujahr {b['baujahr']}"
-        )
+    lines.append("## Open issues")
+    lines.append("> [!info] No open issues yet. New facts from email land here after the patch gate.")
     lines.append("")
 
-    # Bank
-    lines.append("## 🏦 Bank")
-    for f in state["sections"]["bank"]["facts"]:
-        lines.append(f"- {f['text']} {fn(f['provenance'], f['actor'], f['confidence'])}")
-    lines.append("")
-
-    # Owners (summary, ERP-driven)
-    lines.append("## 👥 Owners")
-    lines.append(f"- **Total**: {len(owners)} eigentümer")
-    lines.append(f"- **Selbstnutzer**: {len(selbstnutzer)}")
-    lines.append(f"- **Beirat**: {len(beirat)}")
-    if beirat:
-        lines.append("")
-        lines.append("### Beirat")
-        for o in beirat:
-            unit_chips = ", ".join(f"`@{u}`" for u in o["einheit_ids"])
-            oid = o["id"]
-            lines.append(
-                f"- `@{oid}` · {unit_chips} {fn(f'erp:eigentuemer:{oid}', 'erp', 1.0)}"
-            )
-    lines.append("")
-
-    # Service providers (rendered as rich cards via plugin)
-    lines.append("## 🔧 Service providers")
-    lines.append("```buena-erp")
-    lines.append("ids:")
-    for p in providers.values():
-        lines.append(f"  - {p['id']}")
-    lines.append("```")
-    lines.append("")
-
-    # Active issues (empty, ready for patches)
-    lines.append("## 🐛 Active issues")
-    lines.append("> [!info] No open issues yet — patches from email will land here.")
-    lines.append("")
-
-    # Mahnungen
-    lines.append("## 💸 Active Mahnungen")
-    lines.append("> [!info] No active dunning notices.")
-    lines.append("")
-
-    # Side agreements
-    lines.append("## 🤝 Side agreements")
+    lines.append("## Side agreements")
     lines.append("> [!info] No tracked side agreements yet.")
     lines.append("")
 
-    # Assembly decisions
-    lines.append("## 📋 Assembly decisions")
+    lines.append("## Assembly decisions")
     lines.append("> [!info] No ETV protocols ingested yet.")
     lines.append("")
 
-    # Beirat notes
-    lines.append("## 🪑 Beirat notes")
-    lines.append("> [!info] No beirat notes yet.")
+    lines.append("## Beirat notes")
+    lines.append("> [!info] Manual-only section. Auto patches do not overwrite this block.")
     lines.append("")
 
-    # Per-unit notes (only render units that have notes; here, all empty at bootstrap)
-    lines.append("## 🚪 Units")
-    # group units by building
-    by_building: dict[str, list[dict[str, Any]]] = {bid: [] for bid in buildings}
-    for u in units.values():
-        by_building.setdefault(u["haus_id"], []).append(u)
-    def _person_label(o: dict[str, Any]) -> str:
-        if o.get("firma"):
-            return o["firma"]
-        return f"{o.get('anrede', '')} {o.get('vorname', '')} {o.get('nachname', '')}".strip()
-
-    def _tenant_label(t: dict[str, Any]) -> str:
-        return f"{t.get('anrede', '')} {t.get('vorname', '')} {t.get('nachname', '')}".strip()
-
-    for bid, ulist in by_building.items():
-        lines.append(f"### `@{bid}`")
-        for u in sorted(ulist, key=lambda x: x["einheit_nr"]):
-            tenant = unit_tenant.get(u["id"])
-            owner = unit_owner.get(u["id"])
-            occupancy = []
-            if tenant:
-                occupancy.append(f"Tenant `@{tenant['id']}`")
-            elif owner and owner.get("selbstnutzer"):
-                occupancy.append(f"Owner-occupied `@{owner['id']}`")
-            elif owner:
-                occupancy.append(f"Owner `@{owner['id']}` (rented)")
-            qm = f"{u['wohnflaeche_qm']:.0f}qm" if u.get("wohnflaeche_qm") else "?qm"
-            zimmer = f"{u['zimmer']}Z" if u.get("zimmer") else ""
-            meta = " · ".join(filter(None, [u["einheit_nr"], u["lage"], u["typ"], qm, zimmer]))
-            lines.append(f"- `@{u['id']}` — {meta}")
-            if occupancy:
-                lines.append(f"  - {' · '.join(occupancy)}")
-        lines.append("")
-
-    # Connected pages
-    lines.append("## 🔗 Connected pages")
-    lines.append("- ERP lookup: `erp.json` (units, owners, tenants, service providers)")
-    lines.append("- State: `state.json` (tribal-knowledge facts + provenance)")
-    lines.append("- History: `history/` (immutable change log)")
+    lines.append("## Building reference")
+    lines.append("_Derived from the ERP snapshot. Use IDs as stable references._")
     lines.append("")
+    add_table(
+        ["Building ID", "House no.", "Units", "Floors", "Elevator", "Year"],
+        [
+            [
+                building["id"],
+                building["hausnr"],
+                building["einheiten"],
+                building["etagen"],
+                "Yes" if building.get("fahrstuhl") else "No",
+                building["baujahr"],
+            ]
+            for building in buildings.values()
+        ],
+    )
+
+    lines.append("## Owner reference")
+    lines.append("_Contact data stays in ERP. The markdown keeps just enough reference data to connect context to the right records._")
+    lines.append("")
+    add_table(
+        ["Owner ID", "Name", "Units", "Role"],
+        [
+            [
+                owner["id"],
+                owner_label(owner),
+                ", ".join(owner["einheit_ids"]),
+                owner_role(owner),
+            ]
+            for owner in owners.values()
+        ],
+    )
+    lines.append(f"Beirat seats: {', '.join(owner['id'] for owner in beirat) if beirat else 'None'}")
+    lines.append("")
+    lines.append(f"Self-occupied owners: {len(selbstnutzer)} of {len(owners)}")
+    lines.append("")
+
+    lines.append("## Service provider reference")
+    lines.append("_Directory snapshot only. Scheduling, contact, and contracts remain canonical in ERP._")
+    lines.append("")
+    add_table(
+        ["Provider ID", "Category", "Name", "Contract"],
+        [
+            [
+                provider["id"],
+                provider["branche"],
+                provider["firma"],
+                provider_contract(provider),
+            ]
+            for provider in providers.values()
+        ],
+    )
+
+    lines.append("## Financial reference")
+    lines.append("_Reference-only account view._")
+    lines.append("")
+    add_table(
+        ["Account", "IBAN", "Bank"],
+        [
+            ["WEG account", prop["weg_bankkonto_iban"], prop["weg_bankkonto_bank"]],
+            ["Reserve", prop["ruecklage_iban"], "Reserve account"],
+        ],
+    )
+
+    lines.append("## Unit index")
+    lines.append("_Reference snapshot for routing. Tribal knowledge should stay in the sections above, not in this table._")
+    lines.append("")
+
+    by_building: dict[str, list[dict[str, Any]]] = {building_id: [] for building_id in buildings}
+    for unit in units.values():
+        by_building.setdefault(unit["haus_id"], []).append(unit)
+
+    for building_id, unit_list in by_building.items():
+        lines.append(f"### {building_id}")
+        add_table(
+            ["Unit ID", "Unit no.", "Lage", "Type", "Area", "Occupancy"],
+            [
+                [
+                    unit["id"],
+                    unit["einheit_nr"],
+                    unit["lage"],
+                    unit["typ"],
+                    f"{unit['wohnflaeche_qm']:.1f} m²" if unit.get("wohnflaeche_qm") is not None else "",
+                    occupant_label(unit["id"]),
+                ]
+                for unit in sorted(unit_list, key=lambda value: value["einheit_nr"])
+            ],
+        )
 
     return "\n".join(lines)
 

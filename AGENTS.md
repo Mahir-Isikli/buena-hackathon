@@ -634,7 +634,9 @@ buena-hackathon/
 
 ## Design principles (lifted from the Buena redesign framework)
 
-Anwar's `buena-design-framework` doc on `origin/Anou4r-patch-2` reverse-engineers Din Bisevac's design taste. Three rules from that doc apply directly to what we're shipping. Treat them as gates, not aspirations.
+Anwar's `buena-design-framework` doc on `origin/Anou4r-patch-2` reverse-engineers Din Bisevac's design taste. Three rules from that doc apply directly to what we're shipping. Treat them as gates, not aspirations. 
+
+*Note: For exact design tokens, colors, and typography extracted from the live `buena.com` brand website, reference `HSMD.md`. It includes their signature forest green (`#0d7835`), stone background (`#fafaf9`), and typography (`Inter`, `Signifier`).*
 
 ### 1. Opinion per section
 

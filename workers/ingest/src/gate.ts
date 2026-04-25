@@ -135,15 +135,14 @@ function classifyCandidate(
   const targetHeading = resolveTargetHeading(candidate, headings);
   const section = getSectionSlice(markdown, targetHeading);
   const sectionExists = !!section;
-  const factNorm = normalizeLine(candidate.fact);
 
   if (sectionExists) {
-    const duplicate = section!.contentLines.find((line) => isDuplicateLine(line, factNorm));
+    const duplicate = section!.contentLines.find((line) => isDuplicateLine(line, candidate));
     if (duplicate) {
       return { kind: "ignore", reason: "duplicate" };
     }
 
-    const conflict = section!.contentLines.find((line) => isPotentialConflict(line, candidate.fact));
+    const conflict = section!.contentLines.find((line) => isPotentialConflict(line, candidate));
     const humanEdited = isHumanEditedSection(state, targetHeading, candidate.section);
 
     if (conflict && humanEdited) {
@@ -294,15 +293,45 @@ function isSectionBoundary(trimmed: string, currentLevel: number): boolean {
   return level <= currentLevel;
 }
 
-function isDuplicateLine(line: string, factNorm: string): boolean {
+function isDuplicateLine(line: string, candidate: CandidateFact): boolean {
+  const existingScope = extractScopeId(line);
+  const incomingScope = candidate.unit ?? extractScopeId(candidate.fact);
+  if (existingScope && incomingScope && existingScope !== incomingScope) {
+    return false;
+  }
+
   const existing = normalizeLine(cleanLine(line));
-  if (!existing || !factNorm) return false;
-  return existing === factNorm || existing.includes(factNorm) || factNorm.includes(existing);
+  const incoming = normalizeLine(candidate.fact);
+  if (!existing || !incoming) return false;
+  if (existing === incoming || existing.includes(incoming) || incoming.includes(existing)) {
+    return true;
+  }
+
+  const overlap = tokenOverlap(existing, incoming);
+  if (overlap < 0.82) return false;
+
+  const eEntities = extractEntities(existing);
+  const iEntities = extractEntities(incoming);
+  const sameDates = !arraysDiffer(eEntities.dates, iEntities.dates);
+  const samePercentages = !arraysDiffer(eEntities.percentages, iEntities.percentages);
+  const sameMoney = !arraysDiffer(eEntities.money, iEntities.money);
+  const compatibleIds =
+    !eEntities.ids.length ||
+    !iEntities.ids.length ||
+    !arraysDiffer(eEntities.ids, iEntities.ids);
+
+  return sameDates && samePercentages && sameMoney && compatibleIds;
 }
 
-function isPotentialConflict(line: string, fact: string): boolean {
+function isPotentialConflict(line: string, candidate: CandidateFact): boolean {
+  const existingScope = extractScopeId(line);
+  const incomingScope = candidate.unit ?? extractScopeId(candidate.fact);
+  if (existingScope && incomingScope && existingScope !== incomingScope) {
+    return false;
+  }
+
   const existing = normalizeLine(cleanLine(line));
-  const incoming = normalizeLine(fact);
+  const incoming = normalizeLine(candidate.fact);
   if (!existing || !incoming) return false;
   if (existing === incoming) return false;
 
@@ -370,8 +399,14 @@ function cleanLine(line: string): string {
     .replace(/\{changed:[^}]+\}/g, "")
     .replace(/\^\[[^\]]+\]/g, "")
     .replace(/^[-*]\s+/, "")
+    .replace(/^(?:eh|eig|mie|dl|haus)-\d+\s*:\s*/i, "")
     .replace(/`/g, "")
     .trim();
+}
+
+function extractScopeId(text: string): string | null {
+  const match = /\b(?:eh|eig|mie|dl|haus)-\d+\b/i.exec(text);
+  return match ? match[0].toUpperCase() : null;
 }
 
 function normalizeLine(s: string): string {

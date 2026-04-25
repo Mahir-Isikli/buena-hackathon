@@ -167,8 +167,22 @@ function provFields(p: ProvData): HoverField[] {
   return fields;
 }
 
+function timeAgo(iso: string): string {
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return iso;
+  const secs = Math.floor((Date.now() - t) / 1000);
+  if (secs < 5) return "just now";
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
 function changedFields(c: ChangedData): HoverField[] {
-  const fields: HoverField[] = [{ label: "Changed", value: c.when }];
+  const fields: HoverField[] = [{ label: "Changed", value: timeAgo(c.when) }];
   if (c.from) fields.push({ label: "Was", value: c.from });
   if (c.actor) fields.push({ label: "Actor", value: c.actor });
   if (c.source) fields.push({ label: "Source", value: c.source, mono: true });
