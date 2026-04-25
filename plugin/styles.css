@@ -2900,9 +2900,9 @@ button.buena-changed-pill-recent {
   font-size: 11px;
   font-weight: 600;
   font-family: inherit;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #9ca3af;
+  color: #8A8580;
 }
 
 .buena-card-scope,
@@ -2928,39 +2928,39 @@ button.buena-changed-pill-recent {
 
 .buena-card-old {
   margin-bottom: 4px;
-  color: #9ca3af;
+  color: #8A8580;
   font-size: 13px;
   text-decoration: line-through;
-  text-decoration-color: #d1d5db;
+  text-decoration-color: #d6d3d1;
 }
 
 .buena-card-new {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: #010105;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 400;
   line-height: 1.45;
 }
 
 .buena-card-source {
-  margin-bottom: 20px;
-  padding-left: 16px;
-  border-left: 2px solid #e5e7eb;
+  margin-bottom: 16px;
+  padding-left: 12px;
+  border-left: 2px solid #e7e5e4;
 }
 
 .buena-card-source-quote {
-  color: #6b7280;
+  color: #4A4744;
   font-size: 13px;
   font-style: italic;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .buena-card-source-meta {
-  margin-top: 8px;
-  color: #9ca3af;
+  margin-top: 6px;
+  color: #8A8580;
   font-size: 10px;
   font-family: var(--font-monospace);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
