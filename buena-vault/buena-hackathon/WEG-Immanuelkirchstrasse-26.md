@@ -29,6 +29,10 @@ tags:
 
 ## ⚠️ Active issues
 
+> [!todo] [[EH-014]] — broken hot water
+> Tenant in [[EH-014]] reports **broken hot water**, claims **rent-withholding 10 %** seit 2026-01-15.
+> *Source: `emails/2026-01-15/EMAIL-12891.eml` · confidence 0.83* {changed: 2026-04-25 | actor: gemini-flash | src: emails/2026-01-15/EMAIL-12891.eml}
+
 > [!todo] [[EH-049]] — Kaution-Rückzahlung offen
 > Ehemalige Mieterin [[MIE-003]] ist vor 7 Wochen ausgezogen. Kaution **5.163 €** noch nicht ausgezahlt. Anfrage am 01.01.2026.
 > *Source: `emails/2026-01/EMAIL-06548.eml` · confidence 0.95*
@@ -42,39 +46,59 @@ tags:
 ## 🟡 Pending patches
 
 ```buena-pending
-id: p-001
-unit: EH-014
+id: p-004
+unit: HAUS-12
 section: Active issues
-new: Tenant in EH-014 reports broken hot water, claims rent-withholding 10% (since 2026-01-15). Conflicts with prior note "no open issues".
-source: emails/2026-01-15/EMAIL-12891.eml
-snippet: "Sehr geehrte Damen und Herren, seit dem 15. Januar gibt es in unserer Wohnung kein Warmwasser mehr. Wir behalten daher 10% der Miete ein, bis das Problem behoben ist."
-confidence: 0.83
+old: ""
+new: "Heizungswartung Termin bestätigt 2026-05-06 10:00"
+source: emails/2026-04-22/EMAIL-13044.eml
+snippet: "Wir bestätigen den Wartungstermin für die Heizungsanlage HAUS-12 am 06.05.2026 um 10:00 Uhr. Bitte Zugang zum Heizungskeller sicherstellen."
+confidence: 0.96
 actor: gemini-flash
 target_heading: "## ⚠️ Active issues"
 new_block: |
-  > [!todo] [[EH-014]] — broken hot water
-  > Tenant in [[EH-014]] reports **broken hot water**, claims **rent-withholding 10 %** seit 2026-01-15.
-  > *Source: `emails/2026-01-15/EMAIL-12891.eml` · confidence 0.83* {changed: 2026-04-25 | actor: gemini-flash | src: emails/2026-01-15/EMAIL-12891.eml}
+  > [!todo] [[HAUS-12]] — Heizungswartung 2026-05-06
+  > [[DL-007]] bestätigt Wartungstermin **06.05.2026 um 10:00**. Hausmeister muss Zugang zum Heizungskeller sicherstellen. {changed: 2026-04-25 | actor: gemini-flash | src: emails/2026-04-22/EMAIL-13044.eml}
 ```
 
 ```buena-pending
-id: p-002
-unit: Hausmeister
-section: Service providers
-old: "DL-001: 650 €/Monat"
-new: "DL-001: 720 €/Monat (price increase notice, effective 2026-05-01)"
-source: briefe/2026-04-10/BRIEF-00781.pdf
-snippet: "Aufgrund gestiegener Lohn- und Materialkosten passen wir den Pauschalbetrag ab dem 01.05.2026 von 650 € auf 720 € monatlich an."
-confidence: 0.87
-actor: gemini-2.5-pro
-target_heading: "## 🔧 Service provider contracts"
+id: p-005
+unit: EH-027
+section: Side agreements
+old: ""
+new: "Untermiete-Antrag eingegangen, Genehmigung ausstehend"
+source: emails/2026-04-19/EMAIL-13039.eml
+snippet: "Hiermit beantrage ich die Genehmigung zur Untervermietung meiner Wohnung EH-027 ab dem 01.06.2026 für 9 Monate an Frau Lena Schulz (Studentin, HU Berlin)."
+confidence: 0.89
+actor: gemini-flash
+target_heading: "## 📝 Side agreements"
 new_block: |
-  - [[DL-001]] Hausmeister cost change: **720 €/Monat** ab 2026-05-01 (was 650 €/Monat) {changed: 2026-04-25 | actor: gemini-2.5-pro | src: briefe/2026-04-10/BRIEF-00781.pdf}
+  > [!tip] [[EH-027]] — Untermiete-Antrag offen
+  > [[MIE-009]] beantragt Untervermietung ab 2026-06-01 für 9 Monate. Genehmigung durch Verwalter ausstehend. {changed: 2026-04-25 | actor: gemini-flash | src: emails/2026-04-19/EMAIL-13039.eml}
+```
+
+```buena-pending
+id: p-007
+unit: EH-037
+section: Per-unit notes
+old: ""
+new: "Eigentümerwechsel EIG-005 → EIG-012 zum 2026-06-01"
+source: briefe/2026-04-20/BRIEF-00808.pdf
+snippet: "Mit notarieller Urkunde vom 18.04.2026 (UR-Nr. 412/2026) wechselt das Eigentum an EH-037 von Hr. Weber (EIG-005) auf Fr. Mahmoud (EIG-012) zum 01.06.2026."
+confidence: 0.92
+actor: gemini-2.5-pro
+target_heading: "## 🏘️ Per-unit notes"
+new_block: |
+  > [!note]- 🏠 [[EH-037]] · Eigentümerwechsel
+  > [[EIG-005]] → [[EIG-012]] zum **2026-06-01** (Notar UR-Nr. 412/2026). Beirat-Status [[EIG-005]] prüfen. {changed: 2026-04-25 | actor: gemini-2.5-pro | src: briefe/2026-04-20/BRIEF-00808.pdf}
 ```
 
 ---
 
 ## 💸 Active Mahnungen
+
+> [!bug] [[EH-021]] — 3. Mahnung, Räumungsklage
+> [[MIE-002]] Rückstand **8.420 €**. Räumungsklage durch Anwalt eingeleitet 2026-04-18. {changed: 2026-04-25 | actor: gemini-2.5-pro | src: briefe/2026-04-18/BRIEF-00802.pdf}
 
 > [!bug] [[EH-021]] — 2. Mahnung
 > [[MIE-002]] im Rückstand seit Q2 2024. Vergleichsangebot offen.

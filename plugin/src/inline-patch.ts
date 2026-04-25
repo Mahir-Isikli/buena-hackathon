@@ -1,7 +1,12 @@
 import { Notice, parseYaml, TFile } from "obsidian";
 import type BuenaPlugin from "../main";
 import { attachHoverPopover, HoverField } from "./hover";
-import { applyPatchToVault, revealLineInActiveView } from "./vault-patch";
+import { addHistoryEntry } from "./history";
+import {
+  applyPatchToVault,
+  revealLineInActiveView,
+  stripPendingBlockById,
+} from "./vault-patch";
 
 interface PendingPatchSpec {
   id?: string;
@@ -107,6 +112,17 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
           new Notice(`[Buena] approved ${spec.id}, written to vault`);
           plugin.statusBar.bumpPendingCount(-1);
           plugin.statusBar.markPatchReceived();
+          await addHistoryEntry(plugin, filePath, {
+            id: spec.id,
+            section: spec.section ?? "Unsorted",
+            unit: spec.unit,
+            oldValue: spec.old,
+            newValue: spec.new ?? "",
+            source: spec.source,
+            decision: "approved",
+            timestamp: new Date().toISOString(),
+            actor: spec.actor ?? "unknown",
+          });
           // Reveal the inserted block in the editor
           await revealLineInActiveView(plugin.app, filePath, insertedAt);
         } catch (err) {
@@ -129,6 +145,17 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
             await plugin.app.vault.modify(file, stripped);
           }
         }
+        await addHistoryEntry(plugin, ctx.sourcePath, {
+          id: spec.id,
+          section: spec.section ?? "Unsorted",
+          unit: spec.unit,
+          oldValue: spec.old,
+          newValue: spec.new ?? "",
+          source: spec.source,
+          decision: "rejected",
+          timestamp: new Date().toISOString(),
+          actor: spec.actor ?? "unknown",
+        });
         new Notice(`[Buena] rejected ${spec.id}`);
         plugin.statusBar.bumpPendingCount(-1);
       };
@@ -144,35 +171,4 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
 function shortSource(s: string): string {
   const parts = s.split("/");
   return parts[parts.length - 1];
-}
-
-/**
- * Strip a buena-pending block by id without inserting anything. Used by reject.
- */
-function stripPendingBlockById(text: string, patchId: string): string {
-  const lines = text.split("\n");
-  const out: string[] = [];
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-    if (/^```buena-pending\s*$/.test(line)) {
-      let j = i + 1;
-      let foundId = false;
-      while (j < lines.length && !/^```\s*$/.test(lines[j])) {
-        if (lines[j].trim().startsWith("id:")) {
-          const v = lines[j].split(":").slice(1).join(":").trim();
-          if (v === patchId) foundId = true;
-        }
-        j += 1;
-      }
-      if (foundId) {
-        i = j + 1;
-        if (out.length && out[out.length - 1] === "" && lines[i] === "") i += 1;
-        continue;
-      }
-    }
-    out.push(line);
-    i += 1;
-  }
-  return out.join("\n");
 }

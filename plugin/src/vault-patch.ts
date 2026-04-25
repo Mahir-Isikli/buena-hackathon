@@ -99,6 +99,67 @@ function removePendingBlock(lines: string[], patchId: string): string[] {
 }
 
 /**
+ * Strip a buena-pending block by id without inserting anything. Used by reject.
+ */
+export function stripPendingBlockById(text: string, patchId: string): string {
+  const lines = text.split("\n");
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^```buena-pending\s*$/.test(line)) {
+      let j = i + 1;
+      let foundId = false;
+      while (j < lines.length && !/^```\s*$/.test(lines[j])) {
+        if (lines[j].trim().startsWith("id:")) {
+          const v = lines[j].split(":").slice(1).join(":").trim();
+          if (v === patchId) foundId = true;
+        }
+        j += 1;
+      }
+      if (foundId) {
+        i = j + 1;
+        if (out.length && out[out.length - 1] === "" && lines[i] === "") i += 1;
+        continue;
+      }
+    }
+    out.push(line);
+    i += 1;
+  }
+  return out.join("\n");
+}
+
+export interface ParsedPendingBlock {
+  raw: string;
+  yaml: Record<string, unknown>;
+}
+
+/**
+ * Find every fenced ```buena-pending``` block in the given markdown text.
+ * Returns the inner YAML source for each block so callers can parse it.
+ */
+export function findPendingBlocks(text: string): string[] {
+  const lines = text.split("\n");
+  const blocks: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    if (/^```buena-pending\s*$/.test(lines[i])) {
+      const body: string[] = [];
+      let j = i + 1;
+      while (j < lines.length && !/^```\s*$/.test(lines[j])) {
+        body.push(lines[j]);
+        j += 1;
+      }
+      blocks.push(body.join("\n"));
+      i = j + 1;
+      continue;
+    }
+    i += 1;
+  }
+  return blocks;
+}
+
+/**
  * Open the file in the active leaf (or focus an existing view) and scroll
  * to the given line.
  */
