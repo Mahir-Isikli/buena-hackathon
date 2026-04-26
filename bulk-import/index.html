@@ -4,141 +4,171 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>kontext.haus · Bulk intake</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <style>
       :root {
         --bg: #fafaf9;
         --surface: #ffffff;
         --ink: #010105;
-        --ink-soft: #44403c;
-        --muted: #78716c;
+        --ink-soft: #4A4744;
+        --muted: #8A8580;
         --line: #e7e5e4;
         --line-strong: #d6d3d1;
-        
+
         --accent: #0d7835;
         --accent-hover: #0a5f2a;
         --accent-soft: #e8f3ec;
-        
+        --accent-pale: #ecfdf5;
+
         --buena-sage: #d6dbd5;
         --buena-beige: #cdbda3;
-        
+        --warning: #ea580c;
+        --warning-soft: #fff7ed;
         --danger: #ef4444;
-        
-        --radius-lg: 16px;
-        --radius-md: 12px;
-        --radius-sm: 8px;
-        
+
+        --radius-card: 16px;
+        --radius-sm: 10px;
+        --radius-pill: 999px;
+
         --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-        --font-mono: ui-monospace, monospace;
+        --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+        --font-tight: "Inter Tight", "Inter", ui-sans-serif, system-ui;
+
+        --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+        --shadow-card-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        --shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
       }
 
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      
-      body {
+
+      html, body {
         background: var(--bg);
         color: var(--ink);
         font-family: var(--font-sans);
         -webkit-font-smoothing: antialiased;
-        height: 100vh;
-        width: 100vw;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: clamp(20px, 4vh, 40px) 20px clamp(80px, 10vh, 100px);
-        overflow: hidden;
       }
 
-      /* Hero Section */
-      .app-header {
-        text-align: center;
-        margin-bottom: clamp(20px, 4vh, 40px);
-        max-width: 540px;
-        flex-shrink: 0;
-        animation: rise 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding-bottom: 120px;
       }
-      .brand {
+
+      /* Topbar — centered Kontext brand, mirrors plugin chrome */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px 28px;
+        background: rgba(250, 250, 249, 0.92);
+        backdrop-filter: saturate(150%) blur(10px);
+        -webkit-backdrop-filter: saturate(150%) blur(10px);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .topbar-brand {
         display: inline-flex;
         align-items: center;
-        font-weight: 500;
-        font-size: 13px;
-        margin-bottom: 16px;
-        letter-spacing: 0.02em;
-        background: var(--buena-beige);
-        color: #000;
-        padding: 4px 12px;
-        border-radius: 99px;
-        text-transform: uppercase;
-        box-shadow: 0 2px 8px -4px rgba(0,0,0,0.05);
+        gap: 10px;
+        color: var(--ink);
+        text-decoration: none;
       }
-      .app-header h1 {
-        font-family: var(--font-sans);
-        font-size: clamp(28px, 4vh, 32px);
-        font-weight: 600;
-        letter-spacing: -0.03em;
-        margin-bottom: 12px;
+      .topbar-brand:hover .kontext-mark {
+        color: var(--accent);
+      }
+
+      .kontext-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 22px;
         color: var(--ink);
       }
-      .app-header p {
-        font-size: clamp(14px, 2vh, 15px);
+      .kontext-mark svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .topbar-wordmark {
+        font-size: 19px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        color: var(--ink);
+      }
+
+      /* Hero */
+      .hero {
+        text-align: center;
+        max-width: 540px;
+        margin: clamp(56px, 10vh, 96px) auto clamp(28px, 5vh, 40px);
+        padding: 0 24px;
+        animation: rise 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+      }
+
+      .hero h1 {
+        font-size: clamp(28px, 4vw, 36px);
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        color: var(--ink);
+        line-height: 1.1;
+        margin-bottom: 12px;
+      }
+
+      .hero p {
+        font-size: 15px;
         color: var(--muted);
         line-height: 1.6;
       }
 
-      /* Main Card */
+      /* Card shell — mirrors plugin .buena-card */
       .card {
         background: var(--surface);
         border: 1px solid var(--line-strong);
-        border-radius: var(--radius-lg);
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.025);
-        width: 100%;
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-card);
+        width: calc(100% - 48px);
         max-width: 640px;
-        flex: 1;
-        min-height: 0;
+        margin: 0 auto;
         display: flex;
         flex-direction: column;
         overflow: hidden;
         opacity: 0;
-        animation: rise 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.15s forwards;
+        animation: rise 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.12s forwards;
+        transition: box-shadow 0.2s cubic-bezier(.4, 0, .2, 1);
+      }
+
+      .card:hover {
+        box-shadow: var(--shadow-card-hover);
       }
 
       .card-section {
-        padding: clamp(24px, 4vh, 32px) clamp(24px, 4vw, 36px);
+        padding: 28px 32px;
         border-bottom: 1px solid var(--line);
-        flex-shrink: 0;
       }
       .card-section:last-child {
         border-bottom: none;
-        flex: 1;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        padding: clamp(24px, 4vh, 32px) 0 0 0;
-      }
-
-      .card-section:last-child .section-header {
-        padding: 0 clamp(24px, 4vw, 36px);
-        flex-shrink: 0;
-        margin-bottom: 20px;
-      }
-
-      .upload-scroll-area {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-        padding: 0 clamp(24px, 4vw, 36px) clamp(24px, 4vh, 32px);
       }
 
       .section-header {
-        margin-bottom: 24px;
+        margin-bottom: 22px;
       }
       .section-title {
-        font-family: var(--font-sans);
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 600;
         letter-spacing: -0.01em;
         color: var(--ink);
@@ -147,33 +177,35 @@
         gap: 10px;
       }
       .step-num {
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 24px;
-        height: 24px;
-        background: var(--buena-sage);
-        color: var(--ink);
+        width: 22px;
+        height: 22px;
+        background: var(--line);
+        color: var(--ink-soft);
         border-radius: 50%;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
-        font-family: var(--font-mono);
+        line-height: 1;
+        font-family: var(--font-tight);
       }
 
       .field-group {
         display: flex;
         flex-direction: column;
         gap: 8px;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
       }
       .field-group:last-child {
         margin-bottom: 0;
       }
-      
+
       label {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 500;
         color: var(--ink);
+        letter-spacing: -0.005em;
       }
       .label-hint {
         color: var(--muted);
@@ -182,83 +214,102 @@
 
       .input-wrapper {
         display: flex;
-        gap: 12px;
+        gap: 10px;
       }
 
-      input[type="text"], select, textarea {
+      input[type="text"],
+      select,
+      textarea {
         font-family: inherit;
-        font-size: 15px;
+        font-size: 14px;
         width: 100%;
-        padding: 12px 16px;
+        padding: 11px 14px;
         border: 1px solid var(--line-strong);
         border-radius: var(--radius-sm);
         background: var(--bg);
         color: var(--ink);
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
       }
-      input[type="text"]:focus, select:focus, textarea:focus {
+      input[type="text"]:focus,
+      select:focus,
+      textarea:focus {
         outline: none;
-        border-color: var(--accent);
+        border-color: var(--ink);
         background: var(--surface);
-        box-shadow: 0 0 0 3px var(--accent-soft);
+        box-shadow: 0 0 0 3px rgba(1, 1, 5, 0.06);
       }
-      
+
       select {
         appearance: none;
-        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2344403c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234A4744' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
         background-repeat: no-repeat;
-        background-position: right 16px center;
-        background-size: 16px;
-        padding-right: 40px;
+        background-position: right 14px center;
+        background-size: 14px;
+        padding-right: 36px;
         cursor: pointer;
       }
 
       textarea {
         resize: vertical;
-        min-height: 80px;
+        min-height: 84px;
+        line-height: 1.5;
       }
 
-      /* Buttons */
+      /* Buttons — pill style mirroring plugin chips */
       button {
         font-family: inherit;
-        font-size: 14px;
+        font-size: 13px;
       }
       .btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        padding: 12px 20px;
-        border-radius: var(--radius-sm);
+        padding: 9px 16px;
+        border-radius: var(--radius-pill);
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
         border: 1px solid transparent;
         white-space: nowrap;
+        line-height: 1;
       }
       .btn-primary {
         background: var(--accent);
-        color: white;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        color: #ffffff;
+        border-color: var(--accent);
       }
-      .btn-primary:hover { background: var(--accent-hover); }
-      .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-      
+      .btn-primary:hover {
+        background: var(--accent-hover);
+        border-color: var(--accent-hover);
+      }
+      .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
       .btn-outline {
-        background: white;
+        background: var(--surface);
         border-color: var(--line-strong);
-        color: var(--ink);
-        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        color: var(--ink-soft);
       }
-      .btn-outline:hover { background: var(--bg); border-color: #a8a29e; }
+      .btn-outline:hover {
+        background: var(--bg);
+        border-color: var(--ink);
+        color: var(--ink);
+      }
 
       .btn-ghost {
         background: transparent;
         color: var(--ink-soft);
+        border-color: transparent;
       }
-      .btn-ghost:hover { background: var(--bg); color: var(--ink); }
+      .btn-ghost:hover {
+        background: var(--line);
+        color: var(--ink);
+      }
 
-      /* Property Drawer */
+      /* Property drawer */
       .drawer {
         overflow: hidden;
         height: 0;
@@ -272,51 +323,54 @@
       }
       .drawer.open {
         height: auto;
-        margin-top: 16px;
-        padding: 24px;
+        margin-top: 14px;
+        padding: 20px;
         border-color: var(--line-strong);
         opacity: 1;
       }
       .drawer-grid {
         display: grid;
         grid-template-columns: 1fr 2fr;
-        gap: 16px;
-        margin-bottom: 16px;
+        gap: 14px;
+        margin-bottom: 14px;
       }
 
       /* Dropzone */
       .dropzone {
-        border: 1px dashed var(--line-strong);
-        border-radius: var(--radius-md);
-        padding: clamp(32px, 5vh, 48px) 24px;
+        border: 1.5px dashed var(--line-strong);
+        border-radius: var(--radius-card);
+        padding: clamp(36px, 6vh, 56px) 24px;
         text-align: center;
         background: var(--bg);
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;
         position: relative;
       }
-      .dropzone:hover { background: #f5f5f4; border-color: #a8a29e; }
+      .dropzone:hover {
+        background: #f5f5f4;
+        border-color: var(--ink-soft);
+      }
       .dropzone.drag-active {
         border-color: var(--accent);
         background: var(--accent-soft);
       }
 
       .dropzone-icon {
-        width: 48px;
-        height: 48px;
-        margin: 0 auto 16px;
+        width: 44px;
+        height: 44px;
+        margin: 0 auto 14px;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        background: white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         color: var(--accent);
       }
 
       .dropzone-title {
-        font-family: var(--font-sans);
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
         color: var(--ink);
         margin-bottom: 6px;
@@ -324,42 +378,41 @@
       .dropzone-desc {
         font-size: 13px;
         color: var(--muted);
-        margin-bottom: 24px;
+        margin-bottom: 22px;
       }
       .dropzone-actions {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         justify-content: center;
       }
 
-      /* File List */
+      /* File list */
       .file-list-container {
-        margin-top: 24px;
+        margin-top: 22px;
       }
       .file-list {
         display: flex;
         flex-direction: column;
         gap: 8px;
-        padding-right: 4px;
       }
       .file-item {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 12px 16px;
+        padding: 11px 14px;
         border: 1px solid var(--line);
         border-radius: var(--radius-sm);
-        background: white;
+        background: var(--surface);
         animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
       }
       .file-info {
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 12px;
         overflow: hidden;
       }
       .file-icon {
-        color: var(--buena-sage);
+        color: var(--ink-soft);
         flex-shrink: 0;
       }
       .file-details {
@@ -368,7 +421,7 @@
         overflow: hidden;
       }
       .file-name {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 500;
         color: var(--ink);
         white-space: nowrap;
@@ -376,48 +429,49 @@
         text-overflow: ellipsis;
       }
       .file-meta {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--muted);
         font-family: var(--font-mono);
-        margin-top: 4px;
+        letter-spacing: 0.02em;
+        margin-top: 3px;
       }
       .file-remove {
         background: none;
         border: none;
         color: var(--muted);
         cursor: pointer;
-        padding: 8px;
+        padding: 6px;
         border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.2s;
+        transition: all 0.15s;
       }
       .file-remove:hover {
-        background: var(--bg);
+        background: var(--line);
         color: var(--danger);
       }
 
-      /* Action Bar */
+      /* Floating action bar */
       .action-bar {
         position: fixed;
-        bottom: 32px;
+        bottom: 24px;
         left: 50%;
         transform: translateX(-50%) translateY(20px);
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
         border: 1px solid var(--line-strong);
-        padding: 12px 16px;
-        border-radius: 99px;
+        padding: 8px 8px 8px 18px;
+        border-radius: var(--radius-pill);
         display: flex;
         align-items: center;
-        gap: 16px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.05);
+        gap: 14px;
+        box-shadow: var(--shadow-pop);
         z-index: 100;
         opacity: 0;
         pointer-events: none;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .action-bar.visible {
         pointer-events: auto;
@@ -425,45 +479,43 @@
         transform: translateX(-50%) translateY(0);
       }
       .action-stats {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 500;
         color: var(--ink);
-        padding-left: 12px;
         white-space: nowrap;
       }
 
-      /* Progress & Results */
+      /* Progress */
       .progress-card {
-        margin-top: 28px;
-        padding: 28px;
+        margin-top: 22px;
+        padding: 22px;
         border: 1px solid var(--line-strong);
-        border-radius: var(--radius-sm);
+        border-radius: var(--radius-card);
         background: var(--bg);
       }
       .progress-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 20px;
+        margin-bottom: 16px;
       }
       .progress-title {
-        font-family: var(--font-sans);
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
       }
       .progress-status {
-        font-size: 14px;
+        font-size: 13px;
         color: var(--muted);
       }
       .progress-pct {
-        font-size: 14px;
-        font-family: var(--font-mono);
+        font-size: 12px;
+        font-family: var(--font-tight);
         font-weight: 600;
         color: var(--accent);
-        background: var(--accent-soft);
+        background: var(--accent-pale);
         padding: 4px 10px;
-        border-radius: 6px;
+        border-radius: var(--radius-pill);
       }
       .progress-track {
         height: 6px;
@@ -481,67 +533,195 @@
       .pipeline-stats {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 24px;
-        padding-top: 24px;
+        gap: 8px;
+        margin-top: 18px;
+        padding-top: 18px;
         border-top: 1px solid var(--line);
       }
       .stat-pill {
-        font-size: 12px;
-        font-family: var(--font-mono);
-        background: white;
+        font-size: 11px;
+        font-family: var(--font-tight);
+        letter-spacing: 0.02em;
+        background: var(--surface);
         border: 1px solid var(--line-strong);
-        padding: 6px 12px;
-        border-radius: 6px;
+        padding: 5px 11px;
+        border-radius: var(--radius-pill);
         color: var(--ink-soft);
       }
 
       .results-list {
-        margin-top: 20px;
+        margin-top: 16px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
       }
       .result-item {
-        font-size: 14px;
-        padding: 16px;
+        font-size: 13px;
+        padding: 14px 16px;
         border-radius: var(--radius-sm);
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        background: white;
+        background: var(--surface);
         border: 1px solid var(--line-strong);
       }
-      .result-item.success { border-left: 4px solid var(--accent); }
-      .result-item.error { border-left: 4px solid var(--danger); }
+      .result-item.success { border-left: 3px solid var(--accent); }
+      .result-item.error { border-left: 3px solid var(--danger); }
       .result-details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .result-title { font-weight: 500; }
+      .result-meta {
+        color: var(--muted);
+        font-size: 12px;
+        font-family: var(--font-mono);
+      }
+
+      /* Bootstrap drawer */
+      .bootstrap-zone {
+        border: 1.5px dashed var(--line-strong);
+        border-radius: var(--radius-card);
+        padding: 22px;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.15s cubic-bezier(.4, 0, .2, 1);
+      }
+      .bootstrap-zone:hover {
+        background: #f5f5f4;
+        border-color: var(--ink-soft);
+      }
+      .bootstrap-zone.drag-active {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .bootstrap-zone-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .bootstrap-zone-help {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .bootstrap-zone-actions {
+        margin-top: 8px;
+      }
+
+      .bootstrap-preview {
+        margin-top: 14px;
+        padding: 16px 18px;
+        background: var(--accent-pale);
+        border: 1px solid #c8e6d2;
+        border-radius: var(--radius-card);
         display: flex;
         flex-direction: column;
         gap: 6px;
       }
-      .result-title { font-weight: 500; }
-      .result-meta { color: var(--muted); font-size: 13px; font-family: var(--font-mono); }
+      .preview-row {
+        font-size: 13px;
+        color: var(--ink);
+      }
+      .preview-row strong {
+        font-weight: 600;
+      }
+      .preview-id {
+        font-family: var(--font-tight);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--accent);
+      }
+      .preview-counts {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .preview-counts .stat-pill {
+        background: var(--surface);
+      }
+      .preview-error {
+        margin-top: 12px;
+        padding: 12px 14px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        color: #991b1b;
+      }
+
+      .manual-fallback {
+        margin-top: 16px;
+        padding: 0;
+      }
+      .manual-fallback summary {
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--muted);
+        padding: 8px 0;
+        list-style: none;
+      }
+      .manual-fallback summary::-webkit-details-marker { display: none; }
+      .manual-fallback summary:hover { color: var(--ink); }
+      .manual-fallback summary::before {
+        content: "▸";
+        margin-right: 6px;
+        font-size: 10px;
+        display: inline-block;
+        transition: transform 0.15s;
+      }
+      .manual-fallback[open] summary::before {
+        transform: rotate(90deg);
+      }
+      .manual-fallback-body {
+        padding-top: 8px;
+      }
 
       .hidden { display: none !important; }
 
       @keyframes rise {
-        from { opacity: 0; transform: translateY(24px); }
+        from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
       }
-      
       @keyframes slideIn {
         from { opacity: 0; transform: translateX(-12px); }
         to { opacity: 1; transform: translateX(0); }
       }
+
+      @media (max-width: 600px) {
+        .topbar { padding: 14px 18px; }
+        .card { width: calc(100% - 32px); }
+        .card-section { padding: 22px 22px; }
+        .hero { margin-top: clamp(36px, 7vh, 56px); }
+      }
     </style>
   </head>
   <body>
-    
-    <header class="app-header stagger-item">
-      <div class="brand">kontext.haus</div>
-      <h1>Bulk Archive Intake</h1>
-      <p>Drop an entire property archive in. We'll automatically route, extract, and stage every file for your review.</p>
+    <header class="topbar">
+      <a class="topbar-brand" href="/" aria-label="kontext">
+        <span class="kontext-mark" aria-hidden="true">
+          <svg viewBox="0 0 315 394" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M104.5 170.152V248.257C104.5 252.617 108.034 256.152 112.394 256.152C114.684 256.152 116.861 255.157 118.361 253.426L190.5 170.152H313L212 271.152H95C63.5 268.485 0.5 244.552 0.5 170.152V28.5183L104.5 0.651611V170.152Z" fill="currentColor"/>
+            <path d="M0.5 170.152H104.5M0.5 170.152C0.5 244.552 63.5 268.485 95 271.152H212L313 170.152H190.5L118.361 253.426C116.861 255.157 114.684 256.152 112.394 256.152C108.034 256.152 104.5 252.617 104.5 248.257V170.152M0.5 170.152V28.5183L104.5 0.651611V170.152" stroke="currentColor"/>
+            <path d="M104.5 393.152H0.5C0.5 318.752 63.5 294.818 95 292.152H212L313 393.152H190.5L118.361 309.877C116.861 308.146 114.684 307.152 112.394 307.152C108.034 307.152 104.5 310.686 104.5 315.046V393.152Z" fill="currentColor" stroke="currentColor"/>
+          </svg>
+        </span>
+        <span class="topbar-wordmark">kontext</span>
+      </a>
     </header>
+
+    <section class="hero">
+      <h1>Drop in a new archive</h1>
+      <p>Hand off any property's old archive. We'll route, extract, and stage every file for your review.</p>
+    </section>
 
     <div class="card stagger-item">
       <!-- Step 1: Context -->
@@ -559,21 +739,47 @@
         </div>
 
         <div id="newPropertyDrawer" class="drawer">
-          <div class="drawer-grid">
-            <div class="field-group">
-              <label>ID</label>
-              <input type="text" id="newPropertyId" placeholder="LIE-002" />
+          <div class="bootstrap-zone" id="bootstrapZone">
+            <div class="bootstrap-zone-title">Drop a stammdaten archive (.zip)</div>
+            <div class="bootstrap-zone-help">We parse the master data and create the vault on the fly.</div>
+            <div class="bootstrap-zone-actions">
+              <button type="button" id="pickZipBtn" class="btn btn-outline">Choose archive</button>
             </div>
-            <div class="field-group">
-              <label>Name</label>
-              <input type="text" id="newPropertyName" placeholder="WEG Musterstraße 11" />
+            <input id="bootstrapZipInput" type="file" accept=".zip,application/zip" class="hidden" />
+          </div>
+
+          <div id="bootstrapPreview" class="bootstrap-preview hidden">
+            <div class="preview-id" id="previewId"></div>
+            <div class="preview-row" id="previewName"></div>
+            <div class="preview-row" id="previewAddress"></div>
+            <div class="preview-row" id="previewVerwalter"></div>
+            <div class="preview-counts" id="previewCounts"></div>
+          </div>
+
+          <div id="bootstrapError" class="preview-error hidden"></div>
+
+          <button id="bootstrapConfirmBtn" class="btn btn-primary hidden" style="margin-top: 14px; width: 100%;">Bootstrap property</button>
+
+          <details class="manual-fallback">
+            <summary>Or create an empty entry manually</summary>
+            <div class="manual-fallback-body">
+              <div class="drawer-grid">
+                <div class="field-group">
+                  <label>ID</label>
+                  <input type="text" id="newPropertyId" placeholder="LIE-002" />
+                </div>
+                <div class="field-group">
+                  <label>Name</label>
+                  <input type="text" id="newPropertyName" placeholder="WEG Musterstraße 11" />
+                </div>
+              </div>
+              <div class="field-group">
+                <label>Address</label>
+                <input type="text" id="newPropertyAddress" placeholder="Musterstraße 11, 10115 Berlin" />
+              </div>
+              <button id="savePropertyBtn" class="btn btn-outline" style="margin-top: 12px; width: 100%;">Add empty entry</button>
             </div>
-          </div>
-          <div class="field-group">
-            <label>Address</label>
-            <input type="text" id="newPropertyAddress" placeholder="Musterstraße 11, 10115 Berlin" />
-          </div>
-          <button id="savePropertyBtn" class="btn btn-primary" style="margin-top: 12px; width: 100%;">Save Property</button>
+          </details>
         </div>
 
         <div class="field-group" style="margin-top: 20px;">
@@ -641,7 +847,7 @@
     <script type="module">
       const STORAGE_KEY = "buena-bulk-import-state-v2";
       const WORKER_URL = "https://buena-ingest.isiklimahir.workers.dev";
-      const BEARER_TOKEN = "";
+      const BEARER_TOKEN = "061a29659197887d7c8b2d86d4e01941e925da414def5867";
       const defaults = {
         properties: [
           { id: "LIE-001", name: "WEG Immanuelkirchstraße 26", address: "Immanuelkirchstraße 26, 10405 Berlin" }
@@ -678,8 +884,21 @@
         progressFill: document.getElementById("progressFill"),
         pipelineStats: document.getElementById("pipelineStats"),
         actionBar: document.getElementById("actionBar"),
-        actionCount: document.getElementById("actionCount")
+        actionCount: document.getElementById("actionCount"),
+        bootstrapZone: document.getElementById("bootstrapZone"),
+        pickZipBtn: document.getElementById("pickZipBtn"),
+        bootstrapZipInput: document.getElementById("bootstrapZipInput"),
+        bootstrapPreview: document.getElementById("bootstrapPreview"),
+        previewId: document.getElementById("previewId"),
+        previewName: document.getElementById("previewName"),
+        previewAddress: document.getElementById("previewAddress"),
+        previewVerwalter: document.getElementById("previewVerwalter"),
+        previewCounts: document.getElementById("previewCounts"),
+        bootstrapError: document.getElementById("bootstrapError"),
+        bootstrapConfirmBtn: document.getElementById("bootstrapConfirmBtn")
       };
+
+      let pendingBootstrap = null; // { file, parsed: {id, name, address, verwalter, counts} }
 
       init();
 
@@ -697,6 +916,31 @@
         els.uploadBtn.addEventListener("click", uploadAll);
         els.addPropertyBtn.addEventListener("click", toggleNewPropertyDrawer);
         els.savePropertyBtn.addEventListener("click", saveNewProperty);
+
+        // Bootstrap-from-zip
+        els.bootstrapZone.addEventListener("click", () => els.bootstrapZipInput.click());
+        els.pickZipBtn.addEventListener("click", (e) => { e.stopPropagation(); els.bootstrapZipInput.click(); });
+        els.bootstrapZipInput.addEventListener("change", (e) => {
+          const f = e.target.files?.[0];
+          if (f) handleBootstrapZip(f);
+        });
+        ["dragenter", "dragover"].forEach((event) => {
+          els.bootstrapZone.addEventListener(event, (e) => {
+            e.preventDefault();
+            els.bootstrapZone.classList.add("drag-active");
+          });
+        });
+        ["dragleave", "drop"].forEach((event) => {
+          els.bootstrapZone.addEventListener(event, (e) => {
+            e.preventDefault();
+            els.bootstrapZone.classList.remove("drag-active");
+          });
+        });
+        els.bootstrapZone.addEventListener("drop", (e) => {
+          const f = e.dataTransfer.files?.[0];
+          if (f) handleBootstrapZip(f);
+        });
+        els.bootstrapConfirmBtn.addEventListener("click", confirmBootstrap);
 
         ["dragenter", "dragover"].forEach((event) => {
           els.dropzone.addEventListener(event, (e) => {
@@ -774,6 +1018,173 @@
         els.newPropertyName.value = "";
         els.newPropertyAddress.value = "";
         toggleNewPropertyDrawer();
+      }
+
+      async function handleBootstrapZip(file) {
+        clearBootstrapState();
+        setBootstrapError("");
+        if (!/\.zip$/i.test(file.name)) {
+          setBootstrapError("That doesn't look like a .zip archive.");
+          return;
+        }
+        if (typeof JSZip === "undefined") {
+          setBootstrapError("JSZip didn't load. Check your network.");
+          return;
+        }
+        try {
+          const buf = await file.arrayBuffer();
+          const zip = await JSZip.loadAsync(buf);
+          const stammJsonEntry = findEntryShallowest(zip, /(?:^|\/)stammdaten\/stammdaten\.json$/i);
+          if (!stammJsonEntry) {
+            setBootstrapError("Couldn't find stammdaten/stammdaten.json inside the archive.");
+            return;
+          }
+          const text = await stammJsonEntry.async("string");
+          const parsed = JSON.parse(text);
+          const lieg = parsed?.liegenschaft;
+          if (!lieg || !lieg.id) {
+            setBootstrapError("stammdaten.json is missing the 'liegenschaft' block.");
+            return;
+          }
+          const counts = {
+            buildings: parsed.gebaeude?.length ?? 0,
+            units: parsed.einheiten?.length ?? 0,
+          };
+          // CSVs (best effort) for additional counts
+          const o = await maybeReadCsvCount(zip, /(?:^|\/)stammdaten\/eigentuemer\.csv$/i);
+          const t = await maybeReadCsvCount(zip, /(?:^|\/)stammdaten\/mieter\.csv$/i);
+          const p = await maybeReadCsvCount(zip, /(?:^|\/)stammdaten\/dienstleister\.csv$/i);
+          counts.owners = o;
+          counts.tenants = t;
+          counts.providers = p;
+
+          pendingBootstrap = {
+            file,
+            parsed: {
+              id: lieg.id,
+              name: lieg.name,
+              address: `${lieg.strasse}, ${lieg.plz} ${lieg.ort}`,
+              verwalter: lieg.verwalter,
+              counts,
+            },
+          };
+          showBootstrapPreview();
+        } catch (err) {
+          console.error("bootstrap zip parse failed", err);
+          setBootstrapError(`Couldn't parse the archive: ${err?.message ?? err}`);
+        }
+      }
+
+      function findEntryShallowest(zip, regex) {
+        let best = null;
+        let bestDepth = Infinity;
+        zip.forEach((relPath, entry) => {
+          if (entry.dir) return;
+          if (!regex.test(relPath)) return;
+          const depth = relPath.split("/").length;
+          if (depth < bestDepth) {
+            best = entry;
+            bestDepth = depth;
+          }
+        });
+        return best;
+      }
+
+      async function maybeReadCsvCount(zip, regex) {
+        const entry = findEntryShallowest(zip, regex);
+        if (!entry) return 0;
+        const text = await entry.async("string");
+        const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+        return Math.max(0, lines.length - 1); // minus header
+      }
+
+      function showBootstrapPreview() {
+        if (!pendingBootstrap) return;
+        const { id, name, address, verwalter, counts } = pendingBootstrap.parsed;
+        els.previewId.textContent = id;
+        els.previewName.innerHTML = `<strong>${escapeHtml(name)}</strong>`;
+        els.previewAddress.textContent = address;
+        els.previewVerwalter.textContent = verwalter ?? "";
+        els.previewCounts.innerHTML = "";
+        for (const [label, n] of [
+          ["units", counts.units],
+          ["owners", counts.owners],
+          ["tenants", counts.tenants],
+          ["providers", counts.providers],
+          ["buildings", counts.buildings],
+        ]) {
+          if (!n) continue;
+          const pill = document.createElement("span");
+          pill.className = "stat-pill";
+          pill.textContent = `${n} ${label}`;
+          els.previewCounts.appendChild(pill);
+        }
+        els.bootstrapPreview.classList.remove("hidden");
+        els.bootstrapConfirmBtn.classList.remove("hidden");
+        els.bootstrapConfirmBtn.textContent = `Bootstrap ${id}`;
+        els.bootstrapConfirmBtn.disabled = false;
+      }
+
+      function clearBootstrapState() {
+        pendingBootstrap = null;
+        els.bootstrapPreview.classList.add("hidden");
+        els.bootstrapConfirmBtn.classList.add("hidden");
+        els.bootstrapZipInput.value = "";
+      }
+
+      function setBootstrapError(msg) {
+        if (!msg) {
+          els.bootstrapError.classList.add("hidden");
+          els.bootstrapError.textContent = "";
+          return;
+        }
+        els.bootstrapError.textContent = msg;
+        els.bootstrapError.classList.remove("hidden");
+      }
+
+      function escapeHtml(s) {
+        return String(s ?? "").replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+      }
+
+      async function confirmBootstrap() {
+        if (!pendingBootstrap) return;
+        const { file, parsed } = pendingBootstrap;
+        const id = parsed.id;
+        els.bootstrapConfirmBtn.disabled = true;
+        els.bootstrapConfirmBtn.textContent = `Bootstrapping ${id}…`;
+        setBootstrapError("");
+        try {
+          const headers = {
+            "Content-Type": "application/zip",
+          };
+          if (BEARER_TOKEN) headers["Authorization"] = `Bearer ${BEARER_TOKEN}`;
+          const url = `${WORKER_URL.replace(/\/$/, "")}/vaults/${encodeURIComponent(id)}/init?overwrite=true`;
+          const buf = await file.arrayBuffer();
+          const res = await fetch(url, { method: "POST", headers, body: buf });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json.ok) {
+            throw new Error(json?.error ?? `HTTP ${res.status}`);
+          }
+          // Update local dropdown state.
+          const existing = state.properties.find((p) => p.id === id);
+          if (existing) {
+            existing.name = json.name ?? existing.name;
+            existing.address = json.address ?? existing.address;
+          } else {
+            state.properties.push({ id, name: json.name, address: json.address });
+          }
+          saveState();
+          renderPropertyOptions();
+          els.propertySelect.value = id;
+          clearBootstrapState();
+          toggleNewPropertyDrawer();
+          alert(`Bootstrapped ${id} (${json.counts.units} units, ${json.counts.owners} owners, ${json.counts.tenants} tenants, ${json.counts.providers} providers). Open Obsidian and switch to ${id}.`);
+        } catch (err) {
+          console.error("bootstrap failed", err);
+          setBootstrapError(`Bootstrap failed: ${err?.message ?? err}`);
+          els.bootstrapConfirmBtn.disabled = false;
+          els.bootstrapConfirmBtn.textContent = `Bootstrap ${id}`;
+        }
       }
 
       function mergeFiles(files) {
