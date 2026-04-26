@@ -3,17 +3,22 @@
  *
  * Priority:
  * 1. Property subaddress on the recipient, e.g. property+LIE-001@kontext.haus
- * 2. Sender / recipient email join against stammdaten-derived EMAIL_HINTS.
- *    Emails found inside the body or in extracted attachment text (forwarded
- *    .eml inner From, CSV cells, plain-text PDF surfaces) are joined too.
- * 3. Unit alias scan in subject + body, e.g. WE 29 / EH-029 / TG 18
+ * 2. Sender / recipient email join against D1 (owners.email, tenants.email,
+ *    service_providers.email). Emails found inside the body or in extracted
+ *    attachment text (forwarded .eml inner From, CSV cells, plain-text PDF
+ *    surfaces) are joined too.
+ * 3. Unit alias scan in subject + body, e.g. WE 29 / EH-029 / TG 18, against
+ *    the units table in D1.
  * 4. Fallback to the demo property LIE-001
  *
- * This gives us the hackathon-safe path from AGENTS.md:
- * deterministic lookup first, Gemini only for the ambiguous remainder.
+ * Hackathon-safe path from AGENTS.md: deterministic lookup first, Gemini
+ * only for the ambiguous remainder. Used to read from a generated static
+ * map; now reads from D1 so adding a property no longer needs a redeploy.
  */
 
-import { EMAIL_HINTS, type EmailHint, UNIT_ALIASES } from "./stammdaten-map";
+import { lookupEmailHints, listUnitAliases, type EmailHint } from "./erp";
+
+export type { EmailHint };
 
 const DEFAULT_PROPERTY = "LIE-001";
 const SUBADDRESS_RE = /\+([A-Z0-9_-]{2,})@/i;
@@ -36,18 +41,21 @@ export interface RoutingDecision {
   routingHint?: string;
 }
 
-export function resolvePropertyId(to: string): string {
-  return resolveRoutingHints({ to }).propertyId;
-}
-
-export function resolveRouting(
+export async function resolveRouting(
+  db: D1Database,
   inputFrom?: string,
   inputTo?: string,
   subject?: string,
   body?: string,
   extraEmails?: string[]
-): RoutingDecision {
-  const hints = resolveRoutingHints({ from: inputFrom, to: inputTo, subject, body, extraEmails });
+): Promise<RoutingDecision> {
+  const hints = await resolveRoutingHints(db, {
+    from: inputFrom,
+    to: inputTo,
+    subject,
+    body,
+    extraEmails,
+  });
   const hasSub = !!parsePropertySubaddress(inputTo);
   const via: RoutingDecision["via"] = hasSub
     ? "subaddress"
@@ -68,25 +76,32 @@ export function routingHintText(routing: RoutingDecision): string | undefined {
   return routing.routingHint;
 }
 
-export function resolveRoutingHints(input: {
-  to?: string;
-  from?: string;
-  subject?: string;
-  body?: string;
-  extraEmails?: string[];
-}): RoutingHints {
+export async function resolveRoutingHints(
+  db: D1Database,
+  input: {
+    to?: string;
+    from?: string;
+    subject?: string;
+    body?: string;
+    extraEmails?: string[];
+  }
+): Promise<RoutingHints> {
   const propertyId = parsePropertySubaddress(input.to) ?? DEFAULT_PROPERTY;
+
+  const headerPool = [...extractEmails(input.from), ...extractEmails(input.to)];
+  const extraPool = (input.extraEmails ?? []).map((e) => e.toLowerCase());
+  const allEmails = [...new Set([...headerPool, ...extraPool])];
+
+  const hintsByEmail = await lookupEmailHints(db, allEmails);
 
   const seenEmails = new Set<string>();
   const matchedEmails: string[] = [];
   const matchedFromExtras: string[] = [];
   const matches: EmailHint[] = [];
-  const headerPool = [...extractEmails(input.from), ...extractEmails(input.to)];
-  const extraPool = (input.extraEmails ?? []).map((e) => e.toLowerCase());
   for (const email of headerPool) {
     if (seenEmails.has(email)) continue;
     seenEmails.add(email);
-    const hit = EMAIL_HINTS[email];
+    const hit = hintsByEmail[email];
     if (!hit?.length) continue;
     matchedEmails.push(email);
     matches.push(...hit);
@@ -94,7 +109,7 @@ export function resolveRoutingHints(input: {
   for (const email of extraPool) {
     if (seenEmails.has(email)) continue;
     seenEmails.add(email);
-    const hit = EMAIL_HINTS[email];
+    const hit = hintsByEmail[email];
     if (!hit?.length) continue;
     matchedEmails.push(email);
     matchedFromExtras.push(email);
@@ -103,13 +118,11 @@ export function resolveRoutingHints(input: {
 
   const emailUnitCandidates = new Set<string>();
   for (const match of matches) {
-    if (match.unitIds.length === 1) {
-      emailUnitCandidates.add(match.unitIds[0]);
-    }
+    if (match.unitIds.length === 1) emailUnitCandidates.add(match.unitIds[0]);
   }
 
   const text = `${input.subject ?? ""}\n${input.body ?? ""}`;
-  const textUnit = detectUnitFromText(text);
+  const textUnit = await detectUnitFromText(db, text);
 
   let unitId: string | undefined;
   if (textUnit && (emailUnitCandidates.size === 0 || emailUnitCandidates.has(textUnit))) {
@@ -153,14 +166,19 @@ function extractEmails(input?: string): string[] {
   return [...new Set(found.map((e) => e.toLowerCase()))];
 }
 
-/** Public helper: pull all email-shaped tokens out of arbitrary text (body, attachment text, etc). */
+/** Public helper: pull all email-shaped tokens out of arbitrary text. */
 export function scanEmailsFromText(input?: string): string[] {
   return extractEmails(input);
 }
 
-function detectUnitFromText(text: string): string | undefined {
+async function detectUnitFromText(
+  db: D1Database,
+  text: string
+): Promise<string | undefined> {
   const hay = normalize(text);
-  for (const item of UNIT_ALIASES) {
+  if (!hay) return undefined;
+  const aliases = await listUnitAliases(db);
+  for (const item of aliases) {
     for (const alias of item.aliases) {
       const needle = normalize(alias);
       if (!needle) continue;

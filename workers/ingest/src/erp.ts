@@ -512,4 +512,146 @@ export async function writeErpToD1(
   }
 
   await db.batch(stmts);
+  // After a fresh /init, the units may have changed; bust the unit-alias
+  // cache so the next routing call picks up the new rows.
+  invalidateUnitAliasCache();
+}
+
+/* -------------------------------------------------------------------------
+ * Routing helpers, D1-backed
+ * Replaces the old static stammdaten-map.ts. Same shapes, but resolved live
+ * from D1 so adding a new property no longer requires a redeploy.
+ * ----------------------------------------------------------------------- */
+
+export interface EmailHint {
+  kind: "owner" | "tenant" | "provider";
+  id: string;
+  propertyId: string;
+  unitIds: string[];
+}
+
+export interface UnitAlias {
+  unitId: string;
+  aliases: string[];
+}
+
+/**
+ * Look up a batch of emails across owners, tenants, and service_providers.
+ * Returns a map keyed by lowercased email so callers can intersect with the
+ * inbound message participants. Empty input returns an empty map. One round
+ * trip per entity type plus one for owner_units.
+ */
+export async function lookupEmailHints(
+  db: D1Database,
+  emails: string[]
+): Promise<Record<string, EmailHint[]>> {
+  const out: Record<string, EmailHint[]> = {};
+  const lc = [...new Set(emails.map((e) => e.toLowerCase().trim()).filter(Boolean))];
+  if (lc.length === 0) return out;
+  const placeholders = lc.map(() => "?").join(",");
+
+  const [owners, tenants, providers] = await Promise.all([
+    db
+      .prepare(
+        `SELECT lower(email) AS email, id, property_id FROM owners WHERE lower(email) IN (${placeholders})`
+      )
+      .bind(...lc)
+      .all<{ email: string; id: string; property_id: string }>(),
+    db
+      .prepare(
+        `SELECT lower(email) AS email, id, property_id, einheit_id FROM tenants WHERE lower(email) IN (${placeholders})`
+      )
+      .bind(...lc)
+      .all<{ email: string; id: string; property_id: string; einheit_id: string | null }>(),
+    db
+      .prepare(
+        `SELECT lower(email) AS email, id, property_id FROM service_providers WHERE lower(email) IN (${placeholders})`
+      )
+      .bind(...lc)
+      .all<{ email: string; id: string; property_id: string }>(),
+  ]);
+
+  const ownerIds = owners.results.map((o) => o.id);
+  const ownerUnitsMap: Record<string, string[]> = {};
+  if (ownerIds.length) {
+    const ph = ownerIds.map(() => "?").join(",");
+    const ou = await db
+      .prepare(
+        `SELECT owner_id, unit_id FROM owner_units WHERE owner_id IN (${ph}) ORDER BY owner_id, unit_id`
+      )
+      .bind(...ownerIds)
+      .all<{ owner_id: string; unit_id: string }>();
+    for (const r of ou.results) (ownerUnitsMap[r.owner_id] ??= []).push(r.unit_id);
+  }
+
+  for (const o of owners.results) {
+    (out[o.email] ??= []).push({
+      kind: "owner",
+      id: o.id,
+      propertyId: o.property_id,
+      unitIds: ownerUnitsMap[o.id] ?? [],
+    });
+  }
+  for (const t of tenants.results) {
+    (out[t.email] ??= []).push({
+      kind: "tenant",
+      id: t.id,
+      propertyId: t.property_id,
+      unitIds: t.einheit_id ? [t.einheit_id] : [],
+    });
+  }
+  for (const p of providers.results) {
+    (out[p.email] ??= []).push({
+      kind: "provider",
+      id: p.id,
+      propertyId: p.property_id,
+      unitIds: [],
+    });
+  }
+  return out;
+}
+
+let aliasCache: { ts: number; data: UnitAlias[] } | null = null;
+const ALIAS_TTL_MS = 60_000;
+
+/**
+ * Per-unit alias list ("EH-029" → ["EH-029","WE 29","WE-29","WE29"]) for the
+ * subject/body free-text scan in the routing layer. Cached for 60s; D1 has
+ * the canonical units table now, so a CSV change rerun no longer requires
+ * regenerating a stammdaten-map file.
+ */
+export async function listUnitAliases(db: D1Database): Promise<UnitAlias[]> {
+  const now = Date.now();
+  if (aliasCache && now - aliasCache.ts < ALIAS_TTL_MS) return aliasCache.data;
+  const res = await db
+    .prepare("SELECT id, einheit_nr FROM units ORDER BY id")
+    .all<{ id: string; einheit_nr: string | null }>();
+  const data = res.results.map(buildAliasesForUnit);
+  aliasCache = { ts: now, data };
+  return data;
+}
+
+/** Bust the unit-alias cache. Call after /init when D1 may have new units. */
+export function invalidateUnitAliasCache(): void {
+  aliasCache = null;
+}
+
+function buildAliasesForUnit(u: { id: string; einheit_nr: string | null }): UnitAlias {
+  const aliases = new Set<string>([u.id]);
+  const nr = u.einheit_nr?.trim();
+  if (nr) {
+    const m = /^([A-Za-z]+)\s*0*(\d+)$/.exec(nr);
+    if (m) {
+      const tag = m[1].toUpperCase();
+      // Match the original stammdaten-map format: zero-padded number after the
+      // tag. The CSV "WE 01" pattern is the canonical source.
+      const padded = nr.replace(/^[A-Za-z]+\s*/, "");
+      aliases.add(`${tag} ${padded}`);
+      aliases.add(`${tag}-${padded}`);
+      aliases.add(`${tag}${padded}`);
+    } else {
+      aliases.add(nr);
+    }
+  }
+  return { unitId: u.id, aliases: [...aliases] };
 }

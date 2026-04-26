@@ -376,7 +376,7 @@ export async function handleHttp(
 
     if (rest === "pending" && method === "GET") {
       const pending = await readPending(env.VAULTS, propertyId);
-      const mutated = await enrichEntriesWithSender(env.RAW, pending);
+      const mutated = await enrichEntriesWithSender(env.RAW, env.ERP, pending);
       if (mutated) {
         ctx.waitUntil(writePending(env.VAULTS, propertyId, pending));
       }
@@ -385,7 +385,7 @@ export async function handleHttp(
 
     if (rest === "history" && method === "GET") {
       const history = await readHistory(env.VAULTS, propertyId);
-      const mutated = await enrichEntriesWithSender(env.RAW, history);
+      const mutated = await enrichEntriesWithSender(env.RAW, env.ERP, history);
       if (mutated) {
         ctx.waitUntil(persistHistoryEntries(env.VAULTS, propertyId, history));
       }
@@ -466,7 +466,7 @@ export async function handleHttp(
     const headerToAddr = parsed.to?.[0]?.address ?? "";
     const subject = parsed.subject ?? "";
     const body = (parsed.text ?? parsed.html ?? "").trim();
-    const routing = resolveRouting(fromAddr, headerToAddr, subject, body);
+    const routing = await resolveRouting(env.ERP, fromAddr, headerToAddr, subject, body);
     return jsonResponse({
       ok: true,
       from: fromAddr,

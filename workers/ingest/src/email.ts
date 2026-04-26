@@ -234,7 +234,8 @@ async function processEmailJob(job: EmailJob, env: Env): Promise<void> {
     console.log(`[buena-queue] route prescan ${job.msgId}: ${extraEmails.length} email(s) in body/attachments`);
   }
 
-  const routing = resolveRouting(
+  const routing = await resolveRouting(
+    env.ERP,
     job.from ?? "",
     job.to ?? "",
     job.subject ?? parsed.subject ?? "",
@@ -408,7 +409,8 @@ async function processStoredDocument(
   const filename = basename(meta.key);
   const mimeType = obj.httpMetadata?.contentType ?? guessMimeType(filename);
   const text = await extractTextLike(raw, filename, mimeType);
-  const routing = resolveRouting(
+  const routing = await resolveRouting(
+    env.ERP,
     "bulk-import",
     `property+${meta.propertyId}@kontext.haus`,
     filename,

@@ -7,7 +7,7 @@
 
 import PostalMime from "postal-mime";
 import { resolveRouting } from "./route";
-import type { EmailHint } from "./stammdaten-map";
+import type { EmailHint } from "./erp";
 import type { HistoryEntry, PendingPatch, SenderInfo, SourceMeta } from "./vaults";
 
 interface ParsedFromShape {
@@ -64,6 +64,7 @@ export function rawKeyFromSource(source: string | undefined): string | null {
  */
 async function deriveFromEml(
   rawBucket: R2Bucket,
+  db: D1Database,
   key: string,
   recipientFallback: string | undefined
 ): Promise<{ sender?: SenderInfo; sourceMeta: SourceMeta } | null> {
@@ -84,7 +85,7 @@ async function deriveFromEml(
   const fromAddr = parsed.from?.address ?? undefined;
   const recipient = parsed.to?.[0]?.address ?? recipientFallback;
 
-  const routing = resolveRouting(fromAddr, recipient, subject, body);
+  const routing = await resolveRouting(db, fromAddr, recipient, subject, body);
   const sender = buildSenderFromEmail(parsed, fromAddr, routing.matches);
 
   const filename = key.split("/").pop() ?? key;
@@ -119,7 +120,7 @@ function deriveFromOtherKey(key: string): SourceMeta {
  */
 export async function enrichEntriesWithSender<
   T extends PendingPatch | HistoryEntry
->(rawBucket: R2Bucket, entries: T[]): Promise<boolean> {
+>(rawBucket: R2Bucket, db: D1Database, entries: T[]): Promise<boolean> {
   let mutated = false;
 
   // Cache per-key derivations to avoid re-reading the same .eml when an email
@@ -136,7 +137,7 @@ export async function enrichEntriesWithSender<
 
     let derived = cache.get(key);
     if (derived === undefined) {
-      const fromEml = await deriveFromEml(rawBucket, key, undefined);
+      const fromEml = await deriveFromEml(rawBucket, db, key, undefined);
       if (fromEml) {
         derived = fromEml;
       } else {
