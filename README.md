@@ -95,6 +95,8 @@ Try something like:
 
 Within 10 to 15 seconds, the patch lands in the demo vault. If you're running the Obsidian plugin pointed at this Worker, you'll see it stream in via SSE, with hover-able provenance for each fact. The raw R2 endpoints (`property.md`, `history`, `pending`) require a bearer token; see the Worker API table below.
 
+**The subaddress is optional.** You can send to **`inbox@kontext.haus`** (or any address on the domain without a `+TAG`) and the engine still resolves the right property by joining the sender against the stammdaten. Verified on the 10-day incremental archive: 30 of 30 emails routed to the correct property without a tag, with a unit hint resolved on 21 of 30. The 9 without a unit hint were all from utilities and contractors, where a unit-level scope wouldn't be correct anyway.
+
 If the email mentions a service provider the engine doesn't already have public context for, Tavily is called once for that name and a line lands in `## External context` with `actor: tavily` and the source URL. Try a contractor like **Wisag Facility Service Holding GmbH** or **Apleona HSG Berlin GmbH**.
 
 The bulk-import drop page is live at **`https://import.kontext.haus`**. Drag a zip, pick a property, files queue into the same pipeline.

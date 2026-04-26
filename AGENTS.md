@@ -771,6 +771,15 @@ Expected outcome: the attachment content is extracted through the stored-documen
 #### Important note
 When verifying scope behavior, remember that not every fact should have a unit. Valid scopes are unit (`EH-XXX`), building (`HAUS-XX`), and provider (`DL-XXX`). The pending UI should show the correct scope pill instead of implying everything is a unit issue.
 
+#### Routing works without the subaddress (verified 2026-04-26)
+You can also send to `inbox@kontext.haus`, or any non-tagged address on the domain, and the deterministic ERP join on the sender still resolves the right property from stammdaten. Use `POST /test/route` (raw .eml in body, returns the routing decision without enqueueing) to score routing on a sample.
+
+| Sample | Total | Right property | Via subaddress | Via ERP join | Fallback | Unit hint resolved |
+|---|---:|---:|---:|---:|---:|---:|
+| 30 incoming .eml from `incremental/day-01..10`, no `+TAG` | 30 | 30 (100%) | 0 | 30 | 0 | 21 (70%) |
+
+The 9 emails without a unit hint are all utilities and contractors (`versorger/*`, `dienstleister/*`), where unit-level scope would be incorrect anyway.
+
 ### Tokens in Keychain (never commit token values, references only)
 | Service name | Scope | Use for |
 |---|---|---|
