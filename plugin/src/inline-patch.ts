@@ -151,6 +151,7 @@ export function registerInlinePatchProcessor(plugin: BuenaPlugin) {
             id: spec.id,
             target_heading: spec.target_heading,
             new_block: annotatedBlock,
+            old_value: spec.old,
           });
           if (insertedAt === null) {
             new Notice(

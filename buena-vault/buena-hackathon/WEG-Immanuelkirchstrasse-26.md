@@ -19,6 +19,14 @@ sanierung: 2008
 
 ## Open issues
 
+- EH-029: Der Bewohner mindert seit dem 20.01.2026 die Miete um 15 Prozent statt der bisher angenommenen 10 Prozent {prov: emails/CAJ9sWTu71K9O5pHF_LY_K2ppPOfxqDn=wbDWmVPi1VhmmJpMPg%40mail.gmail.com.eml | conf: 0.99 | actor: gemini-3-pro}
+
+- EH-005: Der Mieter mindert die Miete ab heute um 10 Prozent. {prov: emails/test-20260426T112807Z-lie001%40kontext.haus.eml | conf: 0.98 | actor: gemini-3-pro-preview}
+
+- EH-005: Die Heizung ist seit Donnerstag defekt. {prov: emails/test-20260426T112807Z-lie001%40kontext.haus.eml | conf: 0.98 | actor: gemini-3-pro-preview}
+
+- EH-032: Die Heizung ist seit Freitag defekt. {prov: emails/db286280-c2ef-4cd6-a981-f84b0de940af.eml | conf: 0.95 | actor: gemini-3-pro}
+
 - EH-032: Mieterin meldet ungelöste Baumängel (Wasserschaden, Schimmel) seit über 3 Monaten. {prov: emails/177702013018.22389.2159094075833816675%40huber-partner-verwaltung.de.eml | conf: 0.95 | actor: gemini-3-pro}
 
 - EH-048: Wohnungsübergabe und Vermarktung müssen koordiniert werden {prov: emails/177702013018.22389.10522839458262703243%40huber-partner-verwaltung.de.eml | conf: 0.98 | actor: gemini-3-pro}
@@ -38,12 +46,6 @@ sanierung: 2008
 - EH-048: Der aktuelle Mieter hat zum Monatsende gekündigt und die Wohnung wird ab 01.03.2026 frei {prov: emails/177702013018.22389.10522839458262703243%40huber-partner-verwaltung.de.eml | conf: 0.98 | actor: gemini-3-pro}
 
 - EH-049: Die ehemalige Mieterin wartet 7 Wochen nach ihrem Auszug auf die Rückzahlung der Kaution. {prov: emails/177702013017.22389.17140606223056383272%40huber-partner-verwaltung.de.eml | conf: 0.98 | actor: gemini-3-pro}
-
-- EH-049: Ehemalige Mieterin wartet 7 Wochen nach Auszug auf die Rückzahlung ihrer Kaution {prov: emails/177702013017.22389.17140606223056383272%40huber-partner-verwaltung.de.eml | conf: 0.95 | actor: gemini-3-pro}
-
-- Herr Oswald Gröttner legt Einspruch gegen die beschlossene Sonderumlage in Höhe von 4.264 EUR ein, da der Beschluss aus seiner Sicht nicht ordnungsgemäß war. {prov: attachments/CAJ9sWTuT=Ht9-3zd_CqUPGRk_5Gtx9__amQKBsk77kZQk3-xYQ%40mail.gmail.com/20260101_083800_EMAIL-06547.eml | conf: 0.95 | actor: gemini-3-pro}
-
-- EH-022: Eigentümer Oswald Groettner hat Einspruch gegen die Sonderumlage eingelegt. {prov: emails/CAJ9sWTvJu0nyNWabioz47+O4mMaCOCM8XQJAcjv=RkkggwHMyQ%40mail.gmail.com.eml | conf: 0.95 | actor: gemini-3-pro}
 
 - Die Wartung der defekten Aufzugsanlage wird in der Folgewoche durchgeführt {prov: emails/CAJ9sWTtexjSc34O3eT2ASrd7uZLbrXEkRYzdDfZviOt0w_4YFA%40mail.gmail.com.eml | conf: 0.95 | actor: gemini-3-pro}
 
@@ -92,3 +94,9 @@ _Live projection from the ERP. Edit in Postgres, never here._
 _Live projection from the ERP. Tribal knowledge belongs in the sections above._
 
 {{erp.units(LIE-001)}}
+
+## Service providers
+
+- Hausmeister Mueller GmbH charges monthly flat rates for caretaker services (650 EUR net), trash bin provision (85 EUR net), and winter services (180 EUR net). {prov: bulk/LIE-001/1777197098451-20260104_DL-001_INV-00198.pdf | conf: 0.95 | actor: gemini-3-pro}
+
+- Hausmeister Mueller GmbH provides monthly caretaker and winter services {prov: bulk/LIE-001/1777197115752-20260105_DL-001_INV-00199.pdf | conf: 0.95 | actor: gemini-3-pro}

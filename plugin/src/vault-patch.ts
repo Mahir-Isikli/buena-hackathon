@@ -4,17 +4,18 @@ export interface ApplyPatchSpec {
   id: string;
   target_heading: string; // e.g. "## ⚠️ Active issues"
   new_block: string; // multi-line markdown to insert under that heading
+  old_value?: string;
 }
 
 /**
  * Apply a pending patch to a markdown file:
- *   1. Insert `new_block` under `target_heading` (right after the heading).
- *   2. Remove the `buena-pending` codeblock that owns this id.
- *   3. Save via vault.modify (triggers re-render).
- *   4. Reveal the inserted block in the editor.
+ *   1. If `old_value` matches a line in the target section, replace it in place.
+ *   2. Otherwise insert `new_block` under `target_heading`.
+ *   3. Remove the `buena-pending` codeblock that owns this id.
+ *   4. Save via vault.modify (triggers re-render).
  *
- * Returns the line number where new_block was inserted, or null if heading
- * could not be found.
+ * Returns the line number where new_block was inserted or replaced, or null if
+ * the heading could not be found.
  */
 export async function applyPatchToVault(
   app: App,
@@ -42,30 +43,115 @@ export async function applyPatchToVault(
     return null;
   }
 
-  // 2. Find insertion point: right after the heading, skipping a single blank line.
-  let insertAt = headingIdx + 1;
-  if (lines[insertAt] === "") insertAt += 1;
-
-  // 3. Build new content: insert new_block, then a blank line for spacing.
   const blockLines = spec.new_block.replace(/\n+$/, "").split("\n");
-  const insertion = [...blockLines, ""];
-  const withInsertion = [
-    ...lines.slice(0, insertAt),
-    ...insertion,
-    ...lines.slice(insertAt),
-  ];
+  const replaceIdx = spec.old_value
+    ? findReplaceLineIndex(
+        lines,
+        headingIdx,
+        spec.target_heading,
+        spec.old_value,
+        extractScopeId(spec.new_block)
+      )
+    : -1;
+
+  const nextLines =
+    replaceIdx >= 0
+      ? [
+          ...lines.slice(0, replaceIdx),
+          ...blockLines,
+          ...lines.slice(replaceIdx + 1),
+        ]
+      : insertBlockAfterHeading(lines, headingIdx, blockLines);
 
   // 4. Remove the buena-pending block whose `id:` matches spec.id.
-  const cleaned = removePendingBlock(withInsertion, spec.id);
+  const cleaned = removePendingBlock(nextLines, spec.id);
 
   await app.vault.modify(file, cleaned.join("\n"));
-  return insertAt;
+  return replaceIdx >= 0 ? replaceIdx : findInsertLine(headingIdx, lines);
 }
 
 /**
  * Remove the fenced ```buena-pending block that contains `id: <patchId>`.
  * Whitespace-tolerant on the id line.
  */
+function insertBlockAfterHeading(lines: string[], headingIdx: number, blockLines: string[]): string[] {
+  const insertAt = findInsertLine(headingIdx, lines);
+  return [
+    ...lines.slice(0, insertAt),
+    ...blockLines,
+    "",
+    ...lines.slice(insertAt),
+  ];
+}
+
+function findInsertLine(headingIdx: number, lines: string[]): number {
+  let insertAt = headingIdx + 1;
+  if (lines[insertAt] === "") insertAt += 1;
+  return insertAt;
+}
+
+function findReplaceLineIndex(
+  lines: string[],
+  headingIdx: number,
+  heading: string,
+  oldValue: string,
+  scopeHint?: string | null
+): number {
+  const wanted = normalizeComparableLine(oldValue);
+  if (!wanted) return -1;
+
+  const level = heading.trim().startsWith("###") ? 3 : 2;
+  let inCode = false;
+  for (let i = headingIdx + 1; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (/^```/.test(trimmed)) {
+      inCode = !inCode;
+      continue;
+    }
+    if (!inCode && isSectionBoundary(trimmed, level)) break;
+    if (!trimmed) continue;
+    const existingScope = extractScopeId(line);
+    if (scopeHint && existingScope && existingScope !== scopeHint) continue;
+    const existing = normalizeComparableLine(line);
+    if (!existing) continue;
+    if (existing === wanted || existing.includes(wanted) || wanted.includes(existing)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function extractScopeId(text: string): string | null {
+  const match = /\b(?:eh|eig|mie|dl|haus)-\d+\b/i.exec(text);
+  return match ? match[0].toUpperCase() : null;
+}
+
+function isSectionBoundary(trimmed: string, currentLevel: number): boolean {
+  if (!/^#{2,3}\s+/.test(trimmed)) return false;
+  const level = trimmed.startsWith("###") ? 3 : 2;
+  return level <= currentLevel;
+}
+
+function normalizeComparableLine(line: string): string {
+  return line
+    .replace(/\{prov:[^}]+\}/g, "")
+    .replace(/\{changed:[^}]+\}/g, "")
+    .replace(/\^\[[^\]]+\]/g, "")
+    .replace(/^[-*]\s+/, "")
+    .replace(/^(?:eh|eig|mie|dl|haus)-\d+\s*:\s*/i, "")
+    .replace(/`/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss")
+    .replace(/[^\p{L}\p{N}\s%./:-]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function removePendingBlock(lines: string[], patchId: string): string[] {
   const out: string[] = [];
   let i = 0;

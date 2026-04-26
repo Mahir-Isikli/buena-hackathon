@@ -269,15 +269,27 @@ export async function applyApprovedPatchToPropertyMd(
     headingIdx = lines.length - 2;
   }
 
-  let insertAt = headingIdx + 1;
-  if (lines[insertAt] === "") insertAt += 1;
   const annotated = annotateApprovedBlock(patch, approvedAt).split("\n");
-  const next = [
-    ...lines.slice(0, insertAt),
-    ...annotated,
-    "",
-    ...lines.slice(insertAt),
-  ].join("\n");
+  const replaceIdx = patch.old
+    ? findReplaceLineIndex(
+        lines,
+        headingIdx,
+        patch.target_heading,
+        patch.old,
+        patch.unit ?? extractScopeId(patch.new_block)
+      )
+    : -1;
+
+  const nextLines =
+    replaceIdx >= 0
+      ? [
+          ...lines.slice(0, replaceIdx),
+          ...annotated,
+          ...lines.slice(replaceIdx + 1),
+        ]
+      : insertBlockAfterHeading(lines, headingIdx, annotated);
+
+  const next = nextLines.join("\n");
   await writePropertyMd(bucket, propertyId, next);
   return { applied: true, markdown: next };
 }
@@ -296,6 +308,79 @@ function normalizeSourceRef(source?: string): string | undefined {
   // Encode `@` so Obsidian doesn't autolink the source as an email address.
   // The plugin decodes this before opening the underlying R2 object.
   return stripped.replace(/@/g, "%40");
+}
+
+function insertBlockAfterHeading(lines: string[], headingIdx: number, blockLines: string[]): string[] {
+  let insertAt = headingIdx + 1;
+  if (lines[insertAt] === "") insertAt += 1;
+  return [
+    ...lines.slice(0, insertAt),
+    ...blockLines,
+    "",
+    ...lines.slice(insertAt),
+  ];
+}
+
+function findReplaceLineIndex(
+  lines: string[],
+  headingIdx: number,
+  heading: string,
+  oldValue: string,
+  scopeHint?: string | null
+): number {
+  const wanted = normalizeComparableLine(oldValue);
+  if (!wanted) return -1;
+
+  const level = heading.trim().startsWith("###") ? 3 : 2;
+  let inCode = false;
+  for (let i = headingIdx + 1; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (/^```/.test(trimmed)) {
+      inCode = !inCode;
+      continue;
+    }
+    if (!inCode && isSectionBoundary(trimmed, level)) break;
+    if (!trimmed) continue;
+    const existingScope = extractScopeId(line);
+    if (scopeHint && existingScope && existingScope !== scopeHint) continue;
+    const existing = normalizeComparableLine(line);
+    if (!existing) continue;
+    if (existing === wanted || existing.includes(wanted) || wanted.includes(existing)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function extractScopeId(text: string): string | null {
+  const match = /\b(?:eh|eig|mie|dl|haus)-\d+\b/i.exec(text);
+  return match ? match[0].toUpperCase() : null;
+}
+
+function isSectionBoundary(trimmed: string, currentLevel: number): boolean {
+  if (!/^#{2,3}\s+/.test(trimmed)) return false;
+  const level = trimmed.startsWith("###") ? 3 : 2;
+  return level <= currentLevel;
+}
+
+function normalizeComparableLine(line: string): string {
+  return line
+    .replace(/\{prov:[^}]+\}/g, "")
+    .replace(/\{changed:[^}]+\}/g, "")
+    .replace(/\^\[[^\]]+\]/g, "")
+    .replace(/^[-*]\s+/, "")
+    .replace(/^(?:eh|eig|mie|dl|haus)-\d+\s*:\s*/i, "")
+    .replace(/`/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss")
+    .replace(/[^\p{L}\p{N}\s%./:-]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export async function readHistory(
