@@ -43,18 +43,6 @@ export interface HistoryEntry {
 }
 
 /**
- * Find a history entry by id (most-recent-first scan).
- */
-export async function findHistoryEntry(
-  plugin: BuenaPlugin,
-  filePath: string,
-  id: string
-): Promise<HistoryEntry | undefined> {
-  const list = await loadHistory(plugin, filePath);
-  return list.find((h) => h.id === id);
-}
-
-/**
  * Remove a history entry by id. Used when a change is reversed and re-queued.
  */
 export async function removeHistoryEntry(
@@ -109,11 +97,3 @@ export async function addHistoryEntry(
   await saveStore(plugin, store);
 }
 
-export async function clearHistory(
-  plugin: BuenaPlugin,
-  filePath: string
-): Promise<void> {
-  const store = await loadStore(plugin);
-  delete store.byFile[filePath];
-  await saveStore(plugin, store);
-}

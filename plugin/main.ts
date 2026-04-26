@@ -157,17 +157,6 @@ export default class BuenaPlugin extends Plugin {
       },
     });
 
-    // Command to simulate an incoming patch (handy for demo before backend exists)
-    this.addCommand({
-      id: "buena-simulate-patch",
-      name: "Simulate incoming patch",
-      callback: () => {
-        new Notice("[Buena] Simulated patch added to queue");
-        this.statusBar.bumpPendingCount(1);
-        this.statusBar.markPatchReceived();
-      },
-    });
-
     // Manual full sync from worker: property.md + state.json + current pending queue.
     this.addCommand({
       id: "buena-pull-pending",

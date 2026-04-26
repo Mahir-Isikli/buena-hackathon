@@ -409,7 +409,7 @@ export class BuenaSidebarView extends ItemView {
 
     if (!this.currentFile) {
       pendingBody.createEl("div", {
-        text: "Open a property file, for example WEG-Immanuelkirchstrasse-26.md, to see pending patches.",
+        text: "Open a property file to see pending patches.",
         cls: "buena-empty",
       });
     } else if (this.pending.length === 0) {
@@ -438,7 +438,7 @@ export class BuenaSidebarView extends ItemView {
 
     if (!this.currentFile) {
       section.createEl("div", {
-        text: "Open a property file, for example WEG-Immanuelkirchstrasse-26.md, to see change history.",
+        text: "Open a property file to see change history.",
         cls: "buena-empty",
       });
       return;
@@ -647,7 +647,7 @@ export class BuenaSidebarView extends ItemView {
         attr: { "aria-label": "Reverse and re-queue this change" },
       });
       setIcon(reverseBtn, "undo-2");
-      reverseBtn.title = "Reverse: strip from .md and put back into the pending queue";
+      reverseBtn.title = "Move this entry back to the pending queue";
       reverseBtn.onclick = (ev) => {
         ev.stopPropagation();
         void this.handleReverse(h);

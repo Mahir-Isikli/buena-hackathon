@@ -2659,7 +2659,7 @@ button.buena-changed-pill-recent {
   color: #010105;
 }
 
-/* Kontext mark — inline SVG that sits before the Buena wordmark.
+/* Kontext mark, inline SVG that sits before the Buena wordmark.
    Sized to match the wordmark cap-height (18px font → ~16px glyph). */
 .buena-kontext-mark {
   display: inline-flex;
@@ -3679,7 +3679,7 @@ button.buena-changed-pill-recent {
 }
 
 .buena-history-table thead th:nth-child(4) {
-  width: 84px;
+  width: 132px;
 }
 
 .buena-history-table thead th:nth-child(5) {
@@ -3691,7 +3691,20 @@ button.buena-changed-pill-recent {
 
 .buena-td-source {
   vertical-align: top;
-  white-space: nowrap;
+  padding-right: 12px;
+}
+
+.buena-td-source .buena-source-pill {
+  max-width: 100%;
+  display: inline-block;
+  vertical-align: middle;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;
+  text-align: left;
+  line-height: 1.3;
+  height: auto;
 }
 
 .buena-th-sortable:hover {
@@ -4061,7 +4074,7 @@ button.buena-changed-pill-recent {
 }
 
 /* ============================================================
-   PROVENANCE PILL  v2 — soft brand chip with kind icon
+   PROVENANCE PILL  v2, soft brand chip with kind icon
    Replaces the loud uppercase grey button. Kept at file end so
    it wins the cascade over the original .buena-prov-pill rules.
    ============================================================ */

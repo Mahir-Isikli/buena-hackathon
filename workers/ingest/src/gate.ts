@@ -54,7 +54,7 @@ export interface GateStats {
 }
 
 export async function applyPatchGate(input: ApplyGateInput): Promise<GateStats> {
-  const actor = input.actor ?? "gemini-3-pro";
+  const actor = input.actor ?? "gemini-3-pro-preview";
   let markdown = (await readPropertyMd(input.bucket, input.propertyId)) ?? "";
   let state = await readStateJson(input.bucket, input.propertyId);
 
@@ -283,7 +283,6 @@ function normalizeSectionAlias(section: string): string {
   const s = normalizeSectionName(section);
   if (s === "active issues") return "open issues";
   if (s === "assembly decisions") return "last assembly decisions";
-  if (s === "mahnungen") return "active mahnungen";
   return s;
 }
 

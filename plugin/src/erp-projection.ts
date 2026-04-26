@@ -75,8 +75,6 @@ export async function loadErpForProperty(
   return getCachedSnapshot(plugin, propertyId);
 }
 
-/** Back-compat alias kept for any other call sites. */
-export const prewarmErpProjection = loadErpForProperty;
 
 export function registerErpProjectionProcessor(plugin: BuenaPlugin): void {
   plugin.registerMarkdownPostProcessor(async (el) => {

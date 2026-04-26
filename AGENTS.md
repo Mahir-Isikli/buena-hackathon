@@ -10,7 +10,7 @@ Read this file first, every session.
 
 **All extraction, routing, classification, and reasoning uses Gemini 3.1 Pro with high thinking.** Model id: `gemini-3-pro-preview` (or whatever the current 3.1 Pro alias is in `google-genai`), with `thinking_config={"thinking_level": "high"}` (or equivalent SDK flag for high reasoning).
 
-Do not propose, suggest, or fall back to Flash, 2.5 Pro, 2.0, or any other model unless the user explicitly asks. One model, end to end. If a call fails, retry on the same model — do not silently downgrade.
+Do not propose, suggest, or fall back to Flash, 2.5 Pro, 2.0, or any other model unless the user explicitly asks. One model, end to end. If a call fails, retry on the same model, never silently downgrade.
 
 ## TL;DR
 
@@ -217,7 +217,7 @@ One property holds many units. Each unit is a sub-section under `## Units`, keye
 ### EH-014
 - Tenant: {{erp.tenant(MV-0123)}}
 - **Open**: withholding 10% rent due to broken hot water (since 2026-01-15)
-  <!-- prov: emails/2026-01-15/EMAIL-12891.eml | conf: 0.91 | actor: gemini-flash -->
+  <!-- prov: emails/2026-01-15/EMAIL-12891.eml | conf: 0.91 | actor: gemini-3-pro-preview -->
 - Note from PM: tenant is patient, fix is on Hausmeister DL-001
   <!-- actor: human | edited: 2026-04-22 -->
 
@@ -228,7 +228,7 @@ One property holds many units. Each unit is a sub-section under `## Units`, keye
 ### EH-008
 - Tenant: {{erp.tenant(MV-0098)}}
 - Subletting approved 2025-11 (Untermietvertrag in attachments/)
-  <!-- prov: briefe/2025-11/BRIEF-00412.pdf | conf: 0.88 | actor: gemini-2.5-pro -->
+  <!-- prov: briefe/2025-11/BRIEF-00412.pdf | conf: 0.88 | actor: gemini-3-pro-preview -->
 
 ## Bank
 - WEG-Konto: DE02 1001 0010 0123 4567 89 (Postbank Berlin)
@@ -244,9 +244,9 @@ One property holds many units. Each unit is a sub-section under `## Units`, keye
 
 ## Open issues
 - Tenant in EH-014 withholding 10% rent due to broken hot water
-  <!-- prov: emails/2026-01-15/EMAIL-12891.eml | conf: 0.91 | actor: gemini-flash -->
+  <!-- prov: emails/2026-01-15/EMAIL-12891.eml | conf: 0.91 | actor: gemini-3-pro-preview -->
 - Wartungstermin Heizung bestätigt für 06.10.2024 um 10:00
-  <!-- prov: emails/2024-09/EMAIL-02443.eml | conf: 0.94 | actor: gemini-flash -->
+  <!-- prov: emails/2024-09/EMAIL-02443.eml | conf: 0.94 | actor: gemini-3-pro-preview -->
 
 ## Last assembly decisions
 - ETV 2024-04: see [[ETV-2024-04-Protokoll]]
