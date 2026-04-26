@@ -34,6 +34,9 @@ Thumbs.db
 # Local-only Obsidian plugin symlink (each dev symlinks plugin/ here)
 buena-vault/buena-hackathon/.obsidian/plugins/
 
+# Obsidian per-machine UI state (open tabs, panel layout). Always changing.
+buena-vault/buena-hackathon/.obsidian/workspace.json
+
 # Local notes
 TODO.md
 
