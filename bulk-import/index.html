@@ -3,382 +3,648 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Buena Bulk Import</title>
+    <title>kontext.haus · Bulk intake</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
-        color-scheme: light;
-        --bg: #f6f3ec;
-        --card: #fffdf8;
-        --ink: #181818;
-        --muted: #6a645a;
-        --line: #ddd5c9;
-        --accent: #6e56cf;
-        --accent-soft: #efe9ff;
-        --ok: #16794a;
-        --ok-soft: #e8f6ef;
-        --warn: #9a5b00;
-        --warn-soft: #fff3de;
+        --bg: #fafaf9;
+        --surface: #ffffff;
+        --ink: #010105;
+        --ink-soft: #44403c;
+        --muted: #78716c;
+        --line: #e7e5e4;
+        --line-strong: #d6d3d1;
+        
+        --accent: #0d7835;
+        --accent-hover: #0a5f2a;
+        --accent-soft: #e8f3ec;
+        
+        --buena-sage: #d6dbd5;
+        --buena-beige: #cdbda3;
+        
+        --danger: #ef4444;
+        
+        --radius-lg: 16px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
+        
+        --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+        --font-mono: ui-monospace, monospace;
       }
-      * { box-sizing: border-box; }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      
       body {
-        margin: 0;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background: var(--bg);
         color: var(--ink);
-      }
-      .wrap {
-        max-width: 980px;
-        margin: 0 auto;
-        padding: 32px 20px 80px;
-      }
-      .hero {
-        margin-bottom: 24px;
-      }
-      .eyebrow {
-        display: inline-block;
-        padding: 6px 10px;
-        border-radius: 999px;
-        background: var(--accent-soft);
-        color: var(--accent);
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-      }
-      h1 {
-        margin: 14px 0 10px;
-        font-size: clamp(34px, 6vw, 54px);
-        line-height: 0.95;
-      }
-      .sub {
-        max-width: 720px;
-        color: var(--muted);
-        font-size: 16px;
-        line-height: 1.5;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: 1.05fr 0.95fr;
-        gap: 18px;
-        align-items: start;
-      }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        padding: 18px;
-        box-shadow: 0 1px 0 rgba(0,0,0,0.02);
-      }
-      .card h2 {
-        margin: 0 0 14px;
-        font-size: 18px;
-      }
-      .stack { display: grid; gap: 14px; }
-      label {
-        display: grid;
-        gap: 6px;
-        font-size: 13px;
-        font-weight: 600;
-      }
-      input, select, textarea, button {
-        font: inherit;
-      }
-      input, select, textarea {
-        width: 100%;
-        padding: 11px 12px;
-        border-radius: 12px;
-        border: 1px solid var(--line);
-        background: #fff;
-        color: var(--ink);
-      }
-      textarea { min-height: 88px; resize: vertical; }
-      .row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-      .row-3 {
-        display: grid;
-        grid-template-columns: 1fr auto auto;
-        gap: 10px;
-        align-items: end;
-      }
-      .dropzone {
-        border: 2px dashed #cfc4b6;
-        border-radius: 18px;
-        padding: 22px;
-        background: #fffcf6;
-        transition: border-color 120ms ease, background 120ms ease;
-      }
-      .dropzone.drag {
-        border-color: var(--accent);
-        background: var(--accent-soft);
-      }
-      .drop-title {
-        font-size: 18px;
-        font-weight: 700;
-        margin-bottom: 6px;
-      }
-      .drop-sub {
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.45;
-        margin-bottom: 14px;
-      }
-      .pickers {
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        height: 100vh;
+        width: 100vw;
         display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 14px;
-      }
-      .btn, .ghost {
-        border-radius: 12px;
-        padding: 11px 14px;
-        border: 1px solid var(--line);
-        background: #fff;
-        cursor: pointer;
-        transition: transform 80ms ease, border-color 120ms ease, background 120ms ease;
-      }
-      .btn:hover, .ghost:hover { transform: translateY(-1px); }
-      .btn-primary {
-        background: var(--ink);
-        color: #fff;
-        border-color: var(--ink);
-      }
-      .btn-accent {
-        background: var(--accent);
-        color: white;
-        border-color: var(--accent);
-      }
-      .ghost {
-        background: transparent;
-      }
-      .hidden { display: none !important; }
-      .file-list {
-        display: grid;
-        gap: 8px;
-        max-height: 260px;
-        overflow: auto;
-      }
-      .file-item {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 8px;
+        flex-direction: column;
         align-items: center;
-        padding: 10px 12px;
-        border-radius: 12px;
-        border: 1px solid var(--line);
-        background: #fff;
+        padding: clamp(20px, 4vh, 40px) 20px clamp(80px, 10vh, 100px);
+        overflow: hidden;
       }
-      .file-meta {
-        color: var(--muted);
-        font-size: 12px;
+
+      /* Hero Section */
+      .app-header {
+        text-align: center;
+        margin-bottom: clamp(20px, 4vh, 40px);
+        max-width: 540px;
+        flex-shrink: 0;
+        animation: rise 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
       }
-      .pill {
+      .brand {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 5px 9px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 700;
+        font-weight: 500;
+        font-size: 13px;
+        margin-bottom: 16px;
+        letter-spacing: 0.02em;
+        background: var(--buena-beige);
+        color: #000;
+        padding: 4px 12px;
+        border-radius: 99px;
+        text-transform: uppercase;
+        box-shadow: 0 2px 8px -4px rgba(0,0,0,0.05);
       }
-      .pill-ok { background: var(--ok-soft); color: var(--ok); }
-      .pill-warn { background: var(--warn-soft); color: var(--warn); }
-      .actions {
+      .app-header h1 {
+        font-family: var(--font-sans);
+        font-size: clamp(28px, 4vh, 32px);
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        margin-bottom: 12px;
+        color: var(--ink);
+      }
+      .app-header p {
+        font-size: clamp(14px, 2vh, 15px);
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      /* Main Card */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.025);
+        width: 100%;
+        max-width: 640px;
+        flex: 1;
+        min-height: 0;
         display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 14px;
+        flex-direction: column;
+        overflow: hidden;
+        opacity: 0;
+        animation: rise 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.15s forwards;
       }
-      .results {
+
+      .card-section {
+        padding: clamp(24px, 4vh, 32px) clamp(24px, 4vw, 36px);
+        border-bottom: 1px solid var(--line);
+        flex-shrink: 0;
+      }
+      .card-section:last-child {
+        border-bottom: none;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        padding: clamp(24px, 4vh, 32px) 0 0 0;
+      }
+
+      .card-section:last-child .section-header {
+        padding: 0 clamp(24px, 4vw, 36px);
+        flex-shrink: 0;
+        margin-bottom: 20px;
+      }
+
+      .upload-scroll-area {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 0 clamp(24px, 4vw, 36px) clamp(24px, 4vh, 32px);
+      }
+
+      .section-header {
+        margin-bottom: 24px;
+      }
+      .section-title {
+        font-family: var(--font-sans);
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .step-num {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        background: var(--buena-sage);
+        color: var(--ink);
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: var(--font-mono);
+      }
+
+      .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+      .field-group:last-child {
+        margin-bottom: 0;
+      }
+      
+      label {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink);
+      }
+      .label-hint {
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      .input-wrapper {
+        display: flex;
+        gap: 12px;
+      }
+
+      input[type="text"], select, textarea {
+        font-family: inherit;
+        font-size: 15px;
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        background: var(--bg);
+        color: var(--ink);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      input[type="text"]:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: var(--surface);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+      
+      select {
+        appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2344403c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+        background-repeat: no-repeat;
+        background-position: right 16px center;
+        background-size: 16px;
+        padding-right: 40px;
+        cursor: pointer;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      /* Buttons */
+      button {
+        font-family: inherit;
+        font-size: 14px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: var(--radius-sm);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid transparent;
+        white-space: nowrap;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      .btn-primary:hover { background: var(--accent-hover); }
+      .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+      
+      .btn-outline {
+        background: white;
+        border-color: var(--line-strong);
+        color: var(--ink);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      }
+      .btn-outline:hover { background: var(--bg); border-color: #a8a29e; }
+
+      .btn-ghost {
+        background: transparent;
+        color: var(--ink-soft);
+      }
+      .btn-ghost:hover { background: var(--bg); color: var(--ink); }
+
+      /* Property Drawer */
+      .drawer {
+        overflow: hidden;
+        height: 0;
+        margin-top: 0;
+        padding: 0 16px;
+        background: var(--bg);
+        border: 1px solid transparent;
+        border-radius: var(--radius-sm);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        opacity: 0;
+      }
+      .drawer.open {
+        height: auto;
+        margin-top: 16px;
+        padding: 24px;
+        border-color: var(--line-strong);
+        opacity: 1;
+      }
+      .drawer-grid {
         display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      /* Dropzone */
+      .dropzone {
+        border: 1px dashed var(--line-strong);
+        border-radius: var(--radius-md);
+        padding: clamp(32px, 5vh, 48px) 24px;
+        text-align: center;
+        background: var(--bg);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative;
+      }
+      .dropzone:hover { background: #f5f5f4; border-color: #a8a29e; }
+      .dropzone.drag-active {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .dropzone-icon {
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        color: var(--accent);
+      }
+
+      .dropzone-title {
+        font-family: var(--font-sans);
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 6px;
+      }
+      .dropzone-desc {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 24px;
+      }
+      .dropzone-actions {
+        display: flex;
         gap: 10px;
+        justify-content: center;
       }
-      .result-item {
-        padding: 12px 14px;
-        border-radius: 12px;
+
+      /* File List */
+      .file-list-container {
+        margin-top: 24px;
+      }
+      .file-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-right: 4px;
+      }
+      .file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
         border: 1px solid var(--line);
-        background: #fff;
+        border-radius: var(--radius-sm);
+        background: white;
+        animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
       }
-      .result-item.ok { border-color: #b8e2ca; }
-      .result-item.error { border-color: #efc0c0; }
+      .file-info {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        overflow: hidden;
+      }
+      .file-icon {
+        color: var(--buena-sage);
+        flex-shrink: 0;
+      }
+      .file-details {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .file-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .file-meta {
+        font-size: 12px;
+        color: var(--muted);
+        font-family: var(--font-mono);
+        margin-top: 4px;
+      }
+      .file-remove {
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+      .file-remove:hover {
+        background: var(--bg);
+        color: var(--danger);
+      }
+
+      /* Action Bar */
+      .action-bar {
+        position: fixed;
+        bottom: 32px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--line-strong);
+        padding: 12px 16px;
+        border-radius: 99px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.05);
+        z-index: 100;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .action-bar.visible {
+        pointer-events: auto;
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .action-stats {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink);
+        padding-left: 12px;
+        white-space: nowrap;
+      }
+
+      /* Progress & Results */
       .progress-card {
-        display: grid;
-        gap: 10px;
-        padding: 14px;
-        border-radius: 14px;
-        border: 1px solid var(--line);
-        background: #fff;
+        margin-top: 28px;
+        padding: 28px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        background: var(--bg);
       }
-      .progress-top {
+      .progress-header {
         display: flex;
         justify-content: space-between;
-        gap: 12px;
-        align-items: center;
+        align-items: flex-start;
+        margin-bottom: 20px;
       }
-      .progress-label {
+      .progress-title {
+        font-family: var(--font-sans);
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .progress-status {
         font-size: 14px;
-        font-weight: 700;
-      }
-      .progress-sub {
         color: var(--muted);
-        font-size: 12px;
       }
-      .progress-bar {
-        height: 10px;
-        border-radius: 999px;
-        background: #eee6da;
+      .progress-pct {
+        font-size: 14px;
+        font-family: var(--font-mono);
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--accent-soft);
+        padding: 4px 10px;
+        border-radius: 6px;
+      }
+      .progress-track {
+        height: 6px;
+        background: var(--line);
+        border-radius: 99px;
         overflow: hidden;
       }
       .progress-fill {
         height: 100%;
+        background: var(--accent);
         width: 0%;
-        background: linear-gradient(90deg, var(--accent), #9f8cff);
-        transition: width 180ms ease;
+        border-radius: 99px;
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .pipeline-stats {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 10px;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
       }
-      .pipeline-stat {
-        display: inline-flex;
+      .stat-pill {
+        font-size: 12px;
+        font-family: var(--font-mono);
+        background: white;
+        border: 1px solid var(--line-strong);
+        padding: 6px 12px;
+        border-radius: 6px;
+        color: var(--ink-soft);
+      }
+
+      .results-list {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .result-item {
+        font-size: 14px;
+        padding: 16px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        background: white;
+        border: 1px solid var(--line-strong);
+      }
+      .result-item.success { border-left: 4px solid var(--accent); }
+      .result-item.error { border-left: 4px solid var(--danger); }
+      .result-details {
+        display: flex;
+        flex-direction: column;
         gap: 6px;
-        padding: 6px 10px;
-        border-radius: 999px;
-        background: var(--bg);
-        font-size: 12px;
-        font-weight: 700;
       }
-      .tiny {
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1.5;
+      .result-title { font-weight: 500; }
+      .result-meta { color: var(--muted); font-size: 13px; font-family: var(--font-mono); }
+
+      .hidden { display: none !important; }
+
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: translateY(0); }
       }
-      .inline-note {
-        color: var(--muted);
-        font-size: 13px;
-      }
-      @media (max-width: 860px) {
-        .grid, .row, .row-3 { grid-template-columns: 1fr; }
+      
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateX(-12px); }
+        to { opacity: 1; transform: translateX(0); }
       }
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <div class="hero">
-        <div class="eyebrow">Buena internal intake</div>
-        <h1>Bulk import for one property</h1>
-        <p class="sub">
-          Built around the PM interviews: one property at a time, mostly PDFs, scans, Excel, JSON,
-          and odd legacy files. Pick the property, add a short note if needed, and upload whatever files you got.
-        </p>
+    
+    <header class="app-header stagger-item">
+      <div class="brand">kontext.haus</div>
+      <h1>Bulk Archive Intake</h1>
+      <p>Drop an entire property archive in. We'll automatically route, extract, and stage every file for your review.</p>
+    </header>
+
+    <div class="card stagger-item">
+      <!-- Step 1: Context -->
+      <div class="card-section">
+        <div class="section-header">
+          <h2 class="section-title"><span class="step-num">1</span> Property Context</h2>
+        </div>
+        
+        <div class="field-group">
+          <label>Target Property</label>
+          <div class="input-wrapper">
+            <select id="propertySelect"></select>
+            <button id="addPropertyBtn" class="btn btn-outline">New</button>
+          </div>
+        </div>
+
+        <div id="newPropertyDrawer" class="drawer">
+          <div class="drawer-grid">
+            <div class="field-group">
+              <label>ID</label>
+              <input type="text" id="newPropertyId" placeholder="LIE-002" />
+            </div>
+            <div class="field-group">
+              <label>Name</label>
+              <input type="text" id="newPropertyName" placeholder="WEG Musterstraße 11" />
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Address</label>
+            <input type="text" id="newPropertyAddress" placeholder="Musterstraße 11, 10115 Berlin" />
+          </div>
+          <button id="savePropertyBtn" class="btn btn-primary" style="margin-top: 12px; width: 100%;">Save Property</button>
+        </div>
+
+        <div class="field-group" style="margin-top: 20px;">
+          <label>Intake Note <span class="label-hint">(optional)</span></label>
+          <textarea id="note" placeholder="E.g. Old PM archive, handover batch 1, invoices only…"></textarea>
+        </div>
       </div>
 
-      <div class="grid">
-        <section class="card stack">
-          <h2>1. Intake context</h2>
+      <!-- Step 2: Files -->
+      <div class="card-section">
+        <div class="section-header">
+          <h2 class="section-title"><span class="step-num">2</span> Upload Files</h2>
+        </div>
 
-          <div class="row">
-            <label>
-              Worker URL
-              <input id="workerUrl" type="url" placeholder="https://buena-ingest.isiklimahir.workers.dev" />
-            </label>
-            <label>
-              Bearer token
-              <input id="bearerToken" type="password" placeholder="Optional in dev, required in prod" />
-            </label>
-          </div>
-
-          <div class="row-3">
-            <label>
-              Property
-              <select id="propertySelect"></select>
-            </label>
-            <button id="addPropertyBtn" class="ghost" type="button">Add new property</button>
-            <button id="savePropertyBtn" class="ghost hidden" type="button">Save property</button>
-          </div>
-
-          <div id="newPropertyFields" class="stack hidden">
-            <div class="row">
-              <label>
-                Property ID
-                <input id="newPropertyId" type="text" placeholder="LIE-002" />
-              </label>
-              <label>
-                Property name
-                <input id="newPropertyName" type="text" placeholder="WEG Musterstraße 11" />
-              </label>
-            </div>
-            <label>
-              Address
-              <input id="newPropertyAddress" type="text" placeholder="Musterstraße 11, 10115 Berlin" />
-            </label>
-            <div class="inline-note">This is stored locally in your browser for the intake UI. The backend just receives the selected property metadata for now.</div>
-          </div>
-
-          <label>
-            Intake note
-            <textarea id="note" placeholder="Optional context for the importer, e.g. old PM archive, handover batch 1, mixed scans from seller, invoices only..."></textarea>
-          </label>
-        </section>
-
-        <section class="card stack">
-          <h2>2. Files</h2>
+        <div class="upload-scroll-area">
           <div id="dropzone" class="dropzone">
-            <div class="drop-title">Drop files, folder contents, PDFs, Excel, zips, whatever</div>
-            <div class="drop-sub">
-              This is an internal intake surface. No file type restrictions. Use it for the messy reality the PM described.
+            <div class="dropzone-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
             </div>
-            <div class="pickers">
-              <button id="pickFilesBtn" class="btn" type="button">Choose files</button>
-              <button id="pickFolderBtn" class="btn" type="button">Choose folder</button>
+            <div class="dropzone-title">Drop files, folders, PDFs, or ZIPs</div>
+            <div class="dropzone-desc">No file type restrictions. Use a small subset first to inspect quality.</div>
+            
+            <div class="dropzone-actions">
+              <button id="pickFilesBtn" class="btn btn-outline">Browse Files</button>
+              <button id="pickFolderBtn" class="btn btn-outline">Browse Folders</button>
             </div>
+            
             <input id="fileInput" class="hidden" type="file" multiple />
             <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple />
-            <div class="tiny">Current flow: uploads are stored in R2, queued with property metadata, and processed through the same extraction pipeline. Use a small subset first if you want to inspect quality before uploading the full archive.</div>
           </div>
 
-          <div id="fileSummary" class="inline-note">No files selected yet.</div>
-          <div id="fileList" class="file-list"></div>
-
-          <div class="actions">
-            <button id="clearBtn" class="ghost" type="button">Clear selection</button>
-            <button id="uploadBtn" class="btn btn-accent" type="button">Upload selected files</button>
+          <div id="fileListContainer" class="file-list-container hidden">
+            <label id="fileSummary" style="margin-bottom: 8px; display: block;"></label>
+            <div id="fileList" class="file-list"></div>
           </div>
 
           <div id="progressCard" class="progress-card hidden">
-            <div class="progress-top">
+            <div class="progress-header">
               <div>
-                <div id="progressLabel" class="progress-label">Ready</div>
-                <div id="progressSub" class="progress-sub">No upload running.</div>
+                <div id="progressLabel" class="progress-title">Uploading</div>
+                <div id="progressSub" class="progress-status">Preparing files...</div>
               </div>
-              <div id="progressPct" class="pill pill-ok">0%</div>
+              <div id="progressPct" class="progress-pct">0%</div>
             </div>
-            <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+            <div class="progress-track">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
             <div id="pipelineStats" class="pipeline-stats"></div>
+            <div id="results" class="results-list"></div>
           </div>
-        </section>
+        </div>
       </div>
-
-      <section class="card stack" style="margin-top: 18px;">
-        <h2>3. Upload results</h2>
-        <div id="results" class="results"></div>
-      </section>
     </div>
 
-    <script>
-      const STORAGE_KEY = "buena-bulk-import-state-v1";
+    <!-- Action Bar -->
+    <div id="actionBar" class="action-bar">
+      <span id="actionCount" class="action-stats">0 files selected</span>
+      <button id="clearBtn" class="btn btn-ghost">Clear</button>
+      <button id="uploadBtn" class="btn btn-primary">
+        Upload Files
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px;"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </button>
+    </div>
+
+    <script type="module">
+      const STORAGE_KEY = "buena-bulk-import-state-v2";
+      const WORKER_URL = "https://buena-ingest.isiklimahir.workers.dev";
+      const BEARER_TOKEN = "";
       const defaults = {
-        workerUrl: "https://buena-ingest.isiklimahir.workers.dev",
-        bearerToken: "",
         properties: [
-          {
-            id: "LIE-001",
-            name: "WEG Immanuelkirchstraße 26",
-            address: "Immanuelkirchstraße 26, 10405 Berlin"
-          }
+          { id: "LIE-001", name: "WEG Immanuelkirchstraße 26", address: "Immanuelkirchstraße 26, 10405 Berlin" }
         ]
       };
 
@@ -386,12 +652,10 @@
       let selectedFiles = [];
 
       const els = {
-        workerUrl: document.getElementById("workerUrl"),
-        bearerToken: document.getElementById("bearerToken"),
         propertySelect: document.getElementById("propertySelect"),
         addPropertyBtn: document.getElementById("addPropertyBtn"),
         savePropertyBtn: document.getElementById("savePropertyBtn"),
-        newPropertyFields: document.getElementById("newPropertyFields"),
+        newPropertyDrawer: document.getElementById("newPropertyDrawer"),
         newPropertyId: document.getElementById("newPropertyId"),
         newPropertyName: document.getElementById("newPropertyName"),
         newPropertyAddress: document.getElementById("newPropertyAddress"),
@@ -401,6 +665,7 @@
         folderInput: document.getElementById("folderInput"),
         pickFilesBtn: document.getElementById("pickFilesBtn"),
         pickFolderBtn: document.getElementById("pickFolderBtn"),
+        fileListContainer: document.getElementById("fileListContainer"),
         fileSummary: document.getElementById("fileSummary"),
         fileList: document.getElementById("fileList"),
         clearBtn: document.getElementById("clearBtn"),
@@ -411,43 +676,44 @@
         progressSub: document.getElementById("progressSub"),
         progressPct: document.getElementById("progressPct"),
         progressFill: document.getElementById("progressFill"),
-        pipelineStats: document.getElementById("pipelineStats")
+        pipelineStats: document.getElementById("pipelineStats"),
+        actionBar: document.getElementById("actionBar"),
+        actionCount: document.getElementById("actionCount")
       };
 
       init();
 
       function init() {
-        els.workerUrl.value = state.workerUrl || defaults.workerUrl;
-        els.bearerToken.value = state.bearerToken || "";
         renderPropertyOptions();
         bindEvents();
-        renderFiles();
       }
 
       function bindEvents() {
-        els.workerUrl.addEventListener("change", persistSettings);
-        els.bearerToken.addEventListener("change", persistSettings);
-        els.pickFilesBtn.addEventListener("click", () => els.fileInput.click());
-        els.pickFolderBtn.addEventListener("click", () => els.folderInput.click());
+        els.pickFilesBtn.addEventListener("click", (e) => { e.stopPropagation(); els.fileInput.click(); });
+        els.pickFolderBtn.addEventListener("click", (e) => { e.stopPropagation(); els.folderInput.click(); });
         els.fileInput.addEventListener("change", (e) => mergeFiles([...e.target.files]));
         els.folderInput.addEventListener("change", (e) => mergeFiles([...e.target.files]));
         els.clearBtn.addEventListener("click", () => { selectedFiles = []; renderFiles(); });
         els.uploadBtn.addEventListener("click", uploadAll);
-        els.addPropertyBtn.addEventListener("click", toggleNewPropertyFields);
+        els.addPropertyBtn.addEventListener("click", toggleNewPropertyDrawer);
         els.savePropertyBtn.addEventListener("click", saveNewProperty);
 
         ["dragenter", "dragover"].forEach((event) => {
           els.dropzone.addEventListener(event, (e) => {
             e.preventDefault();
-            els.dropzone.classList.add("drag");
+            els.dropzone.classList.add("drag-active");
+            els.dropzone.style.transform = "scale(1.02)";
           });
         });
+        
         ["dragleave", "drop"].forEach((event) => {
           els.dropzone.addEventListener(event, (e) => {
             e.preventDefault();
-            els.dropzone.classList.remove("drag");
+            els.dropzone.classList.remove("drag-active");
+            els.dropzone.style.transform = "scale(1)";
           });
         });
+        
         els.dropzone.addEventListener("drop", (e) => {
           const files = [...e.dataTransfer.files];
           mergeFiles(files);
@@ -466,12 +732,6 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       }
 
-      function persistSettings() {
-        state.workerUrl = els.workerUrl.value.trim();
-        state.bearerToken = els.bearerToken.value;
-        saveState();
-      }
-
       function renderPropertyOptions() {
         els.propertySelect.innerHTML = "";
         for (const property of state.properties) {
@@ -482,10 +742,16 @@
         }
       }
 
-      function toggleNewPropertyFields() {
-        const hidden = els.newPropertyFields.classList.toggle("hidden");
-        els.savePropertyBtn.classList.toggle("hidden", hidden);
-        els.addPropertyBtn.textContent = hidden ? "Add new property" : "Cancel";
+      let isDrawerOpen = false;
+      function toggleNewPropertyDrawer() {
+        isDrawerOpen = !isDrawerOpen;
+        if (isDrawerOpen) {
+          els.newPropertyDrawer.classList.add("open");
+          els.addPropertyBtn.textContent = "Cancel";
+        } else {
+          els.newPropertyDrawer.classList.remove("open");
+          els.addPropertyBtn.textContent = "New";
+        }
       }
 
       function saveNewProperty() {
@@ -497,7 +763,7 @@
           return;
         }
         if (state.properties.some((p) => p.id === id)) {
-          alert("That property ID already exists in this intake UI.");
+          alert("That property ID already exists.");
           return;
         }
         state.properties.push({ id, name, address });
@@ -507,19 +773,21 @@
         els.newPropertyId.value = "";
         els.newPropertyName.value = "";
         els.newPropertyAddress.value = "";
-        toggleNewPropertyFields();
+        toggleNewPropertyDrawer();
       }
 
       function mergeFiles(files) {
         const seen = new Set(selectedFiles.map(fileKey));
+        let added = 0;
         for (const file of files) {
           const key = fileKey(file);
           if (!seen.has(key)) {
             selectedFiles.push(file);
             seen.add(key);
+            added++;
           }
         }
-        renderFiles();
+        if (added > 0) renderFiles();
       }
 
       function fileKey(file) {
@@ -528,51 +796,84 @@
 
       function renderFiles() {
         els.fileList.innerHTML = "";
+        updateActionBar();
+        
         if (!selectedFiles.length) {
-          els.fileSummary.textContent = "No files selected yet.";
+          els.fileListContainer.classList.add("hidden");
           return;
         }
+        
+        els.fileListContainer.classList.remove("hidden");
         const totalBytes = selectedFiles.reduce((sum, file) => sum + file.size, 0);
-        els.fileSummary.textContent = `${selectedFiles.length} file(s), ${formatBytes(totalBytes)} total`;
-        for (const file of selectedFiles) {
+        els.fileSummary.textContent = `${selectedFiles.length} file${selectedFiles.length === 1 ? "" : "s"} (${formatBytes(totalBytes)}) ready for upload`;
+        
+        const frag = document.createDocumentFragment();
+        selectedFiles.forEach((file, index) => {
           const row = document.createElement("div");
           row.className = "file-item";
+          row.dataset.index = index;
+          
+          const name = escapeHtml(file.webkitRelativePath || file.name);
+          const meta = `${formatBytes(file.size)} · ${escapeHtml(file.type || "unknown type")}`;
+          
           row.innerHTML = `
-            <div>
-              <div><strong>${escapeHtml(file.webkitRelativePath || file.name)}</strong></div>
-              <div class="file-meta">${formatBytes(file.size)} · ${file.type || "unknown type"}</div>
+            <div class="file-info">
+              <div class="file-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+              </div>
+              <div class="file-details">
+                <span class="file-name">${name}</span>
+                <span class="file-meta">${meta}</span>
+              </div>
             </div>
-            <div class="pill pill-warn">queued</div>
+            <button class="file-remove" aria-label="Remove file">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
           `;
-          els.fileList.appendChild(row);
+          
+          row.style.animationDelay = `${index * 0.05 + 0.1}s`;
+          
+          row.querySelector('.file-remove').addEventListener('click', () => {
+            selectedFiles.splice(index, 1);
+            renderFiles();
+          });
+          
+          frag.appendChild(row);
+        });
+        els.fileList.appendChild(frag);
+      }
+
+      function updateActionBar() {
+        const n = selectedFiles.length;
+        els.actionCount.textContent = `${n} file${n === 1 ? "" : "s"} selected`;
+        
+        if (n > 0) {
+          els.actionBar.classList.add("visible");
+        } else {
+          els.actionBar.classList.remove("visible");
         }
       }
 
       async function uploadAll() {
-        persistSettings();
-        const workerUrl = els.workerUrl.value.trim().replace(/\/$/, "");
-        if (!workerUrl) {
-          alert("Please set the worker URL first.");
-          return;
-        }
-        if (!selectedFiles.length) {
-          alert("Please add at least one file.");
-          return;
-        }
+        const workerUrl = WORKER_URL.replace(/\/$/, "");
+        if (!selectedFiles.length) return;
         const property = state.properties.find((p) => p.id === els.propertySelect.value);
-        if (!property) {
-          alert("Please choose a property.");
-          return;
-        }
+        if (!property) { alert("Please choose a property."); return; }
 
         els.uploadBtn.disabled = true;
-        els.uploadBtn.textContent = "Uploading...";
+        els.uploadBtn.innerHTML = `Uploading...`;
+        
+        // Hide action bar during upload
+        els.actionBar.classList.remove("visible");
+        
         els.results.innerHTML = "";
-        showProgress(true);
-        setProgress(0, `Uploading 0 / ${selectedFiles.length}`, "Preparing pipeline stats...");
+        els.progressCard.classList.remove("hidden");
+        els.progressCard.style.animation = "rise 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards";
+        
+        setProgress(0, `Uploading 0 / ${selectedFiles.length}`, "Preparing pipeline stats…");
 
         const note = els.note.value.trim();
-        const beforeStats = await fetchPipelineStats(workerUrl, property.id, els.bearerToken.value.trim());
+        const beforeStats = await fetchPipelineStats(workerUrl, property.id, BEARER_TOKEN);
 
         for (let index = 0; index < selectedFiles.length; index++) {
           const file = selectedFiles[index];
@@ -585,12 +886,8 @@
           if (note) qs.set("note", note);
 
           const headers = {};
-          if (els.bearerToken.value.trim()) {
-            headers.Authorization = `Bearer ${els.bearerToken.value.trim()}`;
-          }
-          if (file.type) {
-            headers["Content-Type"] = file.type;
-          }
+          if (BEARER_TOKEN) headers.Authorization = `Bearer ${BEARER_TOKEN}`;
+          if (file.type) headers["Content-Type"] = file.type;
 
           setProgress(
             ((index) / selectedFiles.length) * 100,
@@ -600,48 +897,51 @@
 
           try {
             const res = await fetch(`${workerUrl}/upload?${qs.toString()}`, {
-              method: "POST",
-              headers,
-              body: file,
+              method: "POST", headers, body: file,
             });
             const text = await res.text();
             let body = null;
             try { body = JSON.parse(text); } catch {}
+            
             addResult({
               ok: res.ok,
               title: file.webkitRelativePath || file.name,
-              detail: res.ok
-                ? `Uploaded to ${body?.key || "bulk/"} for ${body?.propertyId || property.id}`
-                : `Upload failed: ${text}`,
+              detail: res.ok ? `Queued for ${property.id}` : `Failed: ${text}`,
             });
           } catch (err) {
-            addResult({
-              ok: false,
-              title: file.webkitRelativePath || file.name,
-              detail: String(err),
-            });
+            addResult({ ok: false, title: file.webkitRelativePath || file.name, detail: String(err) });
           }
         }
 
-        setProgress(100, "Uploads finished", "Polling worker queue and patch history...");
-        await monitorPipeline(workerUrl, property.id, els.bearerToken.value.trim(), beforeStats);
+        setProgress(100, "Upload Complete", "Polling worker for extraction status…");
+        await monitorPipeline(workerUrl, property.id, BEARER_TOKEN, beforeStats);
 
         els.uploadBtn.disabled = false;
-        els.uploadBtn.textContent = "Upload selected files";
+        els.uploadBtn.innerHTML = `
+          Upload Files
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px;"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        `;
+        
+        // Bring action bar back but allow clearing
+        els.actionBar.classList.add("visible");
       }
 
       async function fetchPipelineStats(workerUrl, propertyId, token) {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const [pendingRes, historyRes] = await Promise.all([
-          fetch(`${workerUrl}/vaults/${encodeURIComponent(propertyId)}/pending`, { headers }),
-          fetch(`${workerUrl}/vaults/${encodeURIComponent(propertyId)}/history`, { headers })
-        ]);
-        const pending = pendingRes.ok ? await pendingRes.json() : { pending: [] };
-        const history = historyRes.ok ? await historyRes.json() : { history: [] };
-        return {
-          pending: Array.isArray(pending.pending) ? pending.pending.length : 0,
-          history: Array.isArray(history.history) ? history.history.length : 0,
-        };
+        try {
+          const [pendingRes, historyRes] = await Promise.all([
+            fetch(`${workerUrl}/vaults/${encodeURIComponent(propertyId)}/pending`, { headers }),
+            fetch(`${workerUrl}/vaults/${encodeURIComponent(propertyId)}/history`, { headers })
+          ]);
+          const pending = pendingRes.ok ? await pendingRes.json() : { pending: [] };
+          const history = historyRes.ok ? await historyRes.json() : { history: [] };
+          return {
+            pending: Array.isArray(pending.pending) ? pending.pending.length : 0,
+            history: Array.isArray(history.history) ? history.history.length : 0,
+          };
+        } catch {
+          return { pending: 0, history: 0 };
+        }
       }
 
       async function monitorPipeline(workerUrl, propertyId, token, beforeStats) {
@@ -649,33 +949,29 @@
           const stats = await fetchPipelineStats(workerUrl, propertyId, token);
           renderPipelineStats(stats, beforeStats);
           if (stats.pending > beforeStats.pending || stats.history > beforeStats.history) {
-            els.progressSub.textContent = "The worker has produced new queue or history activity.";
+            els.progressSub.textContent = "Pipeline has processed new items.";
             return;
           }
-          els.progressSub.textContent = `Uploads queued. Waiting for extraction, poll ${attempt} / 10...`;
+          els.progressSub.textContent = `Processing queued files (poll ${attempt}/10)...`;
           await new Promise((resolve) => setTimeout(resolve, 3000));
         }
-        els.progressSub.textContent = "Uploads are stored and queued. Worker extraction may still be running.";
+        els.progressSub.textContent = "Items queued. Extraction running in background.";
       }
 
       function renderPipelineStats(stats, beforeStats = { pending: 0, history: 0 }) {
         els.pipelineStats.innerHTML = "";
         const items = [
-          { label: "Pending now", value: stats.pending },
-          { label: "History now", value: stats.history },
-          { label: "Pending delta", value: stats.pending - beforeStats.pending },
-          { label: "History delta", value: stats.history - beforeStats.history },
+          { label: "Pending queue", value: stats.pending },
+          { label: "Total history", value: stats.history },
+          { label: "New pending", value: stats.pending - beforeStats.pending },
+          { label: "New history", value: stats.history - beforeStats.history },
         ];
-        for (const item of items) {
+        items.forEach((item, i) => {
           const el = document.createElement("div");
-          el.className = "pipeline-stat";
+          el.className = "stat-pill";
           el.textContent = `${item.label}: ${item.value}`;
           els.pipelineStats.appendChild(el);
-        }
-      }
-
-      function showProgress(show) {
-        els.progressCard.classList.toggle("hidden", !show);
+        });
       }
 
       function setProgress(percent, label, sub) {
@@ -688,15 +984,16 @@
 
       function addResult({ ok, title, detail }) {
         const el = document.createElement("div");
-        el.className = `result-item ${ok ? "ok" : "error"}`;
+        el.className = `result-item ${ok ? "success" : "error"}`;
         el.innerHTML = `
-          <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
-            <div>
-              <div><strong>${escapeHtml(title)}</strong></div>
-              <div class="tiny" style="margin-top:4px;">${escapeHtml(detail)}</div>
-            </div>
-            <div class="pill ${ok ? "pill-ok" : "pill-warn"}">${ok ? "uploaded" : "error"}</div>
+          <div class="result-details">
+            <div class="result-title">${escapeHtml(title)}</div>
+            <div class="result-meta">${escapeHtml(detail)}</div>
           </div>
+          ${ok 
+            ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>` 
+            : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`
+          }
         `;
         els.results.prepend(el);
       }
@@ -713,7 +1010,7 @@
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;")
-          .replace(/\"/g, "&quot;")
+          .replace(/"/g, "&quot;")
           .replace(/'/g, "&#39;");
       }
     </script>
