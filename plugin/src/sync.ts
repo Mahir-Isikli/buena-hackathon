@@ -50,13 +50,14 @@ export async function ensurePropertyFile(
 }
 
 /**
- * Pull property.md + state.json from the worker and write them into the vault.
- * Remote is treated as canonical here. Any stale local `buena-pending` blocks
- * are stripped so the markdown stays focused on the property briefing while the
- * queue lives in the sidebar.
+ * Write a fetched property.md + state.json into the vault.
+ * Pure I/O — caller already has the data. Used both by `pullPropertySnapshotOnce`
+ * (live fetch) and by the property cache's instant-switch path (cache hit).
  */
-export async function pullPropertySnapshotOnce(
-  plugin: BuenaPlugin
+export async function applyPropertySnapshotToVault(
+  plugin: BuenaPlugin,
+  propertyMd: string | null,
+  state: Record<string, unknown> | null
 ): Promise<{ propertyPulled: boolean; statePulled: boolean }> {
   const file = await ensurePropertyFile(plugin.app, plugin);
   if (!file) {
@@ -67,41 +68,58 @@ export async function pullPropertySnapshotOnce(
   let propertyPulled = false;
   let statePulled = false;
 
-  const remoteProperty = await fetchPropertyMd(plugin.settings).catch((err) => {
-    console.warn("[Buena] fetchPropertyMd failed", err);
-    return null;
-  });
-  if (typeof remoteProperty === "string") {
-    const next = ensureTrailingNewline(
-      normalizeInlineSourceRefs(remoteProperty.trimEnd())
-    );
-    const local = await plugin.app.vault.read(file);
-    if (next !== local) {
-      await plugin.app.vault.modify(file, next);
-    }
-    propertyPulled = true;
-  }
-
-  const remoteState = await fetchStateJson(plugin.settings).catch((err) => {
-    console.warn("[Buena] fetchStateJson failed", err);
-    return null;
-  });
-  if (remoteState) {
-    const statePath = siblingStatePath(file.path);
-    const existing = await readJsonIfExists(plugin.app, statePath);
-    const mergedState = mergeState(existing, remoteState);
-    const text = JSON.stringify(mergedState, null, 2) + "\n";
-    const stateFile = plugin.app.vault.getAbstractFileByPath(statePath);
-    if (stateFile instanceof TFile) {
-      await plugin.app.vault.modify(stateFile, text);
-    } else {
-      await ensureFolderForFile(plugin.app, statePath);
-      await plugin.app.vault.create(statePath, text);
-    }
-    statePulled = true;
-  }
+  await Promise.all([
+    (async () => {
+      if (typeof propertyMd !== "string") return;
+      const next = ensureTrailingNewline(
+        normalizeInlineSourceRefs(propertyMd.trimEnd())
+      );
+      const local = await plugin.app.vault.read(file);
+      if (next !== local) {
+        await plugin.app.vault.modify(file, next);
+      }
+      propertyPulled = true;
+    })(),
+    (async () => {
+      if (!state) return;
+      const statePath = siblingStatePath(file.path);
+      const existing = await readJsonIfExists(plugin.app, statePath);
+      const mergedState = mergeState(existing, state);
+      const text = JSON.stringify(mergedState, null, 2) + "\n";
+      const stateFile = plugin.app.vault.getAbstractFileByPath(statePath);
+      if (stateFile instanceof TFile) {
+        await plugin.app.vault.modify(stateFile, text);
+      } else {
+        await ensureFolderForFile(plugin.app, statePath);
+        await plugin.app.vault.create(statePath, text);
+      }
+      statePulled = true;
+    })(),
+  ]);
 
   return { propertyPulled, statePulled };
+}
+
+/**
+ * Pull property.md + state.json from the worker and write them into the vault.
+ * Remote is treated as canonical here. Any stale local `buena-pending` blocks
+ * are stripped so the markdown stays focused on the property briefing while the
+ * queue lives in the sidebar.
+ */
+export async function pullPropertySnapshotOnce(
+  plugin: BuenaPlugin
+): Promise<{ propertyPulled: boolean; statePulled: boolean }> {
+  const [remoteProperty, remoteState] = await Promise.all([
+    fetchPropertyMd(plugin.settings).catch((err) => {
+      console.warn("[Buena] fetchPropertyMd failed", err);
+      return null;
+    }),
+    fetchStateJson(plugin.settings).catch((err) => {
+      console.warn("[Buena] fetchStateJson failed", err);
+      return null;
+    }),
+  ]);
+  return applyPropertySnapshotToVault(plugin, remoteProperty, remoteState);
 }
 
 export async function pullPendingOnce(plugin: BuenaPlugin): Promise<{
@@ -138,9 +156,21 @@ function ensureTrailingNewline(s: string): string {
 }
 
 function normalizeInlineSourceRefs(text: string): string {
-  return text
+  let out = text
     .replace(/\{prov:\s*r2:\/\/buena-raw\//g, "{prov: ")
     .replace(/\|\s*src:\s*r2:\/\/buena-raw\//g, "| src: ");
+
+  // Drop legacy `{changed: ...}` annotations. The history file is the source of
+  // truth for change events; inline duplication just bloats the property briefing.
+  out = out.replace(/\s*\{changed:[^}]*\}/g, "");
+
+  // Encode `@` inside `{prov: ...}` source so Obsidian doesn't autolink the
+  // gmail-style message-id and break the popover regex.
+  out = out.replace(/\{prov:\s*([^}|]+?)(\s*(?:\||\}))/g, (_m, src: string, tail: string) => {
+    return `{prov: ${src.replace(/@/g, "%40")}${tail}`;
+  });
+
+  return out;
 }
 
 function siblingStatePath(propertyPath: string): string {

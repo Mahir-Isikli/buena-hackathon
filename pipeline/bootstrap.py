@@ -34,11 +34,6 @@ def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def fn(prov: str, actor: str, conf: float) -> str:
-    """Inline footnote for provenance, renders as superscript in Obsidian."""
-    return f"^[src: {prov} · actor: {actor} · conf: {conf}]"
-
-
 def to_bool(s: str) -> bool:
     return str(s).strip().lower() in {"true", "1", "yes", "ja"}
 
@@ -189,6 +184,43 @@ def render_markdown(erp: dict[str, Any], state: dict[str, Any]) -> str:
             lines.append("| " + " | ".join(esc(cell) for cell in row) + " |")
         lines.append("")
 
+    def esc_html(value: Any) -> str:
+        return (
+            str(value)
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
+
+    def add_html_table(headers: list[str], rows: list[list[Any]]) -> None:
+        # HTML tables render correctly inside <details> in Obsidian.
+        # Markdown tables don't, because the blank-line gap forces the
+        # parser to exit HTML mode and the table becomes a sibling.
+        lines.append("<table>")
+        lines.append(
+            "<thead><tr>"
+            + "".join(f"<th>{esc_html(h)}</th>" for h in headers)
+            + "</tr></thead>"
+        )
+        lines.append("<tbody>")
+        for row in rows:
+            lines.append(
+                "<tr>"
+                + "".join(f"<td>{esc_html(c)}</td>" for c in row)
+                + "</tr>"
+            )
+        lines.append("</tbody>")
+        lines.append("</table>")
+
+    def open_details(summary: str, *, open_default: bool = False) -> None:
+        attr = " open" if open_default else ""
+        lines.append(f"<details{attr}>")
+        lines.append(f"<summary>{esc_html(summary)}</summary>")
+
+    def close_details() -> None:
+        lines.append("</details>")
+        lines.append("")
+
     def owner_label(owner: dict[str, Any]) -> str:
         if owner.get("firma"):
             return owner["firma"]
@@ -238,37 +270,30 @@ def render_markdown(erp: dict[str, Any], state: dict[str, Any]) -> str:
     lines.append("")
 
     lines.append("## Summary")
-    lines.append(f"- **Address**: {prop['strasse']}, {prop['plz']} {prop['ort']} {fn('stammdaten/stammdaten.json', 'bootstrap', 1.0)}")
+    lines.append(f"- **Address**: {prop['strasse']}, {prop['plz']} {prop['ort']}")
     lines.append(f"- **Verwalter**: {prop['verwalter']}")
     lines.append(f"- **Built / renovated**: {prop['baujahr']} / {prop['sanierung']}")
     lines.append(f"- **Buildings**: {len(buildings)}")
     lines.append(f"- **Total units**: {total_units}")
-    lines.append("- **Master data lookup**: `erp.json`")
-    lines.append("- **Context state**: `state.json`, `history/`")
-    lines.append("")
-    lines.append("> [!note] ERP remains the source of truth for master data. This file keeps the current property briefing, exceptions, and lightweight reference tables.")
     lines.append("")
 
     lines.append("## Open issues")
-    lines.append("> [!info] No open issues yet. New facts from email land here after the patch gate.")
     lines.append("")
 
     lines.append("## Side agreements")
-    lines.append("> [!info] No tracked side agreements yet.")
     lines.append("")
 
     lines.append("## Assembly decisions")
-    lines.append("> [!info] No ETV protocols ingested yet.")
     lines.append("")
 
     lines.append("## Beirat notes")
-    lines.append("> [!info] Manual-only section. Auto patches do not overwrite this block.")
     lines.append("")
 
     lines.append("## Building reference")
     lines.append("_Derived from the ERP snapshot. Use IDs as stable references._")
     lines.append("")
-    add_table(
+    open_details(f"{len(buildings)} buildings")
+    add_html_table(
         ["Building ID", "House no.", "Units", "Floors", "Elevator", "Year"],
         [
             [
@@ -282,11 +307,19 @@ def render_markdown(erp: dict[str, Any], state: dict[str, Any]) -> str:
             for building in buildings.values()
         ],
     )
+    close_details()
 
     lines.append("## Owner reference")
     lines.append("_Contact data stays in ERP. The markdown keeps just enough reference data to connect context to the right records._")
     lines.append("")
-    add_table(
+    beirat_line = f"Beirat seats: {', '.join(owner['id'] for owner in beirat) if beirat else 'None'}"
+    selfocc_line = f"Self-occupied owners: {len(selbstnutzer)} of {len(owners)}"
+    lines.append(beirat_line)
+    lines.append("")
+    lines.append(selfocc_line)
+    lines.append("")
+    open_details(f"{len(owners)} owners")
+    add_html_table(
         ["Owner ID", "Name", "Units", "Role"],
         [
             [
@@ -298,15 +331,13 @@ def render_markdown(erp: dict[str, Any], state: dict[str, Any]) -> str:
             for owner in owners.values()
         ],
     )
-    lines.append(f"Beirat seats: {', '.join(owner['id'] for owner in beirat) if beirat else 'None'}")
-    lines.append("")
-    lines.append(f"Self-occupied owners: {len(selbstnutzer)} of {len(owners)}")
-    lines.append("")
+    close_details()
 
     lines.append("## Service provider reference")
     lines.append("_Directory snapshot only. Scheduling, contact, and contracts remain canonical in ERP._")
     lines.append("")
-    add_table(
+    open_details(f"{len(providers)} service providers")
+    add_html_table(
         ["Provider ID", "Category", "Name", "Contract"],
         [
             [
@@ -318,17 +349,20 @@ def render_markdown(erp: dict[str, Any], state: dict[str, Any]) -> str:
             for provider in providers.values()
         ],
     )
+    close_details()
 
     lines.append("## Financial reference")
     lines.append("_Reference-only account view._")
     lines.append("")
-    add_table(
+    open_details("Accounts")
+    add_html_table(
         ["Account", "IBAN", "Bank"],
         [
             ["WEG account", prop["weg_bankkonto_iban"], prop["weg_bankkonto_bank"]],
             ["Reserve", prop["ruecklage_iban"], "Reserve account"],
         ],
     )
+    close_details()
 
     lines.append("## Unit index")
     lines.append("_Reference snapshot for routing. Tribal knowledge should stay in the sections above, not in this table._")
@@ -338,9 +372,11 @@ def render_markdown(erp: dict[str, Any], state: dict[str, Any]) -> str:
     for unit in units.values():
         by_building.setdefault(unit["haus_id"], []).append(unit)
 
+    primary_building = next(iter(by_building), None)
     for building_id, unit_list in by_building.items():
-        lines.append(f"### {building_id}")
-        add_table(
+        is_primary = building_id == primary_building
+        open_details(f"{building_id} ({len(unit_list)} units)", open_default=is_primary)
+        add_html_table(
             ["Unit ID", "Unit no.", "Lage", "Type", "Area", "Occupancy"],
             [
                 [
@@ -354,6 +390,7 @@ def render_markdown(erp: dict[str, Any], state: dict[str, Any]) -> str:
                 for unit in sorted(unit_list, key=lambda value: value["einheit_nr"])
             ],
         )
+        close_details()
 
     return "\n".join(lines)
 

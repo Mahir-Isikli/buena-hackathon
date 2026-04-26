@@ -1,12 +1,12 @@
-import { App, TAbstractFile, TFile } from "obsidian";
-
 /**
- * ERP data loader.
+ * In-memory ERP cache.
  *
- * Reads erp.json from the vault root, caches the parsed object, and refreshes
- * automatically when the file is modified. Markdown content references ERP
- * entities by ID only (e.g. `@EIG-004`, ```buena-erp ... ```), and the renderer
- * resolves the display via this cache.
+ * Single source of truth for inline `@EIG-001` chips, `buena-erp` codeblocks,
+ * the sidebar's owner directory, and anything else that needs to resolve an
+ * ERP id to a display label. Backed by D1 via the worker's `/vaults/:id/erp`
+ * endpoint. main.ts pulls the snapshot on plugin load, on file-open property
+ * switches, and on full sync, then feeds it in via `setData`. The store
+ * itself is passive: it doesn't know how to fetch.
  */
 
 export type ErpKind = "owner" | "tenant" | "unit" | "provider" | "building" | "property";
@@ -109,35 +109,20 @@ export interface ResolvedErp {
   raw: any;
 }
 
-const ERP_FILENAME = "erp.json";
-
 class ErpStore {
-  private app: App;
   private data: ErpData = {};
   private loaded = false;
   private listeners = new Set<() => void>();
 
-  constructor(app: App) {
-    this.app = app;
-  }
-
-  async load(): Promise<void> {
-    const file = this.findErpFile();
-    if (!file) {
-      this.data = {};
-      this.loaded = true;
-      return;
-    }
-    try {
-      const text = await this.app.vault.read(file);
-      this.data = JSON.parse(text) as ErpData;
-      this.loaded = true;
-      this.fire();
-    } catch (err) {
-      console.warn("[Buena] failed to parse erp.json", err);
-      this.data = {};
-      this.loaded = true;
-    }
+  /**
+   * Replace the cached data, mark the store loaded, and notify listeners so
+   * any rendered chips re-resolve. Call this after a successful fetch from
+   * `/vaults/:id/erp`.
+   */
+  setData(data: ErpData): void {
+    this.data = data ?? {};
+    this.loaded = true;
+    this.fire();
   }
 
   isLoaded(): boolean {
@@ -157,18 +142,6 @@ class ErpStore {
         console.warn("[Buena] erp listener failed", err);
       }
     }
-  }
-
-  private findErpFile(): TFile | null {
-    // Look for erp.json next to the property markdown in the vault root.
-    const direct = this.app.vault.getAbstractFileByPath(ERP_FILENAME);
-    if (direct && direct instanceof TFile) return direct;
-    // Fallback: search the entire vault for any erp.json.
-    const all = this.app.vault.getFiles();
-    for (const f of all) {
-      if (f.name === ERP_FILENAME) return f;
-    }
-    return null;
   }
 
   /**
@@ -306,27 +279,13 @@ class ErpStore {
 
 let singleton: ErpStore | null = null;
 
-export function initErpStore(app: App): ErpStore {
-  if (!singleton) singleton = new ErpStore(app);
+export function initErpStore(): ErpStore {
+  if (!singleton) singleton = new ErpStore();
   return singleton;
 }
 
 export function getErpStore(): ErpStore | null {
   return singleton;
-}
-
-export function watchErpFile(app: App, onChange: () => void): () => void {
-  const handler = (file: TAbstractFile) => {
-    if (file.name === ERP_FILENAME) onChange();
-  };
-  app.vault.on("modify", handler);
-  app.vault.on("create", handler);
-  app.vault.on("delete", handler);
-  return () => {
-    app.vault.off("modify", handler);
-    app.vault.off("create", handler);
-    app.vault.off("delete", handler);
-  };
 }
 
 // ---- formatters --------------------------------------------------------

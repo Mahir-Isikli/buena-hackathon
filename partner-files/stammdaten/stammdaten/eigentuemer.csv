@@ -1,5 +1,5 @@
 id,anrede,vorname,nachname,firma,strasse,plz,ort,land,email,telefon,iban,bic,einheit_ids,selbstnutzer,sev_mandat,beirat,sprache
-EIG-001,Herr,Marcus,Dowerg,,Ansgar-Davids-Platz 9890,43321,Saarbrücken,DE,marcus.dowerg@outlook.com,+49(0) 863794026,DE24100500002528809570,BYLADEM1001,EH-037;EH-032,False,True,False,de
+EIG-001,Herr,Marcus,Dowerg,,Ansgar-Davids-Platz 9890,43321,Saarbrücken,DE,marcus.dowerg@outlook.com,+49(0) 863794026,DE24100500002528809570,BYLADEM1001,EH-037,False,True,False,de
 EIG-002,Frau,Gertraud,Holsten,,Beyerweg 78-21,35116,Kaiserslautern,DE,gertraud.holsten@gmail.com,04959 31034,DE43100700001171822782,GENODEF1P01,EH-047;EH-033,True,False,False,de
 EIG-003,Herr,Arnulf,Heintze,,Tintzmannweg 39,64752,Jülich,DE,arnulf.heintze@gmail.com,03276 48350,DE85100701245787133150,GENODEF1P01,EH-025;EH-049,False,True,False,de
 EIG-004,Herr,Erdal,Beckmann,,Seifertstraße 442,64139,Freudenstadt,DE,erdal.beckmann@gmx.de,08496 96532,DE83100100105183473829,DEUTDEBB101,EH-043;EH-015,True,False,True,de
@@ -21,6 +21,7 @@ EIG-019,Frau,Mina,Textor,,Magda-Textor-Weg 40-28,76320,Magdeburg,DE,mina.textor@
 EIG-020,Herr,Ronald,Kelley,,774 Mary Harbor,10115,Berlin,US,ronald.kelley@icloud.com,001-487-434-7143x45581,DE64120300006936763201,PBNKDEFFXXX,EH-045,False,False,True,en
 EIG-021,Frau,Dörte,Kraus,,Marlies-Linke-Straße 9,31665,Lübeck,DE,doerte.kraus@gmx.de,0705466889,DE64100100107278895798,HYVEDEMMXXX,EH-039,False,False,False,de
 EIG-022,Herr,Tom,Hartmann,,Melissa-Mosemann-Platz 6,34670,Husum,DE,tom.hartmann@icloud.com,(09016) 272046,DE52100701244873471434,BYLADEM1001,EH-029,False,False,False,de
+EIG-036,Herr,Mahir,Isikli,,Donaustraße 44,12043,Berlin,DE,isiklimahir@gmail.com,,DE89370400440532013000,COBADEFFXXX,EH-032,False,False,False,de
 EIG-023,Herr,Gottlob,Hahn,,Karla-Reuter-Gasse 13/11,55646,Bogen,DE,gottlob.hahn@gmail.com,+49(0) 309232719,DE63100500003166587603,DEUTDEBB101,EH-040,True,False,False,de
 EIG-024,Herr,Willfried,Harloff,,Clara-Bauer-Ring 7-4,45299,Eberswalde,DE,willfried.harloff@yahoo.de,+49(0)9314 919058,DE72370400446688937346,COBADEFFXXX,EH-013,False,False,False,de
 EIG-025,Frau,Hiltrud,Speer,,Schusterallee 32-96,18506,Büsingen am Hochrhein,DE,hiltrud.speer@t-online.de,(04987) 76945,DE33100700008069901627,COBADEFFXXX,EH-003,False,False,False,de

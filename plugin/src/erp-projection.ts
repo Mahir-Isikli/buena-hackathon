@@ -62,16 +62,21 @@ export function invalidateErpProjectionCache(): void {
 }
 
 /**
- * Pre-warm the cache for a property so the next file open renders without a
- * round trip. Safe to call eagerly: a failed fetch is cached as null and
- * retries on the next TTL window.
+ * Fetch (or reuse) the ERP snapshot for a property. Public because main.ts
+ * uses it to drive both the inline `@EIG-001` chip resolver (ErpStore) and
+ * the projection cache from a single shared fetch path.
+ *
+ * Returns the snapshot or null if D1 doesn't have it yet.
  */
-export async function prewarmErpProjection(
+export async function loadErpForProperty(
   plugin: BuenaPlugin,
   propertyId: string
-): Promise<void> {
-  await getCachedSnapshot(plugin, propertyId);
+): Promise<RemoteErpSnapshot | null> {
+  return getCachedSnapshot(plugin, propertyId);
 }
+
+/** Back-compat alias kept for any other call sites. */
+export const prewarmErpProjection = loadErpForProperty;
 
 export function registerErpProjectionProcessor(plugin: BuenaPlugin): void {
   plugin.registerMarkdownPostProcessor(async (el) => {

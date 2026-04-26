@@ -1,16 +1,11 @@
 {
   "schema_version": 1,
   "property_id": "LIE-001",
-  "human_edited_sections": [
-    "Open issues",
-    "🏛️ Identity",
-    "👥 Owners",
-    "🔧 Service providers"
-  ],
-  "last_updated": "2026-04-25T22:41:04.710Z",
   "name": "WEG Immanuelkirchstraße 26",
   "address": "Immanuelkirchstraße 26, 10405 Berlin",
   "verwalter": "Huber & Partner Immobilienverwaltung GmbH",
+  "last_updated": "2026-04-26T09:53:31.454Z",
+  "human_edited_sections": [],
   "sections": {
     "identity": {
       "facts": [
@@ -19,7 +14,7 @@
           "provenance": "stammdaten/stammdaten.json",
           "actor": "bootstrap",
           "confidence": 1,
-          "ts": "2026-04-25T21:45:33.776728+00:00"
+          "ts": "2026-04-26T09:13:24.428331+00:00"
         }
       ]
     },
@@ -42,34 +37,19 @@
           "provenance": "stammdaten/stammdaten.json",
           "actor": "bootstrap",
           "confidence": 1,
-          "ts": "2026-04-25T21:45:33.776728+00:00"
+          "ts": "2026-04-26T09:13:24.428331+00:00"
         },
         {
           "text": "Rücklage: DE12 1203 0000 0098 7654 32",
           "provenance": "stammdaten/stammdaten.json",
           "actor": "bootstrap",
           "confidence": 1,
-          "ts": "2026-04-25T21:45:33.776728+00:00"
+          "ts": "2026-04-26T09:13:24.428331+00:00"
         }
       ]
     },
     "active_issues": {
-      "facts": [
-        {
-          "text": "EH-029: Heißwasser-Defekt besteht weiterhin, der Mieter mindert seit dem 15.01.2026 die Miete um 10 Prozent.",
-          "provenance": "r2://buena-raw/emails/CAJ9sWTtUYhTymsJ_kK70nm5gAv9O1hgdoNy8EU66UgVoMuwfzQ@mail.gmail.com.eml",
-          "actor": "gemini-3-pro",
-          "confidence": 0.98,
-          "ts": "2026-04-25T20:02:04.911Z"
-        },
-        {
-          "text": "HAUS-12: Aufzug weiterhin defekt, Reparaturtermin ist für den 28.04.2026 angesetzt.",
-          "provenance": "r2://buena-raw/emails/CAJ9sWTsTxdGW265k2eyT+rkxLAmpfvNqw2Xt=rmPQVFy0dxU0A@mail.gmail.com.eml",
-          "actor": "gemini-3-pro",
-          "confidence": 0.95,
-          "ts": "2026-04-25T19:57:45.199Z"
-        }
-      ]
+      "facts": []
     },
     "mahnungen": {
       "facts": []

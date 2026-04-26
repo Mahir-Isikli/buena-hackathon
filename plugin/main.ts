@@ -6,11 +6,11 @@ import { registerPropertyHeaderProcessor } from "./src/property-header";
 import { registerHumanEditTracking } from "./src/human-edits";
 import { registerUnitsCollapseProcessor } from "./src/units-collapse";
 import { registerPendingInlineProcessor } from "./src/pending-inline";
-import { initErpStore, watchErpFile } from "./src/erp";
+import { initErpStore, ErpData } from "./src/erp";
 import {
   registerErpProjectionProcessor,
   invalidateErpProjectionCache,
-  prewarmErpProjection,
+  loadErpForProperty,
 } from "./src/erp-projection";
 import { BuenaStatusBar } from "./src/statusbar";
 import { BuenaSettingTab, DEFAULT_SETTINGS, BuenaSettings } from "./src/settings";
@@ -19,15 +19,35 @@ import {
   EventClient,
   fetchHistory,
   fetchPending,
+  fetchPropertyMd,
+  fetchStateJson,
+  fetchVaults,
   RemoteHistoryEntry,
   RemotePendingPatch,
+  RemoteVaultSummary,
 } from "./src/api";
-import { pullPendingOnce, pullPropertySnapshotOnce } from "./src/sync";
+import {
+  applyPropertySnapshotToVault,
+  pullPendingOnce,
+  pullPropertySnapshotOnce,
+} from "./src/sync";
+
+interface PropertySnapshot {
+  propertyId: string;
+  propertyMd: string | null;
+  state: Record<string, unknown> | null;
+  pending: RemotePendingPatch[];
+  history: RemoteHistoryEntry[];
+  fetchedAt: number;
+}
 
 export default class BuenaPlugin extends Plugin {
   settings: BuenaSettings = DEFAULT_SETTINGS;
   statusBar!: BuenaStatusBar;
   pendingCache: RemotePendingPatch[] = [];
+  /** All known properties + their full snapshot, keyed by propertyId. */
+  propertyCache = new Map<string, PropertySnapshot>();
+  vaultsList: RemoteVaultSummary[] = [];
   private eventClient: EventClient | null = null;
 
   async onload() {
@@ -46,13 +66,13 @@ export default class BuenaPlugin extends Plugin {
     this.statusBar.mount();
     this.statusBar.setConnected(false);
 
-    // ERP store: load erp.json and watch it for changes
-    const erpStore = initErpStore(this.app);
-    await erpStore.load();
-    const unwatch = watchErpFile(this.app, () => {
-      erpStore.load().catch((err) => console.warn("[Buena] erp reload failed", err));
-    });
-    this.register(unwatch);
+    // ERP store: in-memory cache of D1-backed master data. Hydrated on plugin
+    // load with the current property and re-hydrated on property switch via
+    // refreshErpStore. We no longer read a vault-local erp.json — D1 is the
+    // single source of truth, and a stale local file would only cause
+    // confusing chip mismatches.
+    initErpStore();
+    void this.refreshErpStore(this.settings.propertyId);
 
     // Provenance hover popovers
     registerProvenanceProcessor(this);
@@ -95,7 +115,8 @@ export default class BuenaPlugin extends Plugin {
         }
 
         // Pre-warm the ERP snapshot for whatever property IDs the file
-        // references via `{{erp.foo(LIE-XXX)}}` placeholders.
+        // references via `{{erp.foo(LIE-XXX)}}` placeholders. This drives
+        // both the projection tables and the inline @ID chip resolver.
         void this.app.vault
           .read(file)
           .then((text) => {
@@ -104,7 +125,13 @@ export default class BuenaPlugin extends Plugin {
             let m: RegExpExecArray | null;
             while ((m = re.exec(text)) !== null) ids.add(m[1]);
             for (const id of ids) {
-              void prewarmErpProjection(this, id);
+              void loadErpForProperty(this, id).then((snap) => {
+                // If this file's primary property is the currently active
+                // one, mirror its data into ErpStore so chips resolve.
+                if (snap && id === this.settings.propertyId) {
+                  this.applyErpSnapshotToStore(snap.erp);
+                }
+              });
             }
           })
           .catch(() => {
@@ -152,6 +179,7 @@ export default class BuenaPlugin extends Plugin {
           this.statusBar.setPendingCount(total);
           await this.cachePending();
           invalidateErpProjectionCache();
+          await this.refreshErpStore(this.settings.propertyId);
           await this.refreshSidebarViews();
           new Notice(`[Buena] synced property + state, queue refreshed (${total} pending)`);
         } catch (err) {
@@ -171,7 +199,9 @@ export default class BuenaPlugin extends Plugin {
     // Settings tab
     this.addSettingTab(new BuenaSettingTab(this.app, this));
 
-    // Dedupe any stale Buena leaves, pull the latest property snapshot, then start live sync.
+    // Dedupe any stale Buena leaves, refresh the active property fast,
+    // then prefetch every other property in the background so subsequent
+    // switches are instant cache hits.
     this.app.workspace.onLayoutReady(() => {
       const leaves = this.app.workspace.getLeavesOfType(BUENA_SIDEBAR_VIEW_TYPE);
       for (let i = 1; i < leaves.length; i++) {
@@ -179,15 +209,20 @@ export default class BuenaPlugin extends Plugin {
       }
       void (async () => {
         try {
-          await pullPropertySnapshotOnce(this);
-          const { total } = await pullPendingOnce(this);
-          this.statusBar.setPendingCount(total);
-          await this.cachePending();
-          await this.refreshSidebarViews();
+          const active = this.settings.propertyId;
+          if (active) {
+            const fresh = await this.refreshPropertyCache(active);
+            if (fresh) await this.applyPropertySnapshot(fresh);
+          }
         } catch (err) {
           console.warn("[Buena] initial pull failed", err);
         } finally {
           this.startLiveSync();
+          // Background fan-out — populates cache for every property in /vaults
+          // so the picker and auto-switch hit a warm cache.
+          void this.prefetchAllProperties().catch((err) =>
+            console.warn("[Buena] background prefetch failed", err)
+          );
         }
       })();
     });
@@ -273,10 +308,12 @@ export default class BuenaPlugin extends Plugin {
 
   /**
    * Bind the plugin to a different property.
-   * All four remote reads (property.md, state.json, pending, history) run in
-   * one Promise.all batch so the switch finishes in roughly the time of the
-   * slowest single request, not their sum. SSE reconnects last and does not
-   * block the UI update.
+   *
+   * Cache-first: if we already have a snapshot for the target in
+   * `propertyCache`, apply it instantly (no network) and kick off a background
+   * refresh so the cache stays warm. If there's no snapshot yet (first switch
+   * to this property since plugin load), fetch on demand.
+   *
    * Idempotent: no-op if newId is empty or already the active property.
    */
   async switchProperty(newId: string): Promise<void> {
@@ -284,26 +321,24 @@ export default class BuenaPlugin extends Plugin {
     if (!target || target === this.settings.propertyId) return;
     const prev = this.settings.propertyId;
     this.settings.propertyId = target;
-    // Clear explicit propertyFile so resolution falls back to frontmatter.
     this.settings.propertyFile = "";
     await this.saveSettings();
     invalidateErpProjectionCache();
+
+    const cached = this.propertyCache.get(target);
     try {
-      const [, pending, history] = await Promise.all([
-        pullPropertySnapshotOnce(this),
-        fetchPending(this.settings).catch((err) => {
-          console.warn("[Buena] fetchPending failed during switch", err);
-          return [] as RemotePendingPatch[];
-        }),
-        fetchHistory(this.settings).catch((err) => {
-          console.warn("[Buena] fetchHistory failed during switch", err);
-          return [] as RemoteHistoryEntry[];
-        }),
-      ]);
-      this.setPendingCache(pending);
-      this.statusBar.setPendingCount(pending.length);
-      await this.refreshSidebarViews({ pending, history });
-      // Fire and forget — the new SSE stream's onReady will refresh again.
+      if (cached) {
+        await this.applyPropertySnapshot(cached);
+        // Refresh in the background so the next switch is still warm.
+        void this.refreshPropertyCache(target).then((fresh) => {
+          if (fresh && this.settings.propertyId === target) {
+            void this.applyPropertySnapshot(fresh);
+          }
+        });
+      } else {
+        const fresh = await this.refreshPropertyCache(target);
+        if (fresh) await this.applyPropertySnapshot(fresh);
+      }
       this.restartLiveSync();
     } catch (err) {
       console.error("[Buena] switchProperty failed", err);
@@ -311,6 +346,98 @@ export default class BuenaPlugin extends Plugin {
       await this.saveSettings();
       new Notice(`[Buena] switch to ${target} failed: ${err}`);
     }
+  }
+
+  /**
+   * Apply a snapshot to the active vault + UI. Pure local I/O, no network.
+   * Safe to call repeatedly — vault writes are idempotent (only write if
+   * content changed) and the sidebar render is cheap.
+   */
+  private async applyPropertySnapshot(s: PropertySnapshot): Promise<void> {
+    if (s.propertyId !== this.settings.propertyId) return;
+    await applyPropertySnapshotToVault(this, s.propertyMd, s.state);
+    this.setPendingCache(s.pending);
+    this.statusBar.setPendingCount(s.pending.length);
+    await this.refreshSidebarViews({ pending: s.pending, history: s.history });
+    // ERP for the active property always trails the snapshot, so chips and
+    // the directory render against the matching dataset.
+    void this.refreshErpStore(s.propertyId);
+  }
+
+  /**
+   * Pull the ERP snapshot for `propertyId` from D1 (via the projection cache)
+   * and feed it into ErpStore so inline `@EIG-001` chips and the sidebar
+   * directory resolve. Idempotent and safe to call concurrently.
+   */
+  async refreshErpStore(propertyId: string): Promise<void> {
+    if (!propertyId) return;
+    try {
+      const snap = await loadErpForProperty(this, propertyId);
+      if (!snap) return;
+      // Only mirror if this is still the active property; switching mid-fetch
+      // would leak stale rows otherwise.
+      if (this.settings.propertyId !== propertyId) return;
+      this.applyErpSnapshotToStore(snap.erp);
+    } catch (err) {
+      console.warn("[Buena] refreshErpStore failed for", propertyId, err);
+    }
+  }
+
+  /** Type-bridge: the worker returns a Record<string,Record<...>> shape that
+   * maps cleanly onto our internal ErpData. Shaped this way to keep the cast
+   * isolated to one place. */
+  applyErpSnapshotToStore(
+    erp: import("./src/api").RemoteErpSnapshot["erp"]
+  ): void {
+    const store = initErpStore();
+    store.setData(erp as unknown as ErpData);
+  }
+
+  /**
+   * Fetch all four remote pieces (property.md, state.json, pending, history)
+   * for `propertyId` in one Promise.all burst, store in cache, return the
+   * snapshot.
+   */
+  async refreshPropertyCache(propertyId: string): Promise<PropertySnapshot | null> {
+    const settings = { ...this.settings, propertyId };
+    try {
+      const [propertyMd, state, pending, history] = await Promise.all([
+        fetchPropertyMd(settings).catch(() => null),
+        fetchStateJson(settings).catch(() => null),
+        fetchPending(settings).catch(() => [] as RemotePendingPatch[]),
+        fetchHistory(settings).catch(() => [] as RemoteHistoryEntry[]),
+      ]);
+      const snapshot: PropertySnapshot = {
+        propertyId,
+        propertyMd,
+        state,
+        pending,
+        history,
+        fetchedAt: Date.now(),
+      };
+      this.propertyCache.set(propertyId, snapshot);
+      return snapshot;
+    } catch (err) {
+      console.warn("[Buena] refreshPropertyCache failed for", propertyId, err);
+      return null;
+    }
+  }
+
+  /**
+   * On plugin load, fan out a fetch for every known property so subsequent
+   * switches hit a warm cache. Runs in the background — not awaited.
+   */
+  async prefetchAllProperties(): Promise<void> {
+    let vaults: RemoteVaultSummary[] = [];
+    try {
+      vaults = await fetchVaults(this.settings);
+    } catch (err) {
+      console.warn("[Buena] prefetch fetchVaults failed", err);
+      return;
+    }
+    this.vaultsList = vaults;
+    if (vaults.length === 0) return;
+    await Promise.all(vaults.map((v) => this.refreshPropertyCache(v.id)));
   }
 
   setPendingCache(items: RemotePendingPatch[]) {
@@ -352,10 +479,12 @@ export default class BuenaPlugin extends Plugin {
       this.statusBar.markPatchReceived();
       this.statusBar.bumpPendingCount(1);
       new Notice(`[Buena] new patch: ${patch.section}`);
-      this.setPendingCache([
+      const next = [
         ...this.pendingCache.filter((p) => p.id !== patch.id),
         patch,
-      ]);
+      ];
+      this.setPendingCache(next);
+      this.updateCachedPending(this.settings.propertyId, next);
       await this.refreshSidebarViews();
     } catch (err) {
       console.error("[Buena] handleIncomingPatch failed", err);
@@ -365,11 +494,25 @@ export default class BuenaPlugin extends Plugin {
   private async handleRemoteRemoval(id: string) {
     try {
       this.statusBar.bumpPendingCount(-1);
-      this.setPendingCache(this.pendingCache.filter((p) => p.id !== id));
+      const next = this.pendingCache.filter((p) => p.id !== id);
+      this.setPendingCache(next);
+      this.updateCachedPending(this.settings.propertyId, next);
       await this.refreshSidebarViews();
     } catch (err) {
       console.error("[Buena] handleRemoteRemoval failed", err);
     }
+  }
+
+  /** Keep the cached snapshot's pending list in sync with live SSE deltas. */
+  private updateCachedPending(propertyId: string, pending: RemotePendingPatch[]) {
+    if (!propertyId) return;
+    const existing = this.propertyCache.get(propertyId);
+    if (!existing) return;
+    this.propertyCache.set(propertyId, {
+      ...existing,
+      pending,
+      fetchedAt: Date.now(),
+    });
   }
 
   private async refreshSidebarViews(prefetched?: {

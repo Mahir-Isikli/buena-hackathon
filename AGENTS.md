@@ -673,6 +673,20 @@ Everything a human reads, in the plugin, in the Worker, in the bulk-import page,
 
 Before the Loom, do one read-aloud pass over every visible string. Anything that sounds like SaaS boilerplate gets rewritten.
 
+### 4. Plugin visual style, locked
+
+The Obsidian sidebar and the property markdown share one rounded surface family. Don't drift from it without checking with Mahir first.
+
+- **Cards** (queue cards, history table card, statusbar, inbox card on the property md): `border-radius: 16px`, `1px solid #d6d3d1`, white fill, soft `0 4px 6px -1px rgba(0,0,0,0.03)` shadow, inset 20px from the sidebar edges.
+- **Pills and chips** (filter chips, source pill, confidence pill, unit pill, decision pill, "Go to section", inbox copy button, ERP refs): `border-radius: 999px`, single 1px border, no double-border (no extra `box-shadow`). When the chip is `.buena-chip-conflict`, the border must be visible against its tinted fill — use `#fdba74` not `#ffedd5`.
+- **Approve / Reject buttons in queue cards**: 28px circular icon-only buttons. Approve is filled black with white check; Reject is soft neutral grey with dark x. They sit pinned to the bottom-right of the card; no full-width rectangles.
+- **Header wordmark**: Kontext SVG mark (`.buena-kontext-mark`, inline 16×20 in `currentColor` black) + 1px vertical divider + "Buena" (18px / 700, NOT italic — `font-style: normal` enforced) + 1px vertical divider + the property name. No "Kontext" text label, no ".haus", no pill-wrap, no green tint. The mark glyph lives inline in `plugin/src/sidebar.ts` (paths copied from `kontext_logo.svg`); keep `currentColor` so it picks up the wordmark color. The property name is plain monospace inline text in muted grey (`#4A4744`), no pill/background. Header padding: `28px 28px 20px`, title-row gap `20px`, wordmark gap `14px`.
+- **Diff (pending cards)**: old value muted grey + line-through; new value black with a soft butter-yellow highlighter band (`#fff3b0`, `border-radius: 4px`, `box-decoration-break: clone`). When there's no old value, swap the highlighter to soft mint (`#ecfdf5`).
+- **Hover popovers**: 16px radius, `#d6d3d1` border. Inline mono badges inside are 999px pills; the email-body preview block is 10px radius. Never set both a native `title` and an `attachHoverPopover` on the same element — pick one.
+- **Property markdown inbox card**: 16px radius, no inset left accent stripe, material-style outline SVG icon (not emoji), copy button is a 999px pill. Live in `plugin/src/property-header.ts` + `.buena-inbox-card*` styles.
+
+The V19 override block at the bottom of `plugin/styles.css` is the source of truth for these. Older rules earlier in the file may contradict — V19 wins by cascade order.
+
 ---
 
 ## Anti-patterns to avoid

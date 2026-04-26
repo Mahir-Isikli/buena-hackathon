@@ -8,6 +8,24 @@
  *   vaults/<propertyId>/history/<ts>.json   -> HistoryEntry
  */
 
+export interface SenderInfo {
+  email?: string;
+  name?: string;
+  erpId?: string;
+  role?: "owner" | "tenant" | "provider" | "unknown";
+  unitIds?: string[];
+}
+
+export interface SourceMeta {
+  kind: "email" | "bulk" | "unknown";
+  filename?: string;
+  mimeType?: string;
+  subject?: string;
+  receivedAt?: string;
+  recipient?: string;
+  note?: string;
+}
+
 export interface PendingPatch {
   id: string;
   section: string;
@@ -21,6 +39,8 @@ export interface PendingPatch {
   target_heading: string;
   new_block: string;
   addedAt: string;
+  sender?: SenderInfo;
+  sourceMeta?: SourceMeta;
 }
 
 export interface HistoryEntry {
@@ -34,6 +54,8 @@ export interface HistoryEntry {
   timestamp: string;
   actor: string;
   reason?: string;
+  sender?: SenderInfo;
+  sourceMeta?: SourceMeta;
 }
 
 export interface StateJson {
@@ -157,6 +179,54 @@ export async function writeStateJson(
   });
 }
 
+export interface VaultSummary {
+  id: string;
+  name?: string;
+  address?: string;
+  verwalter?: string;
+  last_updated?: string;
+}
+
+/**
+ * List every vault under vaults/<id>/state.json, returning lightweight metadata
+ * for property pickers. State is small JSON, listing 100s of vaults is cheap.
+ */
+export async function listVaults(bucket: R2Bucket): Promise<VaultSummary[]> {
+  const out: VaultSummary[] = [];
+  let cursor: string | undefined = undefined;
+  do {
+    const page = await bucket.list({ prefix: "vaults/", cursor, limit: 1000 });
+    for (const obj of page.objects) {
+      // We only care about state.json files; skip everything else.
+      if (!obj.key.endsWith("/state.json")) continue;
+      const m = obj.key.match(/^vaults\/([^/]+)\/state\.json$/);
+      if (!m) continue;
+      const id = m[1];
+      try {
+        const file = await bucket.get(obj.key);
+        if (!file) continue;
+        const parsed = JSON.parse(await file.text()) as StateJson & {
+          name?: string;
+          address?: string;
+          verwalter?: string;
+        };
+        out.push({
+          id,
+          name: parsed.name,
+          address: parsed.address,
+          verwalter: parsed.verwalter,
+          last_updated: parsed.last_updated,
+        });
+      } catch (err) {
+        console.warn("[buena] failed to read state.json for", id, err);
+        out.push({ id });
+      }
+    }
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  return out.sort((a, b) => a.id.localeCompare(b.id));
+}
+
 export async function markHumanEditedSections(
   bucket: R2Bucket,
   propertyId: string,
@@ -212,18 +282,20 @@ export async function applyApprovedPatchToPropertyMd(
   return { applied: true, markdown: next };
 }
 
-function annotateApprovedBlock(patch: PendingPatch, approvedAt: string): string {
+function annotateApprovedBlock(patch: PendingPatch, _approvedAt: string): string {
   const sourceRef = normalizeSourceRef(patch.source);
   const prov = sourceRef
     ? ` {prov: ${sourceRef}${typeof patch.confidence === "number" ? ` | conf: ${patch.confidence}` : ""} | actor: ${patch.actor}}`
     : "";
-  const changed = ` {changed: ${approvedAt} | actor: ${patch.actor}${sourceRef ? ` | src: ${sourceRef}` : ""}}`;
-  return `${patch.new_block}${prov}${changed}`;
+  return `${patch.new_block}${prov}`;
 }
 
 function normalizeSourceRef(source?: string): string | undefined {
   if (!source) return undefined;
-  return source.replace(/^r2:\/\/buena-raw\//, "").trim();
+  const stripped = source.replace(/^r2:\/\/buena-raw\//, "").trim();
+  // Encode `@` so Obsidian doesn't autolink the source as an email address.
+  // The plugin decodes this before opening the underlying R2 object.
+  return stripped.replace(/@/g, "%40");
 }
 
 export async function readHistory(

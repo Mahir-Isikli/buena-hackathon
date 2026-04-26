@@ -36,7 +36,6 @@ import {
   readStateJson,
   removePending,
   stateKey,
-  writeErpJson,
   writeHistory,
   writePending,
   writePropertyMd,
@@ -283,7 +282,6 @@ export async function handleHttp(
     await Promise.all([
       writePropertyMd(env.VAULTS, propertyId, bootstrap.markdown),
       writeStateJson(env.VAULTS, propertyId, bootstrap.state),
-      writeErpJson(env.VAULTS, propertyId, bootstrap.erp),
     ]);
 
     // Optional: stash the original zip in RAW for traceability.

@@ -17,9 +17,15 @@ export interface HoverField {
 let activePopover: HTMLElement | null = null;
 let activeHideTimer: number | null = null;
 
+export interface HoverPreview {
+  load: () => Promise<string>;
+  title?: string;
+}
+
 export function attachHoverPopover(
   trigger: HTMLElement,
-  buildFields: () => HoverField[]
+  buildFields: () => HoverField[],
+  preview?: HoverPreview
 ) {
   const clearHideTimer = () => {
     if (activeHideTimer !== null) {
@@ -52,6 +58,31 @@ export function attachHoverPopover(
         text: f.value,
         cls: "buena-popover-value" + (f.mono ? " buena-popover-mono" : ""),
       });
+    }
+
+    if (preview) {
+      const previewBlock = pop.createDiv({ cls: "buena-popover-preview" });
+      if (preview.title) {
+        previewBlock.createDiv({ text: preview.title, cls: "buena-popover-preview-title" });
+      }
+      const body = previewBlock.createDiv({
+        text: "Loading…",
+        cls: "buena-popover-preview-body",
+      });
+      pop.addClass("buena-popover-has-preview");
+      const myPop = pop;
+      preview
+        .load()
+        .then((text) => {
+          if (activePopover !== myPop) return;
+          body.setText(text || "(empty)");
+          position(myPop, trigger);
+        })
+        .catch((err) => {
+          if (activePopover !== myPop) return;
+          body.setText(`Couldn't load source: ${err?.message ?? err}`);
+          body.addClass("buena-popover-preview-error");
+        });
     }
 
     pop.addEventListener("mouseenter", clearHideTimer);

@@ -286,8 +286,18 @@ function normalizeHeading(s: string): string {
 }
 
 /**
- * Open the file in the active leaf (or focus an existing view) and scroll
- * to the given line.
+ * Reveal a line of `filePath` in a markdown leaf. Works whether the click
+ * originated from the sidebar (where `getActiveViewOfType(MarkdownView)`
+ * returns null) or from the editor itself, and works in both Reading and
+ * Edit modes.
+ *
+ * Strategy:
+ *   1. Prefer an existing markdown leaf already showing the file.
+ *   2. Fall back to any markdown leaf and load the file there.
+ *   3. Fall back to opening a new tab in the main (root) area.
+ *
+ * Using `getLeaf(false)` directly is wrong when called from the sidebar:
+ * the active leaf is the sidebar pane itself, which can't host markdown.
  */
 export async function revealLineInActiveView(
   app: App,
@@ -297,18 +307,35 @@ export async function revealLineInActiveView(
   const file = app.vault.getAbstractFileByPath(filePath);
   if (!(file instanceof TFile)) return;
 
-  let view = app.workspace.getActiveViewOfType(MarkdownView);
-  if (!view || view.file?.path !== file.path) {
-    const leaf = app.workspace.getLeaf(false);
-    await leaf.openFile(file);
-    view = app.workspace.getActiveViewOfType(MarkdownView);
-  }
-  if (!view) return;
+  const mdLeaves = app.workspace.getLeavesOfType("markdown");
+  let target = mdLeaves.find((leaf) => {
+    const v = leaf.view;
+    return v instanceof MarkdownView && v.file?.path === file.path;
+  });
 
-  const editor = view.editor;
-  editor.setCursor({ line, ch: 0 });
-  editor.scrollIntoView(
-    { from: { line, ch: 0 }, to: { line, ch: 0 } },
-    /* center */ true
-  );
+  if (!target) {
+    target = mdLeaves[0] ?? app.workspace.getLeaf("tab");
+    await target.openFile(file);
+  }
+
+  app.workspace.setActiveLeaf(target, { focus: true });
+
+  const view = target.view;
+  if (!(view instanceof MarkdownView)) return;
+
+  // Works for both Reading and Live Preview / Edit modes.
+  view.setEphemeralState({ line, scroll: line });
+
+  // Belt-and-braces: drive the editor too, so Edit mode places the cursor
+  // and re-centers if the user is already there.
+  try {
+    const editor = view.editor;
+    editor.setCursor({ line, ch: 0 });
+    editor.scrollIntoView(
+      { from: { line, ch: 0 }, to: { line, ch: 0 } },
+      /* center */ true
+    );
+  } catch {
+    /* editor methods are no-ops in Reading mode */
+  }
 }

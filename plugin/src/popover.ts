@@ -39,7 +39,7 @@ export function registerProvenanceProcessor(plugin: BuenaPlugin) {
           index: m.index,
           raw: m[0],
           fields: provFields(prov),
-          label: "src",
+          label: sourcePillLabel(prov.source),
           className: "buena-prov-pill",
           source: prov.source,
         });
@@ -77,7 +77,7 @@ export function registerProvenanceProcessor(plugin: BuenaPlugin) {
           index: m.index,
           raw: m[0],
           fields: provFields(prov),
-          label: "src",
+          label: sourcePillLabel(prov.source),
           className: "buena-prov-pill",
           source: prov.source,
         });
@@ -106,13 +106,14 @@ export function registerProvenanceProcessor(plugin: BuenaPlugin) {
         pill.type = "button";
         pill.className = m.className;
         pill.textContent = m.label;
+        pill.dataset.kind = m.label;
         attachHoverPopover(pill, () => m.fields);
         if (m.kind === "prov" && m.source) {
           pill.title = "Open source";
           pill.addEventListener("click", (ev) => {
             ev.preventDefault();
             ev.stopPropagation();
-            void openProvenanceSource(plugin, m.source!);
+            void openProvenanceSource(plugin, decodeSource(m.source!));
           });
         }
         if (m.recent) {
@@ -159,7 +160,7 @@ interface ChangedData {
 }
 
 function provFields(p: ProvData): HoverField[] {
-  const fields: HoverField[] = [{ label: "Source", value: p.source, mono: true }];
+  const fields: HoverField[] = [{ label: "Source", value: sourceSummary(p.source), mono: true }];
   if (typeof p.confidence === "number") {
     fields.push({ label: "Confidence", value: `${(p.confidence * 100).toFixed(0)}%` });
   }
@@ -185,8 +186,30 @@ function changedFields(c: ChangedData): HoverField[] {
   const fields: HoverField[] = [{ label: "Changed", value: timeAgo(c.when) }];
   if (c.from) fields.push({ label: "Was", value: c.from });
   if (c.actor) fields.push({ label: "Actor", value: c.actor });
-  if (c.source) fields.push({ label: "Source", value: c.source, mono: true });
+  if (c.source) fields.push({ label: "Source", value: sourceSummary(c.source), mono: true });
   return fields;
+}
+
+function sourcePillLabel(source: string): string {
+  const summary = sourceSummary(source).toLowerCase();
+  if (summary.endsWith(".eml")) return "email";
+  if (summary.endsWith(".pdf")) return "pdf";
+  if (summary.endsWith(".png") || summary.endsWith(".jpg") || summary.endsWith(".jpeg") || summary.endsWith(".webp")) {
+    return "image";
+  }
+  return "src";
+}
+
+function sourceSummary(source: string): string {
+  return decodeSource(source.replace(/^r2:\/\/buena-raw\//, "").trim());
+}
+
+function decodeSource(source: string): string {
+  try {
+    return source.replace(/%40/gi, "@");
+  } catch {
+    return source;
+  }
 }
 
 function isRecent(when: string): boolean {

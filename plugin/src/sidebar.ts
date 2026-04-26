@@ -1,6 +1,7 @@
 import {
   ItemView,
   MarkdownView,
+  Menu,
   Notice,
   parseYaml,
   setIcon,
@@ -9,7 +10,7 @@ import {
 } from "obsidian";
 import type BuenaPlugin from "../main";
 import { attachHoverPopover, HoverField } from "./hover";
-import { openProvenanceSource } from "./provenance-open";
+import { isPreviewableSource, loadSourcePreview, openProvenanceSource } from "./provenance-open";
 import {
   addHistoryEntry,
   HistoryEntry,
@@ -25,13 +26,34 @@ import {
 import {
   fetchHistory,
   fetchPending,
+  fetchVaults,
   postDecision,
+  RemoteHistoryEntry,
   RemotePendingPatch,
+  type RemoteVaultSummary,
 } from "./api";
 import { pullPendingOnce, resolvePropertyFile, pullPropertySnapshotOnce } from "./sync";
 import { getErpStore } from "./erp";
 
 export const BUENA_SIDEBAR_VIEW_TYPE = "buena-sidebar";
+
+interface SenderInfo {
+  email?: string;
+  name?: string;
+  erpId?: string;
+  role?: "owner" | "tenant" | "provider" | "unknown";
+  unitIds?: string[];
+}
+
+interface SourceMeta {
+  kind?: "email" | "bulk" | "unknown";
+  filename?: string;
+  mimeType?: string;
+  subject?: string;
+  receivedAt?: string;
+  recipient?: string;
+  note?: string;
+}
 
 interface PendingPatch {
   id: string;
@@ -46,6 +68,8 @@ interface PendingPatch {
   receivedAt?: string;
   target_heading?: string;
   new_block?: string;
+  sender?: SenderInfo;
+  sourceMeta?: SourceMeta;
 }
 
 type SidebarTab = "queue" | "history";
@@ -55,7 +79,7 @@ export class BuenaSidebarView extends ItemView {
   private pending: PendingPatch[] = [];
   private history: HistoryEntry[] = [];
   private currentFile: TFile | null = null;
-  // Filter modes: "__all__" | "__review__" | "unit:<EH-XXX>"
+  // Filter modes: "__all__" | "__conflict__" | "scope:unit" | "scope:building" | "scope:provider"
   private filter: string = "__all__";
   private activeTab: SidebarTab = "queue";
   // History table sort
@@ -99,7 +123,10 @@ export class BuenaSidebarView extends ItemView {
     this.contentEl.empty();
   }
 
-  async refresh() {
+  async refresh(prefetched?: {
+    pending?: RemotePendingPatch[];
+    history?: RemoteHistoryEntry[];
+  }): Promise<void> {
     const resolvedFile = await resolvePropertyFile(this.app, this.plugin);
     const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
     const activeFile = activeView?.file ?? null;
@@ -114,17 +141,28 @@ export class BuenaSidebarView extends ItemView {
       this.currentFile = null;
     }
 
-    this.pending = await this.loadPending(this.currentFile);
+    if (prefetched?.pending) {
+      this.plugin.setPendingCache(prefetched.pending);
+      this.pending = prefetched.pending
+        .map((patch) => this.fromRemotePending(patch))
+        .sort(comparePendingByRecency);
+    } else {
+      this.pending = await this.loadPending(this.currentFile);
+    }
+
     if (this.currentFile) {
-      const local = await loadHistory(this.plugin, this.currentFile.path);
-      let remote = [] as Awaited<ReturnType<typeof fetchHistory>>;
-      if (this.plugin.settings.workerUrl) {
-        try {
-          remote = await fetchHistory(this.plugin.settings);
-        } catch (err) {
-          console.warn("[Buena] remote history fetch failed", err);
-        }
-      }
+      // Local history is fast (plugin data), do it in parallel with the
+      // optional remote fetch.
+      const localPromise = loadHistory(this.plugin, this.currentFile.path);
+      const remotePromise = prefetched?.history
+        ? Promise.resolve(prefetched.history)
+        : this.plugin.settings.workerUrl
+          ? fetchHistory(this.plugin.settings).catch((err) => {
+              console.warn("[Buena] remote history fetch failed", err);
+              return [] as RemoteHistoryEntry[];
+            })
+          : Promise.resolve([] as RemoteHistoryEntry[]);
+      const [local, remote] = await Promise.all([localPromise, remotePromise]);
       this.history = mergeHistory(local, remote);
     } else {
       this.history = [];
@@ -139,6 +177,7 @@ export class BuenaSidebarView extends ItemView {
     if (this.plugin.settings.workerUrl) {
       try {
         const remote = await fetchPending(this.plugin.settings);
+        this.plugin.setPendingCache(remote);
         return remote
           .map((patch) => this.fromRemotePending(patch))
           .sort(comparePendingByRecency);
@@ -163,6 +202,8 @@ export class BuenaSidebarView extends ItemView {
       receivedAt: patch.addedAt,
       target_heading: patch.target_heading,
       new_block: patch.new_block,
+      sender: patch.sender,
+      sourceMeta: patch.sourceMeta,
     };
   }
 
@@ -206,12 +247,21 @@ export class BuenaSidebarView extends ItemView {
     const header = root.createDiv({ cls: "buena-sidebar-header" });
     const titleRow = header.createDiv({ cls: "buena-sidebar-title-row" });
     const wordmark = titleRow.createDiv({ cls: "buena-sidebar-wordmark" });
+    const kontextMark = wordmark.createSpan({ cls: "buena-kontext-mark", attr: { "aria-hidden": "true" } });
+    kontextMark.innerHTML = `<svg viewBox="0 0 315 394" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M104.5 170.152V248.257C104.5 252.617 108.034 256.152 112.394 256.152C114.684 256.152 116.861 255.157 118.361 253.426L190.5 170.152H313L212 271.152H95C63.5 268.485 0.5 244.552 0.5 170.152V28.5183L104.5 0.651611V170.152Z"/><path d="M0.5 170.152H104.5M0.5 170.152C0.5 244.552 63.5 268.485 95 271.152H212L313 170.152H190.5L118.361 253.426C116.861 255.157 114.684 256.152 112.394 256.152C108.034 256.152 104.5 252.617 104.5 248.257V170.152M0.5 170.152V28.5183L104.5 0.651611V170.152" stroke="currentColor"/><path d="M104.5 393.152H0.5C0.5 318.752 63.5 294.818 95 292.152H212L313 393.152H190.5L118.361 309.877C116.861 308.146 114.684 307.152 112.394 307.152C108.034 307.152 104.5 310.686 104.5 315.046V393.152Z" stroke="currentColor"/></svg>`;
+    wordmark.createSpan({ cls: "buena-wordmark-divider" });
     wordmark.createSpan({ text: "Buena", cls: "buena-wordmark-text" });
-    wordmark.createSpan({ text: "/", cls: "buena-wordmark-dot" });
-    titleRow.createEl("span", {
-      text: this.currentFile?.basename ?? this.plugin.settings.propertyId ?? "",
-      cls: "buena-sidebar-property",
+    titleRow.createSpan({ cls: "buena-wordmark-divider" });
+    const propertyPicker = titleRow.createEl("button", {
+      cls: "buena-sidebar-property buena-property-picker",
+      attr: { "aria-label": "Switch property" },
     });
+    propertyPicker.createSpan({
+      text: this.plugin.settings.propertyId || this.currentFile?.basename || "",
+      cls: "buena-property-picker-label",
+    });
+    setIcon(propertyPicker.createSpan({ cls: "buena-property-picker-caret" }), "chevron-down");
+    propertyPicker.onclick = (evt) => this.openPropertyPicker(evt);
     
     const syncBtn = header.createEl("button", {
       cls: "buena-sync-btn",
@@ -258,6 +308,50 @@ export class BuenaSidebarView extends ItemView {
     this.plugin.statusBar.attach(statusHost);
   }
 
+  private async openPropertyPicker(evt: MouseEvent): Promise<void> {
+    let vaults: RemoteVaultSummary[] = [];
+    try {
+      vaults = await fetchVaults(this.plugin.settings);
+    } catch (err) {
+      console.warn("[Buena] fetchVaults failed", err);
+      new Notice(`[Buena] could not load properties: ${err}`);
+      return;
+    }
+    const menu = new Menu();
+    const current = this.plugin.settings.propertyId;
+    if (vaults.length === 0) {
+      menu.addItem((item) => item.setTitle("No properties found").setDisabled(true));
+    } else {
+      for (const v of vaults) {
+        const label = v.name ? `${v.id} · ${v.name}` : v.id;
+        menu.addItem((item) => {
+          item.setTitle(label);
+          if (v.id === current) item.setIcon("check");
+          item.onClick(async () => {
+            if (v.id === current) return;
+            await this.switchProperty(v.id);
+          });
+        });
+      }
+    }
+    menu.addSeparator();
+    menu.addItem((item) =>
+      item.setTitle("Refresh property list").setIcon("refresh-cw").onClick(async () => {
+        await this.refresh();
+      })
+    );
+    menu.showAtMouseEvent(evt);
+  }
+
+  private async switchProperty(newId: string): Promise<void> {
+    if (newId === this.plugin.settings.propertyId) return;
+    new Notice(`[Buena] switching to ${newId}…`);
+    await this.plugin.switchProperty(newId);
+    if (this.plugin.settings.propertyId === newId) {
+      new Notice(`[Buena] switched to ${newId}`);
+    }
+  }
+
   private renderTab(
     parent: HTMLElement,
     id: SidebarTab,
@@ -282,13 +376,10 @@ export class BuenaSidebarView extends ItemView {
   // ---- Queue tab ------------------------------------------------------
 
   private renderQueueTab(content: HTMLElement) {
-    const units = uniqueUnits(this.pending);
-    const reviewCount = this.pending.filter(
-      (p) => p.confidence > 0 && p.confidence < 0.85
-    ).length;
-    if (this.filter.startsWith("unit:")) {
-      const u = this.filter.slice(5);
-      if (!units.includes(u)) this.filter = "__all__";
+    const counts = countByScope(this.pending);
+    // If the active filter no longer has any matching items, fall back to All.
+    if (this.filter !== "__all__" && filterCount(this.filter, counts) === 0) {
+      this.filter = "__all__";
     }
     const visiblePending = this.applyFilter(this.pending);
 
@@ -298,20 +389,19 @@ export class BuenaSidebarView extends ItemView {
 
     if (this.pending.length > 0) {
       const subhead = pendingSection.createDiv({ cls: "buena-subhead" });
-      const count = this.pending.length;
-      const noun = count === 1 ? "update" : "updates";
-      subhead.createSpan({
-        text: `${count} pending ${noun}`,
-        cls: "buena-subhead-text",
-      });
       const filters = subhead.createDiv({ cls: "buena-filter-chips" });
       this.renderChip(filters, "All", "__all__", this.pending.length);
-      if (reviewCount > 0) {
-        this.renderChip(filters, "Needs review", "__review__", reviewCount);
+      if (counts.conflict > 0) {
+        this.renderChip(filters, "Conflicts", "__conflict__", counts.conflict);
       }
-      for (const u of units) {
-        const countForUnit = this.pending.filter((p) => p.unit === u).length;
-        this.renderChip(filters, u, `unit:${u}`, countForUnit);
+      if (counts.unit > 0) {
+        this.renderChip(filters, "Units", "scope:unit", counts.unit);
+      }
+      if (counts.building > 0) {
+        this.renderChip(filters, "Buildings", "scope:building", counts.building);
+      }
+      if (counts.provider > 0) {
+        this.renderChip(filters, "Providers", "scope:provider", counts.provider);
       }
     }
 
@@ -390,7 +480,8 @@ export class BuenaSidebarView extends ItemView {
     this.renderHistoryHeader(headRow, "section", "Section");
     this.renderHistoryHeader(headRow, "unit", "Unit");
     headRow.createEl("th", { text: "What", cls: "buena-th" });
-    this.renderHistoryHeader(headRow, "decision", "Decision");
+    headRow.createEl("th", { text: "Source", cls: "buena-th" });
+    this.renderHistoryHeader(headRow, "decision", "Outcome");
     headRow.createEl("th", { text: "", cls: "buena-th buena-th-actions" });
 
     const tbody = table.createEl("tbody");
@@ -500,19 +591,52 @@ export class BuenaSidebarView extends ItemView {
       });
     }
 
+    // Source (own column)
+    const sourceTd = tr.createEl("td", { cls: "buena-td buena-td-source" });
+    if (h.source) {
+      const src = h.source;
+      const hSender = h.sender;
+      const hSourceMeta = h.sourceMeta;
+      const sourcePill = sourceTd.createEl("button", {
+        text: senderDisplayName(hSender) ?? sourceChipLabel(src),
+        cls: "buena-source-pill buena-source-pill-sm",
+      });
+      // No native title here — the custom hover popover shows the same info
+      // and we don't want both browser tooltip and popover firing at once.
+      attachHoverPopover(
+        sourcePill,
+        () =>
+          buildSourceFields(src, hSender, hSourceMeta, [
+            { label: "When", value: new Date(h.timestamp).toLocaleString() },
+          ]),
+        isPreviewableSource(src)
+          ? {
+              title: previewTitle(src),
+              load: () => loadSourcePreview(this.plugin, src),
+            }
+          : undefined
+      );
+      sourcePill.onclick = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        void openProvenanceSource(this.plugin, src);
+      };
+    }
+
     // Decision
     const decTd = tr.createEl("td", { cls: "buena-td buena-td-decision" });
     const pill = decTd.createSpan({
       cls: `buena-decision-pill buena-decision-${h.decision}`,
     });
-    setIcon(
-      pill.createSpan({ cls: "buena-decision-icon" }),
-      h.decision === "approved" ? "check" : h.decision === "rejected" ? "x" : "zap"
-    );
-    pill.createSpan({ 
-      text: h.decision.charAt(0).toUpperCase() + h.decision.slice(1), 
-      cls: "buena-decision-label" 
-    });
+    const iconName =
+      h.decision === "approved" ? "check" : h.decision === "rejected" ? "x" : "zap";
+    setIcon(pill.createSpan({ cls: "buena-decision-icon" }), iconName);
+    pill.title =
+      h.decision === "approved"
+        ? "Approved"
+        : h.decision === "rejected"
+        ? "Rejected"
+        : "Auto-applied";
 
     // Actions (hover-only)
     const actionsTd = tr.createEl("td", { cls: "buena-td buena-td-actions" });
@@ -530,21 +654,21 @@ export class BuenaSidebarView extends ItemView {
       };
     }
 
-    whatTd.addClass("buena-history-hover-target");
-    attachHoverPopover(whatTd, () => {
-      const fields: HoverField[] = [
-        { label: "Decision", value: h.decision },
-        { label: "When", value: new Date(h.timestamp).toLocaleString() },
-        { label: "Actor", value: h.actor },
-      ];
-      if (h.source) fields.push({ label: "Source", value: h.source, mono: true });
-      if (h.oldValue) fields.push({ label: "Was", value: h.oldValue });
-      fields.push({ label: "Now", value: h.newValue });
-      if (h.rejectionReason) {
-        fields.push({ label: "Reason", value: h.rejectionReason });
-      }
-      return fields;
-    });
+    const whatTextEl = whatTd.querySelector(".buena-td-what-text") as HTMLElement | null;
+    if (whatTextEl) {
+      whatTextEl.addClass("buena-history-hover-target");
+      attachHoverPopover(whatTextEl, () => {
+        const fields: HoverField[] = [
+          { label: "When", value: new Date(h.timestamp).toLocaleString() },
+        ];
+        if (h.oldValue) fields.push({ label: "Was", value: h.oldValue });
+        fields.push({ label: "Now", value: h.newValue });
+        if (h.rejectionReason) {
+          fields.push({ label: "Reason", value: h.rejectionReason });
+        }
+        return fields;
+      });
+    }
   }
 
   // ---- Pending card (used by Queue tab) ------------------------------
@@ -556,9 +680,9 @@ export class BuenaSidebarView extends ItemView {
     count: number
   ) {
     const isActive = this.filter === value;
-    const reviewCls = value === "__review__" ? " buena-chip-review" : "";
+    const accentCls = value === "__conflict__" ? " buena-chip-conflict" : "";
     const chip = parent.createEl("button", {
-      cls: `buena-chip buena-queue-chip${reviewCls}${isActive ? " buena-chip-active" : ""}`,
+      cls: `buena-chip buena-queue-chip${accentCls}${isActive ? " buena-chip-active" : ""}`,
     });
     const iconName = chipIcon(value);
     if (iconName) {
@@ -574,20 +698,22 @@ export class BuenaSidebarView extends ItemView {
 
   private applyFilter(items: PendingPatch[]): PendingPatch[] {
     if (this.filter === "__all__") return items;
-    if (this.filter === "__review__") {
-      return items.filter((p) => p.confidence > 0 && p.confidence < 0.85);
+    if (this.filter === "__conflict__") {
+      return items.filter((p) => Boolean(p.oldValue));
     }
-    if (this.filter.startsWith("unit:")) {
-      const u = this.filter.slice(5);
-      return items.filter((p) => p.unit === u);
+    if (this.filter.startsWith("scope:")) {
+      const want = this.filter.slice(6) as "unit" | "building" | "provider";
+      return items.filter((p) => derivePendingScope(p)?.kind === want);
     }
     return items;
   }
 
   private filterLabel(): string {
     if (this.filter === "__all__") return "All";
-    if (this.filter === "__review__") return "Needs review";
-    if (this.filter.startsWith("unit:")) return this.filter.slice(5);
+    if (this.filter === "__conflict__") return "Conflicts";
+    if (this.filter === "scope:unit") return "Units";
+    if (this.filter === "scope:building") return "Buildings";
+    if (this.filter === "scope:provider") return "Providers";
     return this.filter;
   }
 
@@ -598,38 +724,37 @@ export class BuenaSidebarView extends ItemView {
     const idLine = top.createDiv({ cls: "buena-card-section" });
     const scope = derivePendingScope(p);
     if (scope) {
-      const scopeSpan = idLine.createSpan({
+      idLine.createSpan({
         text: scope.label,
         cls: `buena-card-scope buena-card-scope-${scope.kind}`,
       });
-      attachHoverPopover(scopeSpan, () => [
-        { label: "Scope", value: scope.kind },
-        { label: "Value", value: scope.label, mono: true },
-        { label: "Section", value: p.section },
-      ]);
-      idLine.createSpan({ text: " · ", cls: "buena-card-sep" });
+    } else {
+      // No resolvable scope, fall back to the section name so the header isn't empty.
+      idLine.createSpan({ text: p.section, cls: "buena-card-section-name" });
     }
-    idLine.createSpan({ text: p.section, cls: "buena-card-section-name" });
 
     const topIndicators = top.createDiv({ cls: "buena-card-indicators" });
 
     if (p.source) {
       const sourcePill = topIndicators.createEl("button", {
-        text: sourceChipLabel(p.source),
-        cls: "buena-source-pill",
+        cls: `buena-source-icon buena-source-icon-${sourceKind(p.source)}`,
+        attr: { "aria-label": "View source" },
       });
-      sourcePill.title = sourceSummary(p.source);
-      attachHoverPopover(sourcePill, () => {
-        const fields: HoverField[] = [
-          { label: "Source", value: sourceSummary(p.source), mono: true },
-        ];
-        if (typeof p.confidence === "number") {
-          fields.push({ label: "Confidence", value: `${(p.confidence * 100).toFixed(0)}%` });
-        }
-        fields.push({ label: "Actor", value: p.actor });
-        if (p.sourceSnippet) fields.push({ label: "Snippet", value: p.sourceSnippet });
-        return fields;
-      });
+      setIcon(sourcePill, sourceIconName(p.source));
+      // No native title here — the custom hover popover replaces it.
+      const pSrc = p.source;
+      const pSender = p.sender;
+      const pSourceMeta = p.sourceMeta;
+      attachHoverPopover(
+        sourcePill,
+        () => buildSourceFields(pSrc, pSender, pSourceMeta),
+        isPreviewableSource(pSrc)
+          ? {
+              title: previewTitle(pSrc),
+              load: () => loadSourcePreview(this.plugin, pSrc),
+            }
+          : undefined
+      );
       sourcePill.onclick = (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
@@ -644,10 +769,26 @@ export class BuenaSidebarView extends ItemView {
       });
     }
 
-    if (p.oldValue) {
-      card.createDiv({ text: p.oldValue, cls: "buena-card-old" });
+    const senderName = senderDisplayName(p.sender);
+    const roleLabel = senderRoleLabel(p.sender?.role);
+    if (senderName) {
+      const senderRow = card.createDiv({ cls: "buena-card-sender" });
+      senderRow.createSpan({ text: "From", cls: "buena-card-sender-label" });
+      senderRow.createSpan({ text: senderName, cls: "buena-card-sender-name" });
+      const meta: string[] = [];
+      if (roleLabel) meta.push(roleLabel);
+      if (p.sender?.erpId) meta.push(p.sender.erpId);
+      if (meta.length) {
+        senderRow.createSpan({ text: meta.join(" · "), cls: "buena-card-sender-role" });
+      }
     }
-    card.createDiv({ text: p.newValue, cls: "buena-card-new" });
+
+    const diff = card.createDiv({ cls: `buena-card-diff${p.oldValue ? " has-old" : ""}` });
+    if (p.oldValue) {
+      diff.createDiv({ text: p.oldValue, cls: "buena-card-old" });
+    }
+    const newRow = diff.createDiv({ cls: "buena-card-new" });
+    newRow.createSpan({ text: p.newValue, cls: "buena-card-new-text" });
 
     if (p.sourceSnippet) {
       const sourceBlock = card.createDiv({ cls: "buena-card-source" });
@@ -696,15 +837,19 @@ export class BuenaSidebarView extends ItemView {
 
     const actions = card.createDiv({ cls: "buena-card-actions" });
     const approve = actions.createEl("button", {
-      text: "Approve",
-      cls: "buena-btn buena-btn-primary",
+      cls: "buena-btn-icon-circle buena-btn-icon-approve",
     });
+    approve.setAttr("aria-label", "Approve");
+    approve.setAttr("title", "Approve");
+    approve.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3.5 8.5 6.5 11.5 12.5 5"/></svg>`;
     approve.onclick = () => this.handleApprove(p);
 
     const reject = actions.createEl("button", {
-      text: "Reject",
-      cls: "buena-btn",
+      cls: "buena-btn-icon-circle buena-btn-icon-reject",
     });
+    reject.setAttr("aria-label", "Reject");
+    reject.setAttr("title", "Reject");
+    reject.innerHTML = `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>`;
     const reasonHost = card.createDiv({
       cls: "buena-reject-reason buena-reject-reason-hidden",
     });
@@ -712,37 +857,42 @@ export class BuenaSidebarView extends ItemView {
   }
 
   private toggleRejectReason(p: PendingPatch, host: HTMLElement) {
+    const card = host.closest(".buena-card-pending");
     if (!host.hasClass("buena-reject-reason-hidden")) {
       host.addClass("buena-reject-reason-hidden");
       host.empty();
+      card?.removeClass("is-rejecting");
       return;
     }
     host.removeClass("buena-reject-reason-hidden");
     host.empty();
-    host.createEl("label", {
+    card?.addClass("is-rejecting");
+    const headRow = host.createDiv({ cls: "buena-reject-reason-head" });
+    headRow.createEl("label", {
       text: "Why reject this update?",
       cls: "buena-reject-reason-label",
     });
-    const ta = host.createEl("textarea", {
-      cls: "buena-reject-reason-input",
-      attr: {
-        placeholder: "e.g. Duplicate issue...",
-        rows: "2",
-      },
-    });
-    const row = host.createDiv({ cls: "buena-reject-reason-row" });
-    const cancel = row.createEl("button", {
+    const actions = headRow.createDiv({ cls: "buena-reject-reason-row" });
+    const cancel = actions.createEl("button", {
       text: "Cancel",
-      cls: "buena-btn",
+      cls: "buena-reject-cancel",
     });
     cancel.onclick = () => {
       host.addClass("buena-reject-reason-hidden");
       host.empty();
+      card?.removeClass("is-rejecting");
     };
-    const confirm = row.createEl("button", {
-      text: "Confirm reject",
-      cls: "buena-btn buena-btn-danger",
+    const confirm = actions.createEl("button", {
+      cls: "buena-reject-confirm",
     });
+    const ta = host.createEl("textarea", {
+      cls: "buena-reject-reason-input",
+      attr: {
+        placeholder: "e.g. Duplicate, already filed, wrong unit...",
+        rows: "2",
+      },
+    });
+    confirm.innerHTML = `<span class="buena-reject-confirm-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></span><span>Reject</span>`;
     const submit = async () => {
       const reason = ta.value.trim();
       if (reason.length < 10) {
@@ -790,6 +940,8 @@ export class BuenaSidebarView extends ItemView {
         decision: "approved",
         timestamp: approvedAt,
         actor: p.actor,
+        sender: p.sender,
+        sourceMeta: p.sourceMeta,
         originalBlock: {
           target_heading: p.target_heading,
           new_block: p.new_block,
@@ -828,6 +980,8 @@ export class BuenaSidebarView extends ItemView {
         source: p.source,
         decision: "rejected",
         timestamp: new Date().toISOString(),
+        sender: p.sender,
+        sourceMeta: p.sourceMeta,
         actor: p.actor,
         rejectionReason: reason,
         originalBlock: {
@@ -906,6 +1060,88 @@ function sourceSummary(source: string): string {
     .trim();
 }
 
+function senderRoleLabel(role?: SenderInfo["role"]): string | null {
+  switch (role) {
+    case "owner": return "Owner";
+    case "tenant": return "Tenant";
+    case "provider": return "Service provider";
+    case "unknown":
+    default: return null;
+  }
+}
+
+function senderDisplayName(sender?: SenderInfo): string | null {
+  if (!sender) return null;
+  if (sender.name && sender.name.length > 0) return sender.name;
+  if (sender.email) return sender.email;
+  if (sender.erpId) return sender.erpId;
+  return null;
+}
+
+function buildSourceFields(
+  source: string,
+  sender?: SenderInfo,
+  sourceMeta?: SourceMeta,
+  extra?: HoverField[]
+): HoverField[] {
+  const fields: HoverField[] = [];
+  const senderName = senderDisplayName(sender);
+  if (senderName) {
+    fields.push({ label: "From", value: senderName });
+  }
+  if (sender?.email && sender.email !== senderName) {
+    fields.push({ label: "Email", value: sender.email, mono: true });
+  }
+  const role = senderRoleLabel(sender?.role);
+  if (role || sender?.erpId) {
+    const idPart = sender?.erpId ? ` (${sender.erpId})` : "";
+    fields.push({ label: "Linked to", value: `${role ?? "Unknown"}${idPart}` });
+  }
+  if (sender?.unitIds && sender.unitIds.length) {
+    fields.push({ label: "Units", value: sender.unitIds.join(", "), mono: true });
+  }
+  if (sourceMeta?.subject) {
+    fields.push({ label: "Subject", value: sourceMeta.subject });
+  }
+  if (sourceMeta?.recipient) {
+    fields.push({ label: "To", value: sourceMeta.recipient, mono: true });
+  }
+  if (extra) fields.push(...extra);
+  if (fields.length === 0) {
+    fields.push({ label: "Source", value: sourceSummary(source), mono: true });
+  }
+  return fields;
+}
+
+function sourceKind(source: string): "email" | "pdf" | "image" | "sheet" | "doc" | "file" {
+  const lower = sourceSummary(source).toLowerCase();
+  if (lower.endsWith(".eml")) return "email";
+  if (lower.endsWith(".pdf")) return "pdf";
+  if (/\.(png|jpg|jpeg|webp|gif)$/.test(lower)) return "image";
+  if (/\.(xlsx|xls|csv)$/.test(lower)) return "sheet";
+  if (/\.(docx|doc|md|txt|html?)$/.test(lower)) return "doc";
+  return "file";
+}
+
+function sourceIconName(source: string): string {
+  switch (sourceKind(source)) {
+    case "email": return "mail";
+    case "pdf": return "file-text";
+    case "image": return "image";
+    case "sheet": return "sheet";
+    case "doc": return "file";
+    default: return "paperclip";
+  }
+}
+
+function previewTitle(source: string): string {
+  const lower = sourceSummary(source).toLowerCase();
+  if (lower.endsWith(".eml")) return "Email body";
+  if (lower.endsWith(".pdf")) return "PDF preview";
+  if (lower.endsWith(".html") || lower.endsWith(".htm")) return "Page preview";
+  return "Source preview";
+}
+
 function timeAgo(iso: string): string {
   const t = new Date(iso).getTime();
   if (!Number.isFinite(t)) return "";
@@ -923,9 +1159,38 @@ function timeAgo(iso: string): string {
 
 function chipIcon(value: string): string | null {
   if (value === "__all__") return "layers";
-  if (value === "__review__") return "alert-triangle";
-  if (value.startsWith("unit:")) return "home";
+  if (value === "__conflict__") return "alert-triangle";
+  if (value === "scope:unit") return "home";
+  if (value === "scope:building") return "building-2";
+  if (value === "scope:provider") return "wrench";
   return null;
+}
+
+interface ScopeCounts {
+  conflict: number;
+  unit: number;
+  building: number;
+  provider: number;
+}
+
+function countByScope(pending: PendingPatch[]): ScopeCounts {
+  const out: ScopeCounts = { conflict: 0, unit: 0, building: 0, provider: 0 };
+  for (const p of pending) {
+    if (p.oldValue) out.conflict += 1;
+    const scope = derivePendingScope(p);
+    if (scope?.kind === "unit") out.unit += 1;
+    else if (scope?.kind === "building") out.building += 1;
+    else if (scope?.kind === "provider") out.provider += 1;
+  }
+  return out;
+}
+
+function filterCount(filter: string, counts: ScopeCounts): number {
+  if (filter === "__conflict__") return counts.conflict;
+  if (filter === "scope:unit") return counts.unit;
+  if (filter === "scope:building") return counts.building;
+  if (filter === "scope:provider") return counts.provider;
+  return 0;
 }
 
 function computeStreak(history: HistoryEntry[]): number {
@@ -979,18 +1244,6 @@ function comparePendingByRecency(a: PendingPatch, b: PendingPatch): number {
   return a.id.localeCompare(b.id);
 }
 
-function uniqueUnits(pending: PendingPatch[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const p of pending) {
-    if (p.unit && !seen.has(p.unit)) {
-      seen.add(p.unit);
-      out.push(p.unit);
-    }
-  }
-  return out.sort();
-}
-
 function derivePendingScope(
   p: Pick<PendingPatch, "unit" | "newValue" | "sourceSnippet" | "new_block">
 ): { kind: "unit" | "building" | "provider"; label: string } | null {
@@ -1033,6 +1286,8 @@ function mergeHistory(
     timestamp: string;
     actor: string;
     reason?: string;
+    sender?: HistoryEntry["sender"];
+    sourceMeta?: HistoryEntry["sourceMeta"];
   }>
 ): HistoryEntry[] {
   const byKey = new Map<string, HistoryEntry>();
@@ -1050,6 +1305,8 @@ function mergeHistory(
       timestamp: item.timestamp,
       actor: item.actor,
       rejectionReason: item.reason,
+      sender: item.sender,
+      sourceMeta: item.sourceMeta,
     });
   }
 

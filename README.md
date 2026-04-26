@@ -78,7 +78,7 @@ Tavily sits to the side for lazy enrichment of public registries, contractor rev
 | :---               | :---                                                                                                            |
 | **Gemini 3.1 Pro** | Single model for all extraction, routing, and classification. High thinking on, no fallbacks, no downgrade.    |
 | **Cloudflare**     | Email Routing for inbound MX, Worker for ingestion, R2 for raw and vault storage, Queue for extraction jobs.   |
-| **Tavily**         | Lazy enrichment for public registries and contractor reviews. Hosted MCP.                                       |
+| **Tavily**         | Lazy enrichment. Fires once per genuinely new service provider, lands a one-line summary plus source URL in `## External context` with `actor: tavily`. |
 
 ---
 
@@ -93,11 +93,9 @@ Try something like:
 - **Subject**: `WE 29 Mietminderung wegen Heisswasser`
 - **Body**: `In WE 29 mindert der Bewohner seit dem 15.01.2026 die Miete um 10 Prozent.`
 
-Within 10 to 15 seconds, check:
+Within 10 to 15 seconds, the patch lands in the demo vault. If you're running the Obsidian plugin pointed at this Worker, you'll see it stream in via SSE, with hover-able provenance for each fact. The raw R2 endpoints (`property.md`, `history`, `pending`) require a bearer token; see the Worker API table below.
 
-- [`/vaults/LIE-001/property.md`](https://buena-ingest.isiklimahir.workers.dev/vaults/LIE-001/property.md) for the rendered markdown.
-- [`/vaults/LIE-001/history`](https://buena-ingest.isiklimahir.workers.dev/vaults/LIE-001/history) for the change log.
-- [`/vaults/LIE-001/pending`](https://buena-ingest.isiklimahir.workers.dev/vaults/LIE-001/pending) for items awaiting human review.
+If the email mentions a service provider the engine doesn't already have public context for, Tavily is called once for that name and a line lands in `## External context` with `actor: tavily` and the source URL. Try a contractor like **Wisag Facility Service Holding GmbH** or **Apleona HSG Berlin GmbH**.
 
 The bulk-import drop page is live at **`https://import.kontext.haus`**. Drag a zip, pick a property, files queue into the same pipeline.
 
@@ -136,10 +134,12 @@ npm run dev
 | `GET`  | `/vaults/:id/state.json`     | Structured facts with provenance per section.                  |
 | `GET`  | `/vaults/:id/pending`        | Pending review items.                                          |
 | `GET`  | `/vaults/:id/history`        | Change log. Auto, approved, rejected.                          |
-| `POST` | `/vaults/:id/approve`        | Approve a pending patch.                                       |
-| `POST` | `/vaults/:id/reject`         | Reject a pending patch with reason (free text, stored as-is).  |
+| `POST` | `/vaults/:id/decision`       | Approve or reject a pending patch with `{patchId, decision, actor, reason?}`. Reason is free text, stored as-is. |
 | `POST` | `/vaults/:id/human-edit`     | Mark a section as human-edited so future writes route to review. |
-| `GET`  | `/vaults/:id/sse`            | One-way SSE stream of patch events for the plugin.             |
+| `GET`  | `/vaults/:id/events`         | One-way SSE stream of patch events for the plugin.             |
+| `GET`  | `/raw?key=<r2-key>`          | Fetch a raw source object from `buena-raw` for the provenance jump. |
+
+Authed routes require `Authorization: Bearer <INGEST_TOKEN>`. `/health` is public.
 
 The email handler parses MIME via `postal-mime`, drops `.eml` and attachments to R2, and enqueues `{source, msgId, from, to, subject, attachmentKeys}` to the `buena-extract` queue. The subaddress (`+LIE-001`) is the strongest property hint and is preferred over inference.
 

@@ -36,3 +36,7 @@ buena-vault/buena-hackathon/.obsidian/plugins/
 
 # Local notes
 TODO.md
+
+# Generated D1 seed. Regenerate with workers/ingest/sql/build_seed.py.
+# We keep it out of git so it can't drift from the CSVs.
+workers/ingest/sql/seed.sql

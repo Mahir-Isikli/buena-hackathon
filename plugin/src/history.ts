@@ -1,5 +1,23 @@
 import type BuenaPlugin from "../main";
 
+export interface SenderInfo {
+  email?: string;
+  name?: string;
+  erpId?: string;
+  role?: "owner" | "tenant" | "provider" | "unknown";
+  unitIds?: string[];
+}
+
+export interface SourceMeta {
+  kind?: "email" | "bulk" | "unknown";
+  filename?: string;
+  mimeType?: string;
+  subject?: string;
+  receivedAt?: string;
+  recipient?: string;
+  note?: string;
+}
+
 export interface HistoryEntry {
   id: string;
   section: string;
@@ -20,6 +38,8 @@ export interface HistoryEntry {
     confidence?: number;
     snippet?: string;
   };
+  sender?: SenderInfo;
+  sourceMeta?: SourceMeta;
 }
 
 /**

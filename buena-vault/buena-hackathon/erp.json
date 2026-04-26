@@ -587,8 +587,7 @@
       "iban": "DE24100500002528809570",
       "bic": "BYLADEM1001",
       "einheit_ids": [
-        "EH-037",
-        "EH-032"
+        "EH-037"
       ],
       "selbstnutzer": false,
       "sev_mandat": true,
@@ -1067,6 +1066,28 @@
       "bic": "BYLADEM1001",
       "einheit_ids": [
         "EH-029"
+      ],
+      "selbstnutzer": false,
+      "sev_mandat": false,
+      "beirat": false,
+      "sprache": "de"
+    },
+    "EIG-036": {
+      "id": "EIG-036",
+      "anrede": "Herr",
+      "vorname": "Mahir",
+      "nachname": "Isikli",
+      "firma": "",
+      "strasse": "Donaustraße 44",
+      "plz": "12043",
+      "ort": "Berlin",
+      "land": "DE",
+      "email": "isiklimahir@gmail.com",
+      "telefon": "",
+      "iban": "DE89370400440532013000",
+      "bic": "COBADEFFXXX",
+      "einheit_ids": [
+        "EH-032"
       ],
       "selbstnutzer": false,
       "sev_mandat": false,

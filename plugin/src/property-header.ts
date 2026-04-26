@@ -21,48 +21,52 @@ export function registerPropertyHeaderProcessor(plugin: BuenaPlugin) {
     const propertyId = typeof fm.property_id === "string" ? fm.property_id : plugin.settings.propertyId;
     if (!propertyId) return;
 
-    const address = typeof fm.address === "string" ? fm.address : "";
-    const display = compactAddressLabel(address, propertyId);
     const email = `property+${propertyId}@kontext.haus`;
 
     const wrap = document.createElement("div");
     wrap.className = "buena-header-pills";
 
-    const pill = document.createElement("button");
-    pill.className = "buena-header-pill buena-header-pill-email";
-    pill.type = "button";
-    pill.title = email;
-    pill.innerHTML = `<span class="buena-header-pill-icon">✉</span><span class="buena-header-pill-label">Inbox · ${escapeHtml(display)}</span>`;
-    pill.addEventListener("click", async () => {
+    const card = document.createElement("div");
+    card.className = "buena-inbox-card";
+    card.title = email;
+    // Outline-style mail glyph (Material-ish, 1.6px stroke, sharp corners).
+    const mailSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>`;
+    const copySvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>`;
+    card.innerHTML = `
+      <span class="buena-inbox-card-icon" aria-hidden="true">${mailSvg}</span>
+      <div class="buena-inbox-card-body">
+        <span class="buena-inbox-card-label">Property inbox</span>
+        <span class="buena-inbox-card-address">${escapeHtml(email)}</span>
+      </div>
+      <button type="button" class="buena-inbox-card-copy" aria-label="Copy email address">
+        <span class="buena-inbox-card-copy-icon" aria-hidden="true">${copySvg}</span>
+        <span class="buena-inbox-card-copy-label">Copy</span>
+      </button>
+    `;
+
+    const copyBtn = card.querySelector<HTMLButtonElement>(".buena-inbox-card-copy")!;
+    const copyLabel = copyBtn.querySelector<HTMLSpanElement>(".buena-inbox-card-copy-label")!;
+    const doCopy = async (e: Event) => {
+      e.stopPropagation();
       try {
         await navigator.clipboard.writeText(email);
+        copyBtn.classList.add("is-copied");
+        copyLabel.textContent = "Copied";
         new Notice(`[Buena] copied inbox: ${email}`);
+        setTimeout(() => {
+          copyBtn.classList.remove("is-copied");
+          copyLabel.textContent = "Copy";
+        }, 1400);
       } catch {
         new Notice(`[Buena] inbox: ${email}`);
       }
-    });
-    wrap.appendChild(pill);
+    };
+    copyBtn.addEventListener("click", doCopy);
+    card.addEventListener("click", doCopy);
+    wrap.appendChild(card);
 
     h1.insertAdjacentElement("afterend", wrap);
   });
-}
-
-function compactAddressLabel(address: string, propertyId: string): string {
-  const first = address.split(",")[0]?.trim() ?? "";
-  if (!first) return propertyId.toLowerCase();
-  const match = first.match(/^(.*?)(\d+[a-zA-Z]?)$/);
-  const street = (match?.[1] ?? first)
-    .toLowerCase()
-    .replace(/straße/g, "str")
-    .replace(/ä/g, "ae")
-    .replace(/ö/g, "oe")
-    .replace(/ü/g, "ue")
-    .replace(/ß/g, "ss")
-    .replace(/[^a-z0-9]+/g, "")
-    .trim();
-  const number = match?.[2]?.toLowerCase() ?? "";
-  const base = `${street}${number}` || propertyId.toLowerCase();
-  return base.length > 18 ? base.slice(0, 18) : base;
 }
 
 function escapeHtml(s: string): string {

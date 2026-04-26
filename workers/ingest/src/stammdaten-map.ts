@@ -15,7 +15,16 @@ export const EMAIL_HINTS: Record<string, EmailHint[]> = {
       "id": "EIG-001",
       "propertyId": "LIE-001",
       "unitIds": [
-        "EH-037",
+        "EH-037"
+      ]
+    }
+  ],
+  "isiklimahir@gmail.com": [
+    {
+      "kind": "owner",
+      "id": "EIG-036",
+      "propertyId": "LIE-001",
+      "unitIds": [
         "EH-032"
       ]
     }

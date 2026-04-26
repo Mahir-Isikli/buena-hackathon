@@ -310,16 +310,16 @@ async function commitReject(
 
 function annotateApprovedBlock(
   block: string,
-  approvedAt: string,
+  _approvedAt: string,
   actor: string,
   source?: string,
   confidence?: number
 ): string {
-  const prov = source
-    ? ` {prov: ${source}${typeof confidence === "number" ? ` | conf: ${confidence}` : ""} | actor: ${actor}}`
+  const safeSource = source ? source.replace(/@/g, "%40") : undefined;
+  const prov = safeSource
+    ? ` {prov: ${safeSource}${typeof confidence === "number" ? ` | conf: ${confidence}` : ""} | actor: ${actor}}`
     : "";
-  const changed = ` {changed: ${approvedAt} | actor: ${actor}${source ? ` | src: ${source}` : ""}}`;
-  return `${block}${prov}${changed}`;
+  return `${block}${prov}`;
 }
 
 function deriveScope(spec: PendingPatchSpec): { kind: "unit" | "building" | "provider"; label: string } | null {

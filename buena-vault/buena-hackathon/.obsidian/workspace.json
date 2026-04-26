@@ -92,8 +92,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "5dbcb30817ca83b1",
@@ -194,6 +193,26 @@
             "id": "8d5437100dcac293",
             "type": "leaf",
             "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          },
+          {
+            "id": "d1f78a155c9b1e50",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          },
+          {
+            "id": "fb0983d6c6a5fa29",
+            "type": "leaf",
+            "state": {
               "type": "buena-sidebar",
               "state": {},
               "icon": "inbox",
@@ -201,11 +220,11 @@
             }
           }
         ],
-        "currentTab": 6
+        "currentTab": 8
       }
     ],
     "direction": "horizontal",
-    "width": 713.5
+    "width": 653.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -219,15 +238,19 @@
       "buena:Buena: open pending queue": false
     }
   },
-  "active": "8d5437100dcac293",
+  "active": "ac57853ea65b0f59",
   "lastOpenFiles": [
-    "Huber & Partner Immobilienverwaltung GmbH.md",
+    "LIE-002.md",
     "WEG-Immanuelkirchstrasse-26.md",
+    "Huber & Partner Immobilienverwaltung GmbH.md",
+    "Welcome.md",
     "test.md",
+    "attachments/emails/CAJ9sWTu71K9O5pHF_LY_K2ppPOfxqDn=wbDWmVPi1VhmmJpMPg@mail.gmail.com.eml",
+    "attachments/emails",
+    "attachments",
     "state.json",
     "erp.json",
     "Immanuelkirchstraße 26/WEG-Übersicht.md",
-    "Welcome.md",
     "Immanuelkirchstraße 26/Portfolio-Übersicht.canvas",
     "Untitled.canvas",
     "2026-04-25.md",
