@@ -7,6 +7,24 @@
 
 import type { BuenaSettings } from "./settings";
 
+export interface RemoteSenderInfo {
+  email?: string;
+  name?: string;
+  erpId?: string;
+  role?: "owner" | "tenant" | "provider" | "unknown";
+  unitIds?: string[];
+}
+
+export interface RemoteSourceMeta {
+  kind?: "email" | "bulk" | "unknown";
+  filename?: string;
+  mimeType?: string;
+  subject?: string;
+  receivedAt?: string;
+  recipient?: string;
+  note?: string;
+}
+
 export interface RemotePendingPatch {
   id: string;
   section: string;
@@ -20,6 +38,8 @@ export interface RemotePendingPatch {
   target_heading: string;
   new_block: string;
   addedAt?: string;
+  sender?: RemoteSenderInfo;
+  sourceMeta?: RemoteSourceMeta;
 }
 
 function authHeaders(settings: BuenaSettings): Record<string, string> {
@@ -77,6 +97,44 @@ export async function fetchStateJson(
     throw new Error(`fetchStateJson ${res.status}: ${await res.text()}`);
   }
   return (await res.json()) as Record<string, unknown>;
+}
+
+export interface RemoteErpSnapshot {
+  propertyId: string;
+  generatedAt: string;
+  erp: {
+    property: Record<string, unknown> & { id: string; name: string };
+    buildings: Record<string, Record<string, unknown> & { id: string }>;
+    units: Record<string, Record<string, unknown> & { id: string; haus_id: string }>;
+    owners: Record<string, Record<string, unknown> & { id: string; einheit_ids: string[] }>;
+    tenants: Record<string, Record<string, unknown> & { id: string }>;
+    service_providers: Record<string, Record<string, unknown> & { id: string }>;
+  };
+}
+
+/**
+ * Fetch the live ERP snapshot for `propertyId`. If omitted, falls back to the
+ * settings.propertyId, but callers should always pass the property id from the
+ * token itself so a LIE-002 file always pulls LIE-002 data, regardless of what
+ * is selected in the dropdown.
+ */
+export async function fetchErpSnapshot(
+  settings: BuenaSettings,
+  propertyId?: string,
+  signal?: AbortSignal
+): Promise<RemoteErpSnapshot | null> {
+  const id = propertyId ?? settings.propertyId;
+  const base = settings.workerUrl.replace(/\/$/, "");
+  const url = `${base}/vaults/${encodeURIComponent(id)}/erp`;
+  const res = await fetch(url, {
+    headers: authHeaders(settings),
+    signal,
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(`fetchErpSnapshot ${res.status}: ${await res.text()}`);
+  }
+  return (await res.json()) as RemoteErpSnapshot;
 }
 
 export async function postHumanEdit(
@@ -144,6 +202,32 @@ export interface RemoteHistoryEntry {
   timestamp: string;
   actor: string;
   reason?: string;
+  sender?: RemoteSenderInfo;
+  sourceMeta?: RemoteSourceMeta;
+}
+
+export interface RemoteVaultSummary {
+  id: string;
+  name?: string;
+  address?: string;
+  verwalter?: string;
+  last_updated?: string;
+}
+
+export async function fetchVaults(
+  settings: BuenaSettings,
+  signal?: AbortSignal
+): Promise<RemoteVaultSummary[]> {
+  const base = settings.workerUrl.replace(/\/$/, "");
+  const res = await fetch(`${base}/vaults`, {
+    headers: authHeaders(settings),
+    signal,
+  });
+  if (!res.ok) {
+    throw new Error(`fetchVaults ${res.status}: ${await res.text()}`);
+  }
+  const body = (await res.json()) as { properties?: RemoteVaultSummary[] };
+  return body.properties ?? [];
 }
 
 export async function fetchHistory(

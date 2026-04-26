@@ -15,11 +15,22 @@ bucket_name = "buena-raw"
 binding = "VAULTS"
 bucket_name = "buena-vaults"
 
+[[d1_databases]]
+binding = "ERP"
+database_name = "buena-erp"
+database_id = "38e9caca-5f78-4a5c-8731-d6e00039c7fa"
+
 [[queues.producers]]
 binding = "EXTRACT_QUEUE"
 queue = "buena-extract"
 
 [[queues.consumers]]
 queue = "buena-extract"
-max_batch_size = 10
+# Each Gemini high-thinking call is 5-15s. With max_batch_size > 1 we hit
+# the worker CPU/wall-time limit and the whole batch cancels + retries,
+# making the queue drain in a death spiral. One message per invocation
+# keeps each call comfortably under the limit.
+max_batch_size = 1
 max_batch_timeout = 5
+# Serialize property.md writes across invocations.
+max_concurrency = 1

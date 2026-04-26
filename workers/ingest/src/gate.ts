@@ -21,6 +21,8 @@ import type { CandidateFact } from "./gemini";
 import {
   type HistoryEntry,
   type PendingPatch,
+  type SenderInfo,
+  type SourceMeta,
   type StateJson,
   appendPending,
   applyApprovedPatchToPropertyMd,
@@ -41,6 +43,8 @@ export interface ApplyGateInput {
   candidates: CandidateFact[];
   receivedAt: string;
   actor?: string;
+  sender?: SenderInfo;
+  sourceMeta?: SourceMeta;
 }
 
 export interface GateStats {
@@ -72,6 +76,8 @@ export async function applyPatchGate(input: ApplyGateInput): Promise<GateStats> 
       actor,
       targetHeading: decision.targetHeading,
       oldValue: decision.kind === "pending" ? decision.oldValue : undefined,
+      sender: input.sender,
+      sourceMeta: input.sourceMeta,
     });
 
     if (decision.kind === "pending") {
@@ -99,6 +105,8 @@ export async function applyPatchGate(input: ApplyGateInput): Promise<GateStats> 
       timestamp: appliedAt,
       actor,
       reason: applied.applied ? undefined : "target_heading_missing",
+      sender: input.sender,
+      sourceMeta: input.sourceMeta,
     } satisfies HistoryEntry);
 
     state = {
@@ -133,6 +141,19 @@ function classifyCandidate(
 
   const headings = parseHeadings(markdown);
   const targetHeading = resolveTargetHeading(candidate, headings);
+
+  // Rule 0: never patch ERP-snapshot sections. The body is a render-time
+  // projection of D1; the canonical edit path is Postgres. Route to pending
+  // so the user sees the misclassification, with a stable reason the UI can
+  // present as "ERP master data, edit in Postgres".
+  if (isErpSnapshotSection(markdown, targetHeading)) {
+    return {
+      kind: "pending",
+      reason: "erp_snapshot_section",
+      targetHeading,
+    };
+  }
+
   const section = getSectionSlice(markdown, targetHeading);
   const sectionExists = !!section;
 
@@ -187,6 +208,8 @@ function buildPatch(input: {
   actor: string;
   targetHeading: string;
   oldValue?: string;
+  sender?: SenderInfo;
+  sourceMeta?: SourceMeta;
 }): PendingPatch {
   return {
     id: input.id,
@@ -201,6 +224,8 @@ function buildPatch(input: {
     target_heading: input.targetHeading,
     new_block: buildNewBlock(input.candidate),
     addedAt: input.receivedAt,
+    sender: input.sender,
+    sourceMeta: input.sourceMeta,
   };
 }
 
@@ -437,4 +462,21 @@ function isHumanEditedSection(
 ): boolean {
   const edited = new Set((state?.human_edited_sections ?? []).map((s) => normalizeSectionName(s)));
   return edited.has(normalizeSectionName(targetHeading)) || edited.has(normalizeSectionName(section));
+}
+
+/**
+ * True if the section starting at `heading` is marked with
+ * `<!-- erp:snapshot ... -->` somewhere between the heading and the next H2.
+ * The marker is emitted by the renderer for ERP-derived projection sections.
+ */
+function isErpSnapshotSection(markdown: string, heading: string): boolean {
+  const lines = markdown.split("\n");
+  const idx = lines.findIndex((l) => l.trim() === heading.trim());
+  if (idx === -1) return false;
+  for (let i = idx + 1; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (/^##\s+/.test(trimmed)) return false;
+    if (/<!--\s*erp:snapshot/i.test(trimmed)) return true;
+  }
+  return false;
 }

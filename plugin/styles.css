@@ -936,8 +936,8 @@
   z-index: 9999;
   background: #ffffff;
   color: #111827;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid #d6d3d1;
+  border-radius: 16px;
   padding: 16px 20px;
   font-size: 13px;
   max-width: 380px;
@@ -983,10 +983,49 @@
   font-size: 11.5px;
   color: #4b5563;
   background: #f9fafb;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
   border: 1px solid #f3f4f6;
   width: fit-content;
+}
+
+.buena-popover-has-preview {
+  max-width: 480px;
+}
+
+.buena-popover-preview {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.buena-popover-preview-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.buena-popover-preview-body {
+  font-size: 12px;
+  line-height: 1.55;
+  color: #1f2937;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 320px;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: #fafaf9;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e7e5e4;
+}
+
+.buena-popover-preview-error {
+  color: #b91c1c;
+  font-style: italic;
 }
 
 /* ============================================================
@@ -1942,10 +1981,27 @@
   color: var(--text-muted);
 }
 .buena-td-reason {
-  margin-top: 3px;
-  font-size: 0.92em;
-  color: var(--text-muted);
-  font-style: italic;
+  margin-top: 8px;
+  padding: 7px 10px 7px 12px;
+  border-left: 3px solid #d09898;
+  background: rgba(160, 88, 88, 0.06);
+  border-radius: 0 6px 6px 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #6e3a3a;
+  font-style: normal;
+}
+
+.buena-td-reason::before {
+  content: "Reason";
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a05858;
+  vertical-align: 1px;
 }
 .buena-td-decision {
   white-space: nowrap;
@@ -2316,6 +2372,94 @@
   font-weight: 600;
 }
 
+/* ===== Property inbox card (header) =====
+   A compact card showing the property's @kontext.haus inbox address with a
+   copy affordance. Sits below the H1, styled like the ERP reference chips
+   (left accent stripe, beige tones) but as a card instead of a pill. */
+.buena-inbox-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  background: var(--buena-beige-soft, var(--background-secondary));
+  border: 1px solid var(--buena-beige, var(--background-modifier-border));
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+  max-width: 100%;
+}
+.buena-inbox-card:hover {
+  background: var(--background-primary);
+  border-color: var(--buena-black, var(--text-normal));
+}
+.buena-inbox-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--buena-black, var(--text-normal));
+  opacity: 0.85;
+  flex: 0 0 auto;
+}
+.buena-inbox-card-icon svg {
+  display: block;
+}
+.buena-inbox-card-body {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+.buena-inbox-card-label {
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--buena-ink-muted, var(--text-muted));
+}
+.buena-inbox-card-address {
+  font-family: var(--font-monospace);
+  font-size: 0.82em;
+  color: var(--buena-black, var(--text-normal));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.buena-inbox-card-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px 4px 10px;
+  margin-left: 4px;
+  border: 1px solid var(--buena-beige, var(--background-modifier-border));
+  border-radius: 999px;
+  background: var(--background-primary);
+  color: var(--buena-ink-muted, var(--text-muted));
+  font-size: 0.74em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  flex: 0 0 auto;
+}
+.buena-inbox-card-copy:hover {
+  background: var(--buena-black, var(--text-normal));
+  color: var(--buena-beige-soft, var(--background-primary));
+  border-color: var(--buena-black, var(--text-normal));
+}
+.buena-inbox-card-copy.is-copied {
+  background: #2E7D32;
+  color: #ffffff;
+  border-color: #2E7D32;
+}
+.buena-inbox-card-copy-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.buena-inbox-card-copy-icon svg {
+  display: block;
+}
+
 /* ===== Change history mode pill ===== */
 .buena-td-mode {
   white-space: nowrap;
@@ -2483,8 +2627,8 @@ button.buena-changed-pill-recent {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 24px 24px 16px;
+  gap: 24px;
+  padding: 28px 28px 20px;
   background: #fafaf9;
   border-bottom: 0;
   color: #010105;
@@ -2492,16 +2636,16 @@ button.buena-changed-pill-recent {
 
 .buena-sidebar-title-row {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 20px;
   min-width: 0;
   flex: 1 1 auto;
 }
 
 .buena-sidebar-wordmark {
   display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 14px;
   color: #010105;
   flex-shrink: 0;
 }
@@ -2509,10 +2653,27 @@ button.buena-changed-pill-recent {
 .buena-wordmark-text {
   font-size: 18px;
   font-weight: 700;
+  font-style: normal;
   letter-spacing: -0.02em;
-  font-style: italic;
   line-height: 1;
   color: #010105;
+}
+
+/* Kontext mark — inline SVG that sits before the Buena wordmark.
+   Sized to match the wordmark cap-height (18px font → ~16px glyph). */
+.buena-kontext-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 20px;
+  color: #010105;
+  flex: 0 0 auto;
+}
+.buena-kontext-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .buena-wordmark-dot {
@@ -2522,9 +2683,35 @@ button.buena-changed-pill-recent {
   line-height: 1;
 }
 
+/* Vertical divider between the Buena wordmark and the Kontext context label.
+   Sized to match the wordmark cap-height. */
+.buena-wordmark-divider {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: #d6d3d1;
+  flex: 0 0 auto;
+}
+
+/* "Kontext" context label next to the Buena wordmark.
+   Same height as the Buena wordmark, not italic, plain inline text. */
+.buena-kontext-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: #010105;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
 .buena-sidebar-property {
-  color: #8A8580;
-  font-size: 13px;
+  color: #4A4744;
+  font-size: 12px;
   font-weight: 500;
   font-family: 'Inter Tight', var(--font-monospace);
   letter-spacing: 0.04em;
@@ -2533,6 +2720,41 @@ button.buena-changed-pill-recent {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.buena-property-picker {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  margin: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.buena-property-picker:hover {
+  background: #e7e5e4;
+  border-color: #d6d3d1;
+  color: #010105;
+}
+.buena-property-picker-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.buena-property-picker-caret {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.6;
+}
+.buena-property-picker-caret .svg-icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.4;
 }
 
 .buena-sync-btn {
@@ -2685,8 +2907,8 @@ button.buena-changed-pill-recent {
   background: #fafaf9;
   border: 1px solid #d6d3d1;
   box-shadow: 0 10px 15px -3px #0000001a;
-  border-radius: 8px;
-  padding: 4px 10px;
+  border-radius: 999px;
+  padding: 4px 12px;
   color: #4A4744;
   font-size: 12px;
   font-weight: 500;
@@ -2730,11 +2952,12 @@ button.buena-changed-pill-recent {
   justify-content: center;
   background: #e7e5e4;
   color: #4A4744;
-  border-radius: 12px;
-  padding: 0 6px;
+  border-radius: 999px;
+  padding: 0 7px;
   font-size: 11px;
   font-weight: 600;
   height: 18px;
+  min-width: 18px;
   margin-left: 2px;
 }
 
@@ -2743,30 +2966,30 @@ button.buena-changed-pill-recent {
   color: #010105;
 }
 
-.buena-queue-chip.buena-chip-review {
+.buena-queue-chip.buena-chip-conflict {
   color: #ea580c;
   font-weight: 600;
   background: #fff7ed;
-  border-color: #ffedd5;
+  border-color: #fdba74;
 }
 
-.buena-queue-chip.buena-chip-review:hover {
+.buena-queue-chip.buena-chip-conflict:hover {
   background: #ffedd5;
-  border-color: #fed7aa;
+  border-color: #fb923c;
 }
 
-.buena-queue-chip.buena-chip-review.buena-chip-active {
+.buena-queue-chip.buena-chip-conflict.buena-chip-active {
   background: #ea580c;
   color: #ffffff;
   border-color: #ea580c;
 }
 
-.buena-queue-chip.buena-chip-review.buena-chip-active:hover {
+.buena-queue-chip.buena-chip-conflict.buena-chip-active:hover {
   background: #c2410c;
   border-color: #c2410c;
 }
 
-.buena-queue-chip.buena-chip-review.buena-chip-active .buena-chip-count {
+.buena-queue-chip.buena-chip-conflict.buena-chip-active .buena-chip-count {
   background: #ffffff;
   color: #ea580c;
 }
@@ -2863,12 +3086,13 @@ button.buena-changed-pill-recent {
 }
 
 .buena-card {
+  position: relative;
   background: #ffffff;
   border: 1px solid #d6d3d1;
-  border-radius: 12px;
-  padding: 24px;
-  margin: 0 24px 16px;
-  width: calc(100% - 48px);
+  border-radius: 16px;
+  padding: 14px 16px 12px;
+  margin: 0 20px 10px;
+  width: calc(100% - 40px);
   box-sizing: border-box;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
   transition: box-shadow 0.15s cubic-bezier(.4, 0, .2, 1);
@@ -2882,8 +3106,8 @@ button.buena-changed-pill-recent {
 .buena-card-top {
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 10px;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
 .buena-card-top .buena-card-section,
@@ -2897,10 +3121,10 @@ button.buena-changed-pill-recent {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   font-family: inherit;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #8A8580;
 }
@@ -2924,23 +3148,33 @@ button.buena-changed-pill-recent {
 
 .buena-source-pill {
   padding: 2px 8px;
-  border-radius: 4px;
-  background: #e7e5e4;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #e7e5e4;
   color: #4A4744;
   font-size: 10px;
   font-weight: 600;
   white-space: nowrap;
-  font-family: var(--font-monospace);
-  cursor: help;
+  font-family: inherit;
+  cursor: pointer;
   max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.buena-source-pill:hover {
+  background: #fafaf9;
+  border-color: #d6d3d1;
+  color: #010105;
 }
 
 .buena-confidence-pill {
   flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
   background: #ecfdf5;
   color: #047857;
   font-size: 10px;
@@ -2948,31 +3182,86 @@ button.buena-changed-pill-recent {
   white-space: nowrap;
 }
 
+/* Sender row. Sits between the header and the diff block so the human
+   reader sees who the patch came from without hovering. */
+.buena-card-sender {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.buena-card-sender-label {
+  color: #a8a29e;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.buena-card-sender-name {
+  color: #1c1917;
+  font-weight: 500;
+}
+
+.buena-card-sender-role {
+  color: #78716c;
+  font-size: 11.5px;
+}
+
+/* Diff block. Old (was) lives muted on top, new (now) reads as the
+   primary message with a soft yellow highlighter band so a contradiction
+   pops at a glance. The highlighter sits behind only the changed text
+   itself, not the full row, mimicking a marker stroke. */
+.buena-card-diff {
+  margin-bottom: 12px;
+}
+
 .buena-card-old {
   margin-bottom: 4px;
-  color: #8A8580;
-  font-size: 13px;
+  color: #b3aea8;
+  font-size: 12px;
+  line-height: 1.45;
   text-decoration: line-through;
-  text-decoration-color: #d6d3d1;
+  text-decoration-color: #cfcac4;
+  text-decoration-thickness: 1px;
 }
 
 .buena-card-new {
-  margin-bottom: 12px;
   color: #010105;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.45;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+}
+
+.buena-card-new-text {
+  /* Soft butter-yellow highlighter that wraps onto a second line cleanly. */
+  background-image: linear-gradient(transparent 0%, transparent 18%, #fff3b0 18%, #fff3b0 92%, transparent 92%);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0 3px;
+  border-radius: 4px;
+}
+
+/* When there's no old value (auto-applied first fact), tone the highlight
+   down so the brightness doesn't suggest a conflict. */
+.buena-card-diff:not(.has-old) .buena-card-new-text {
+  background-image: linear-gradient(transparent 0%, transparent 18%, #ecfdf5 18%, #ecfdf5 92%, transparent 92%);
 }
 
 .buena-card-source {
-  margin-bottom: 16px;
-  padding-left: 12px;
+  margin-bottom: 12px;
+  padding-left: 10px;
   border-left: 2px solid #e7e5e4;
 }
 
 .buena-card-source-quote {
   color: #4A4744;
-  font-size: 13px;
+  font-size: 12px;
   font-style: italic;
   line-height: 1.5;
 }
@@ -2993,12 +3282,23 @@ button.buena-changed-pill-recent {
 .buena-card-actions,
 .buena-pending-actions {
   display: flex;
-  gap: 10px;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* In a pending card, lift the actions to overlap the Go-to-section row,
+   so each card ends with a single tight footer row instead of an extra
+   empty band below the buttons. */
+.buena-card-pending .buena-card-actions {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  margin: 0;
 }
 
 .buena-btn {
   appearance: none;
-  flex: 1 1 0%;
+  flex: 0 0 auto;
   background: #ffffff;
   border: 1px solid #d6d3d1;
   border-radius: 8px;
@@ -3010,6 +3310,68 @@ button.buena-changed-pill-recent {
   letter-spacing: 0;
   cursor: pointer;
   transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Circular icon-only action buttons.
+   Used for Approve / Reject in the pending queue cards.
+   Approve = black filled circle, white check.
+   Reject  = soft neutral circle, dark x. */
+.buena-btn-icon-circle {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.buena-btn-icon-circle svg {
+  display: block;
+}
+
+.buena-btn-icon-approve,
+.buena-sidebar button.buena-btn-icon-approve {
+  background: #010105 !important;
+  color: #ffffff !important;
+  border-color: #010105 !important;
+  box-shadow: none;
+}
+
+.buena-btn-icon-approve:hover:not(:disabled),
+.buena-sidebar button.buena-btn-icon-approve:hover:not(:disabled) {
+  background: #171717 !important;
+  border-color: #171717 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+}
+
+.buena-btn-icon-reject,
+.buena-sidebar button.buena-btn-icon-reject {
+  background: #f3f1ee !important;
+  color: #4A4744 !important;
+  border-color: #f3f1ee !important;
+  box-shadow: none;
+}
+
+.buena-btn-icon-reject:hover:not(:disabled),
+.buena-sidebar button.buena-btn-icon-reject:hover:not(:disabled) {
+  background: #e7e5e0 !important;
+  border-color: #d6d3d1 !important;
+  color: #010105 !important;
+}
+
+.buena-btn-icon-circle:active {
+  transform: scale(0.92);
+}
+
+.buena-btn-icon-circle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .buena-btn:hover:not(:disabled) {
@@ -3049,31 +3411,59 @@ button.buena-changed-pill-recent {
 
 .buena-goto-wrap {
   margin-top: -4px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
+}
+
+.buena-card-pending .buena-goto-wrap {
+  /* Leave room for the absolutely-positioned approve/reject buttons on the right. */
+  padding-right: 80px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
 }
 
 .buena-goto-pill {
   appearance: none;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  color: #9ca3af;
+  gap: 5px;
+  padding: 5px 11px 5px 9px;
+  background: #ffffff;
+  border: 1px solid #e7e5e4;
+  color: #4A4744;
   font-size: 12px;
-  border-radius: 0;
+  font-weight: 500;
+  font-family: inherit;
+  letter-spacing: 0;
+  border-radius: 999px;
   box-shadow: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .buena-goto-pill:not(:disabled):hover {
-  background: transparent;
-  border: 0;
-  color: #111827;
+  background: #fafaf9;
+  border-color: #d6d3d1;
+  color: #010105;
+}
+
+.buena-goto-pill:not(:disabled):active {
+  transform: scale(0.97);
 }
 
 .buena-goto-pill:disabled {
-  opacity: 0.45;
+  opacity: 0.55;
+  cursor: default;
+}
+
+.buena-goto-pill .buena-goto-icon {
+  display: inline-flex;
+  align-items: center;
+  color: #8A8580;
+}
+
+.buena-goto-pill:not(:disabled):hover .buena-goto-icon {
+  color: #010105;
 }
 
 .buena-goto-icon .svg-icon {
@@ -3081,64 +3471,174 @@ button.buena-changed-pill-recent {
   height: 11px;
 }
 
+/* Reject-reason inline panel.
+   Shown inside a pending card when the user clicks the X button.
+   Replaces the bottom-right approve/reject circles for the duration of the
+   interaction so the card has one clear focus state. */
 .buena-reject-reason {
   margin-top: 12px;
-  padding: 12px;
+  padding: 14px 14px 12px;
   background: #fafaf9;
   border: 1px solid #e7e5e4;
-  border-radius: 8px;
-  border-radius: 8px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .buena-reject-reason-hidden {
   display: none;
 }
 
+/* Hide the absolute-positioned approve/reject circles while the reject
+   panel is open so they don't clash with the panel's own buttons. Also
+   undo the card's reserved right-padding for the goto pill row. */
+.buena-card-pending.is-rejecting .buena-card-actions {
+  display: none;
+}
+.buena-card-pending.is-rejecting .buena-goto-wrap {
+  padding-right: 0;
+}
+
+.buena-reject-reason-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .buena-reject-reason-label {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: #6b7280;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .buena-reject-reason-input {
   width: 100%;
-  min-height: 42px;
+  min-height: 64px;
+  max-height: 220px;
   resize: vertical;
-  padding: 10px;
+  padding: 10px 12px;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  border: 1px solid #d6d3d1;
+  border-radius: 12px;
   font-size: 13px;
+  font-family: inherit;
+  line-height: 1.4;
+  color: #010105;
   box-sizing: border-box;
+  box-shadow: none;
+  outline: none;
+}
+
+.buena-reject-reason-input::placeholder {
+  color: #b3aea8;
 }
 
 .buena-reject-reason-input:focus {
   outline: none;
-  border-color: #9ca3af;
+  border-color: #8A8580;
+  box-shadow: 0 0 0 3px rgba(138, 133, 128, 0.12);
 }
 
 .buena-reject-reason-row {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.buena-reject-reason-row .buena-btn {
+.buena-reject-cancel,
+.buena-sidebar button.buena-reject-cancel {
+  -webkit-appearance: none;
+  appearance: none;
   flex: 0 0 auto;
-  padding: 6px 12px;
-  background: #fafaf9;
+  padding: 6px 14px;
+  background: #ffffff;
   border: 1px solid #e7e5e4;
-  border-radius: 6px;
+  border-radius: 999px;
   color: #4A4744;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.buena-reject-reason-row .buena-btn:hover {
-  background: #e7e5e4;
+.buena-reject-cancel:hover:not(:disabled),
+.buena-sidebar button.buena-reject-cancel:hover:not(:disabled) {
+  background: #fafaf9;
+  border-color: #d6d3d1;
   color: #010105;
+}
+
+.buena-reject-confirm,
+.buena-sidebar button.buena-reject-confirm {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 6px 14px 6px 11px;
+  background: #b91c1c;
+  border: 1px solid #b91c1c;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.buena-reject-confirm:hover:not(:disabled),
+.buena-sidebar button.buena-reject-confirm:hover:not(:disabled) {
+  background: #991b1b;
+  border-color: #991b1b;
+}
+
+.buena-reject-confirm:active {
+  transform: scale(0.97);
+}
+
+.buena-reject-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.buena-reject-confirm-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.buena-reject-confirm-icon svg {
+  display: block;
+}
+
+/* Card frame around the change history table so it reads as a single
+   bordered component, matching the rounded queue cards. */
+.buena-section-history-full .buena-history-table-wrap {
+  margin: 0 20px 16px;
+  border: 1px solid #d6d3d1;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  overflow-y: auto;
 }
 
 .buena-history-table {
@@ -3171,15 +3671,27 @@ button.buena-changed-pill-recent {
 }
 
 .buena-history-table thead th:nth-child(2) {
-  width: 18%;
+  width: 16%;
 }
 
 .buena-history-table thead th:nth-child(3) {
-  width: 44%;
+  width: auto;
 }
 
 .buena-history-table thead th:nth-child(4) {
-  width: 14%;
+  width: 84px;
+}
+
+.buena-history-table thead th:nth-child(5) {
+  width: 64px;
+  text-align: center;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.buena-td-source {
+  vertical-align: top;
+  white-space: nowrap;
 }
 
 .buena-th-sortable:hover {
@@ -3209,7 +3721,7 @@ button.buena-changed-pill-recent {
 }
 
 .buena-td {
-  padding: 20px 24px;
+  padding: 14px 20px;
   color: #374151;
   vertical-align: top;
 }
@@ -3219,22 +3731,24 @@ button.buena-changed-pill-recent {
 }
 
 .buena-history-row-meta {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .buena-history-row-time {
   color: #8A8580;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 }
 
 .buena-history-row-section {
   color: #010105;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.4;
   word-break: break-word;
+  letter-spacing: -0.005em;
 }
 
 .buena-td-unit {
@@ -3246,9 +3760,11 @@ button.buena-changed-pill-recent {
 }
 
 .buena-td-what-text {
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.5;
   color: #010105;
   word-break: break-word;
+  letter-spacing: -0.005em;
 }
 
 .buena-strike {
@@ -3258,21 +3774,35 @@ button.buena-changed-pill-recent {
 }
 
 .buena-td-reason {
-  margin-top: 10px;
+  margin-top: 6px;
+  font-size: 12px;
   color: #4A4744;
   font-style: italic;
-  line-height: 1.45;
+  line-height: 1.5;
+}
+
+.buena-td-source-row {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.buena-source-pill-sm {
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 .buena-unit-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 10px;
+  padding: 3px 11px;
   background: #fafaf9;
   border: 1px solid #d6d3d1;
   color: #010105;
-  border-radius: 6px;
+  border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
   font-family: inherit;
@@ -3282,6 +3812,9 @@ button.buena-changed-pill-recent {
 
 .buena-td-decision {
   white-space: nowrap;
+  text-align: center;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 .buena-decision-pill {
@@ -3289,8 +3822,8 @@ button.buena-changed-pill-recent {
   align-items: center;
   justify-content: flex-start;
   gap: 5px;
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 3px 11px;
+  border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
   text-transform: none;
@@ -3314,22 +3847,101 @@ button.buena-changed-pill-recent {
   letter-spacing: 0.02em;
 }
 
+.buena-decision-approved,
+.buena-decision-rejected,
+.buena-decision-auto {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 999px;
+  justify-content: center;
+  cursor: default;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.buena-decision-approved:hover,
+.buena-decision-rejected:hover,
+.buena-decision-auto:hover {
+  transform: translateY(-1px);
+}
+
 .buena-decision-approved {
-  background: #ecfdf5;
-  color: #059669;
-  border: 1px solid #d1fae5;
+  background: #f1f4f1;
+  color: #4f7d5b;
+  border: 1px solid #dde3dc;
+}
+
+.buena-decision-approved:hover {
+  background: #e8efe9;
+  border-color: #c9d4ca;
+  color: #3e6649;
+  box-shadow: 0 1px 2px rgba(79, 125, 91, 0.15);
 }
 
 .buena-decision-rejected {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fee2e2;
+  background: #faf3f2;
+  color: #a05858;
+  border: 1px solid #ecdcd9;
+}
+
+.buena-decision-rejected:hover {
+  background: #f4e9e7;
+  border-color: #e0c9c5;
+  color: #834545;
+  box-shadow: 0 1px 2px rgba(160, 88, 88, 0.15);
 }
 
 .buena-decision-auto {
-  background: #eef2ff;
-  color: #4f46e5;
-  border: 1px solid #e0e7ff;
+  background: #f4f1ec;
+  color: #8a6f3a;
+  border: 1px solid #e6dfd0;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.buena-decision-auto:hover {
+  background: #ede8df;
+  border-color: #d8cfb9;
+  color: #6e5829;
+  box-shadow: 0 1px 2px rgba(138, 111, 58, 0.15);
+}
+
+.buena-source-icon,
+.buena-sidebar button.buena-source-icon {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 999px;
+  background: transparent;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  color: #4A4744;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.buena-source-icon .svg-icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.85;
+}
+
+.buena-source-icon:hover,
+.buena-sidebar button.buena-source-icon:hover {
+  background: #f5f5f4;
+  color: #010105;
+}
+
+.buena-source-icon:focus,
+.buena-source-icon:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .buena-row-reverse {
@@ -3362,9 +3974,12 @@ button.buena-changed-pill-recent {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 24px;
+  padding: 10px 16px;
+  margin: 0 20px 16px;
   background: #ffffff;
-  border-top: 1px solid #f3f4f6;
+  border: 1px solid #d6d3d1;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
   color: #6b7280;
   font-family: inherit;
   font-size: 11px;
@@ -3443,4 +4058,239 @@ button.buena-changed-pill-recent {
   -webkit-appearance: none;
   appearance: none;
   box-shadow: none;
+}
+
+/* ============================================================
+   PROVENANCE PILL  v2 — soft brand chip with kind icon
+   Replaces the loud uppercase grey button. Kept at file end so
+   it wins the cascade over the original .buena-prov-pill rules.
+   ============================================================ */
+button.buena-prov-pill,
+.buena-prov-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(205, 189, 163, 0.18);
+  color: var(--buena-ink-muted, #4A4744);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: lowercase;
+  font-family: var(--font-interface, inherit);
+  padding: 1px 9px 1px 7px;
+  margin: 0 4px;
+  border: 1px solid rgba(205, 189, 163, 0.55);
+  border-radius: 999px;
+  vertical-align: 1px;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: none;
+}
+
+button.buena-prov-pill::before,
+.buena-prov-pill::before {
+  display: inline-block;
+  font-size: 11px;
+  line-height: 1;
+  flex: 0 0 auto;
+  color: var(--buena-ink-faint, #8A8580);
+  font-feature-settings: normal;
+  /* Force monochrome glyph rendering for dual-purpose codepoints. */
+  font-variant-emoji: text;
+  transition: color 140ms ease;
+}
+
+.buena-prov-pill[data-kind="email"]::before { content: "\2709"; /* envelope */ }
+.buena-prov-pill[data-kind="pdf"]::before   { content: "\25A4"; /* doc-ish square */ }
+.buena-prov-pill[data-kind="image"]::before { content: "\25A3"; /* image-ish square */ }
+.buena-prov-pill[data-kind="src"]::before   {
+  content: "\2022"; /* bullet */
+  font-size: 14px;
+  line-height: 0;
+  vertical-align: -1px;
+}
+
+button.buena-prov-pill:hover,
+.buena-prov-pill:hover {
+  background: var(--buena-beige, #CDBDA3);
+  color: var(--buena-black, #000);
+  border-color: var(--buena-beige, #CDBDA3);
+  transform: translateY(-0.5px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+button.buena-prov-pill:hover::before,
+.buena-prov-pill:hover::before {
+  color: var(--buena-black, #000);
+}
+
+button.buena-prov-pill:active,
+.buena-prov-pill:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+button.buena-prov-pill:focus-visible,
+.buena-prov-pill:focus-visible {
+  outline: 2px solid var(--buena-beige, #CDBDA3);
+  outline-offset: 1px;
+}
+
+/* ============================================================
+   INLINE PENDING ROWS
+   Plain dimmed rows under their target heading. No callouts,
+   no boxes. Pending tag pill on the left, italic body, source
+   and confidence pills on the right reusing existing chips.
+   ============================================================ */
+.markdown-preview-view ul.buena-pending-inline,
+ul.buena-pending-inline {
+  list-style: none;
+  margin: 0.4em 0 1.1em;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.buena-pending-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 0;
+  margin: 0;
+  color: var(--buena-ink-muted, #4A4744);
+  line-height: 1.55;
+}
+
+.buena-pending-row::before {
+  content: none;
+}
+
+.buena-pending-tag {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.buena-pending-text {
+  flex: 1 1 auto;
+  font-style: italic;
+  font-size: 0.95em;
+  word-break: break-word;
+}
+
+.buena-pending-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.buena-prov-pill-pending,
+.buena-confidence-pill-pending {
+  opacity: 0.9;
+}
+
+/* ============================================================
+   ERP RENDER-TIME PROJECTION
+   The {{erp.foo(LIE-001)}} placeholders in property.md get
+   replaced by `.buena-erp-projection` blocks at reading time.
+   These tables show live ERP data fetched from the worker; the
+   markdown source stays minimal and the gate refuses to write
+   here, so what you see is always the latest.
+   ============================================================ */
+.buena-erp-projection {
+  margin: 12px 0 28px;
+}
+
+.buena-erp-projection-freshness {
+  font-size: 11px;
+  color: var(--text-muted, #6b7280);
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+.buena-erp-projection-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  background: var(--background-primary, #ffffff);
+}
+
+.buena-erp-projection-table thead th {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--background-modifier-border, #e5e7eb);
+  font-weight: 600;
+  color: var(--text-normal, #111827);
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
+}
+
+.buena-erp-projection-table tbody td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--background-modifier-border, #f3f4f6);
+  color: var(--text-normal, #1f2937);
+}
+
+.buena-erp-projection-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.buena-erp-projection details {
+  background: var(--background-secondary, #fafaf9);
+  border: 1px solid var(--background-modifier-border, #e7e5e4);
+  border-radius: 12px;
+  padding: 0;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.buena-erp-projection details > summary {
+  cursor: pointer;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-normal, #111827);
+  user-select: none;
+}
+
+.buena-erp-projection details[open] > summary {
+  border-bottom: 1px solid var(--background-modifier-border, #e7e5e4);
+}
+
+.buena-erp-projection-owners > p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--text-normal, #1f2937);
+}
+
+.buena-erp-projection-error {
+  padding: 10px 14px;
+  border: 1px dashed var(--background-modifier-border, #d6d3d1);
+  border-radius: 10px;
+  color: var(--text-muted, #6b7280);
+  font-style: italic;
+  font-size: 13px;
 }
