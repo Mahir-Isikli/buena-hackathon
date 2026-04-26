@@ -536,6 +536,39 @@ export interface UnitAlias {
 }
 
 /**
+ * Lightweight property descriptor for prompt templating. Just enough for the
+ * Gemini system prompt to know which property and which units it's looking at,
+ * without dragging in the full Erp shape.
+ */
+export interface PropertyMeta {
+  id: string;
+  name: string;
+  unitIds: string[];
+}
+
+export async function getPropertyMeta(
+  db: D1Database,
+  propertyId: string
+): Promise<PropertyMeta | null> {
+  const prop = await db
+    .prepare("SELECT id, name FROM properties WHERE id = ?")
+    .bind(propertyId)
+    .first<{ id: string; name: string }>();
+  if (!prop) return null;
+  const units = await db
+    .prepare(
+      "SELECT u.id FROM units u JOIN buildings b ON b.id = u.haus_id WHERE b.property_id = ? ORDER BY u.id"
+    )
+    .bind(propertyId)
+    .all<{ id: string }>();
+  return {
+    id: prop.id,
+    name: prop.name,
+    unitIds: units.results.map((r) => r.id),
+  };
+}
+
+/**
  * Look up a batch of emails across owners, tenants, and service_providers.
  * Returns a map keyed by lowercased email so callers can intersect with the
  * inbound message participants. Empty input returns an empty map. One round

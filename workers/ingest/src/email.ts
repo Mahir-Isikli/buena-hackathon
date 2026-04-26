@@ -6,6 +6,7 @@ import { extractBulkCandidates, extractCandidates, type CandidateFact } from "./
 import { resolveRouting, routingHintText, scanEmailsFromText } from "./route";
 import { applyPatchGate } from "./gate";
 import { buildSenderFromEmail } from "./sender";
+import { getPropertyMeta, type PropertyMeta } from "./erp";
 import {
   alreadyEnriched,
   buildEnrichmentCandidate,
@@ -257,13 +258,20 @@ async function processEmailJob(job: EmailJob, env: Env): Promise<void> {
 
   let totalCandidates = 0;
 
+  const property = await loadPropertyForExtraction(env, propertyId);
+
   if (body) {
-    const candidates = await extractCandidates(env.GEMINI_API_KEY!, body, {
-      subject,
-      from: job.from ?? "",
-      to: job.to ?? "",
-      routingHint,
-    });
+    const candidates = await extractCandidates(
+      env.GEMINI_API_KEY!,
+      body,
+      {
+        subject,
+        from: job.from ?? "",
+        to: job.to ?? "",
+        routingHint,
+      },
+      property
+    );
     const candidatesWithHints = applyPreferredUnit(candidates, routing.preferredUnit);
     totalCandidates += candidatesWithHints.length;
     await applyPatchGate({
@@ -273,7 +281,7 @@ async function processEmailJob(job: EmailJob, env: Env): Promise<void> {
       source: `r2://buena-raw/${emlKey}`,
       candidates: candidatesWithHints,
       receivedAt: job.receivedAt ?? new Date().toISOString(),
-      actor: "gemini-3-pro",
+      actor: "gemini-3-pro-preview",
       sender,
       sourceMeta,
     });
@@ -424,6 +432,7 @@ async function processStoredDocument(
     .filter((v): v is string => !!v)
     .join("\n");
 
+  const property = await loadPropertyForExtraction(env, meta.propertyId);
   const candidates = await extractBulkCandidates(
     env.GEMINI_API_KEY!,
     {
@@ -438,7 +447,8 @@ async function processStoredDocument(
       propertyAddress: meta.propertyAddress,
       note: meta.note,
       routingHint: routingHint || undefined,
-    }
+    },
+    property
   );
 
   if (!text && candidates.length === 0) {
@@ -469,7 +479,7 @@ async function processStoredDocument(
     source: `r2://buena-raw/${meta.key}`,
     candidates: candidatesWithHints,
     receivedAt: meta.receivedAt,
-    actor: "gemini-3-pro",
+    actor: "gemini-3-pro-preview",
     sender: meta.sender,
     sourceMeta,
   });
@@ -494,6 +504,22 @@ function ensureGemini(env: Env): void {
   if (!env.GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY secret is not set");
   }
+}
+
+/**
+ * Fetch the property descriptor for the Gemini system prompt. Falls back to a
+ * sparse object if D1 doesn't know the property yet (race between /init and
+ * the queue, or a brand-new property the operator typed manually). Sparse
+ * fallback still scopes the prompt to the right id and disables unit hints.
+ */
+async function loadPropertyForExtraction(
+  env: Env,
+  propertyId: string
+): Promise<PropertyMeta> {
+  const meta = await getPropertyMeta(env.ERP, propertyId);
+  if (meta) return meta;
+  console.warn(`[buena] property ${propertyId} not in D1, using sparse meta`);
+  return { id: propertyId, name: propertyId, unitIds: [] };
 }
 
 function applyPreferredUnit<T extends { section: string; unit?: string }>(

@@ -4,7 +4,14 @@
  * One model, end-to-end: gemini-3-pro-preview with high thinking. No
  * fallback to Flash, 2.5 Pro, or anything else. If a call fails, retry
  * on the same model.
+ *
+ * Property-specific: the system prompt is templated from a PropertyMeta
+ * (name + valid unit IDs) so a LIE-002 email is never asked to extract
+ * "for WEG Immanuelkirchstraße 26", and Gemini constrains its `unit`
+ * output to IDs that actually exist for the resolved property.
  */
+
+import type { PropertyMeta } from "./erp";
 
 const GEMINI_MODEL = "gemini-3-pro-preview";
 const GEMINI_ENDPOINT =
@@ -44,17 +51,22 @@ interface GeminiResponse {
   candidates?: GeminiCandidate[];
 }
 
-const SYSTEM_PROMPT = `You extract property-management facts from inbound material for a German Berlin property
-("WEG Immanuelkirchstraße 26", id LIE-001). The material may be an email, PDF, scan, image,
-plain text file, HTML, JSON, CSV, or another uploaded document. The output must be valid JSON only,
-no prose, no markdown fences.
+function buildSystemPrompt(property: PropertyMeta): string {
+  const unitLine = property.unitIds.length
+    ? `Valid unit IDs for this property (use exactly one of these in "unit", or null): ${property.unitIds.join(", ")}.`
+    : `This property has no units in the ERP, so "unit" must always be null.`;
+
+  return `You extract property-management facts from inbound material for the German Berlin property
+"${property.name}" (id ${property.id}).
+${unitLine}
+The material may be an email, PDF, scan, image, plain text file, HTML, JSON, CSV, or another uploaded document. The output must be valid JSON only, no prose, no markdown fences.
 
 Schema:
 {
   "candidates": [
     {
       "section": "Open issues" | "Bank" | "Owners" | "Service providers" | "Last assembly decisions" | "Identity" | "Units",
-      "unit": "EH-XXX or null",
+      "unit": "one of the valid unit IDs above, or null",
       "fact": "single bullet sentence, German or English, no leading dash",
       "confidence": 0.0..1.0,
       "snippet": "<= 160 chars from the source supporting this fact"
@@ -65,10 +77,12 @@ Schema:
 Rules:
 - Be conservative. Precision over recall. If unsure, skip it.
 - Use deterministic routing hints when present. If a hint resolves a single unit and the material clearly concerns that resident/provider context, set unit to that EH-XXX.
-- Don't restate ERP data already known (tenant names, rents, owner addresses) — only extract things that don't fit a structured table.
+- "unit" must be either one of the valid unit IDs listed above or null. Never invent a unit id, and never use a unit from a different property.
+- Don't restate ERP data already known (tenant names, rents, owner addresses), only extract things that don't fit a structured table.
 - Tribal knowledge wins: open issues, side-agreements, withholdings, appointments, complaints, decisions, contractor changes.
 - Each candidate is one atomic fact, one bullet. Don't bundle multiple facts.
 - If the material has nothing extractable, return {"candidates": []}.`;
+}
 
 export async function extractCandidates(
   apiKey: string,
@@ -78,7 +92,8 @@ export async function extractCandidates(
     from: string;
     to: string;
     routingHint?: string;
-  }
+  },
+  property: PropertyMeta
 ): Promise<CandidateFact[]> {
   const userText = [
     `Subject: ${meta.subject}`,
@@ -93,7 +108,7 @@ export async function extractCandidates(
     .filter((v): v is string => v !== null)
     .join("\n");
 
-  return generateCandidates(apiKey, [{ text: userText }]);
+  return generateCandidates(apiKey, [{ text: userText }], property);
 }
 
 export async function extractBulkCandidates(
@@ -110,7 +125,8 @@ export async function extractBulkCandidates(
     propertyAddress?: string;
     note?: string;
     routingHint?: string;
-  }
+  },
+  property: PropertyMeta
 ): Promise<CandidateFact[]> {
   const intro = [
     `Bulk upload filename: ${doc.filename}`,
@@ -128,25 +144,33 @@ export async function extractBulkCandidates(
     .join("\n");
 
   if (typeof doc.text === "string" && doc.text.trim()) {
-    return generateCandidates(apiKey, [
-      {
-        text: `${intro}Extract facts from this uploaded document text:\n\n${doc.text.slice(0, 12000)}`,
-      },
-    ]);
+    return generateCandidates(
+      apiKey,
+      [
+        {
+          text: `${intro}Extract facts from this uploaded document text:\n\n${doc.text.slice(0, 12000)}`,
+        },
+      ],
+      property
+    );
   }
 
   if (doc.data && supportsInlineDocument(doc.mimeType) && doc.data.byteLength <= 5_000_000) {
-    return generateCandidates(apiKey, [
-      {
-        text: `${intro}Analyze the attached uploaded document and extract only the relevant property-management facts.`,
-      },
-      {
-        inlineData: {
-          mimeType: doc.mimeType,
-          data: arrayBufferToBase64(doc.data),
+    return generateCandidates(
+      apiKey,
+      [
+        {
+          text: `${intro}Analyze the attached uploaded document and extract only the relevant property-management facts.`,
         },
-      },
-    ]);
+        {
+          inlineData: {
+            mimeType: doc.mimeType,
+            data: arrayBufferToBase64(doc.data),
+          },
+        },
+      ],
+      property
+    );
   }
 
   return [];
@@ -154,11 +178,12 @@ export async function extractBulkCandidates(
 
 async function generateCandidates(
   apiKey: string,
-  parts: GeminiRequestPart[]
+  parts: GeminiRequestPart[],
+  property: PropertyMeta
 ): Promise<CandidateFact[]> {
   const url = `${GEMINI_ENDPOINT}/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
   const body = {
-    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    systemInstruction: { parts: [{ text: buildSystemPrompt(property) }] },
     contents: [{ role: "user", parts }],
     generationConfig: {
       temperature: 0.1,
