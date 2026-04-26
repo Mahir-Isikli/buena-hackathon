@@ -43,7 +43,7 @@ import {
 } from "./vaults";
 import { bootstrapVault, renderMarkdown, type StammFiles } from "./bootstrap";
 import { enrichEntriesWithSender } from "./sender";
-import { getErpSnapshot } from "./erp";
+import { getErpSnapshot, writeErpToD1 } from "./erp";
 import { resolveRouting } from "./route";
 
 export interface Env {
@@ -282,6 +282,7 @@ export async function handleHttp(
     await Promise.all([
       writePropertyMd(env.VAULTS, propertyId, bootstrap.markdown),
       writeStateJson(env.VAULTS, propertyId, bootstrap.state),
+      writeErpToD1(env.ERP, propertyId, bootstrap.erp),
     ]);
 
     // Optional: stash the original zip in RAW for traceability.

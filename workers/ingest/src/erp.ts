@@ -292,3 +292,224 @@ export async function getErpSnapshot(db: D1Database, propertyId: string): Promis
 
   return { property, buildings, units, owners, tenants, service_providers: providers };
 }
+
+const numOrNull = (v: unknown): number | null => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+const intOrNull = (v: unknown): number | null => {
+  const n = numOrNull(v);
+  return n === null ? null : Math.trunc(n);
+};
+
+const strOrNull = (v: unknown): string | null => {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  return s.length ? s : null;
+};
+
+/**
+ * Replace the entire ERP slice for `propertyId` in D1 with the given `erp`.
+ *
+ * Idempotent: deletes existing rows for the property first, then inserts the
+ * fresh set. Designed to be called from the /init handler so a stammdaten zip
+ * upload populates D1 the same way the demo seed did. Production would call
+ * this from a webhook when Buena's Postgres mutates.
+ *
+ * Runs as a single D1 batch so partial failures roll back.
+ */
+export async function writeErpToD1(
+  db: D1Database,
+  propertyId: string,
+  erp: Erp
+): Promise<void> {
+  const stmts: D1PreparedStatement[] = [];
+
+  // Delete in dependency order. owner_units, tenants, providers, owners,
+  // units (via building filter), buildings, property.
+  stmts.push(
+    db
+      .prepare(
+        "DELETE FROM owner_units WHERE owner_id IN (SELECT id FROM owners WHERE property_id = ?)"
+      )
+      .bind(propertyId)
+  );
+  stmts.push(db.prepare("DELETE FROM tenants WHERE property_id = ?").bind(propertyId));
+  stmts.push(db.prepare("DELETE FROM service_providers WHERE property_id = ?").bind(propertyId));
+  stmts.push(db.prepare("DELETE FROM owners WHERE property_id = ?").bind(propertyId));
+  stmts.push(
+    db
+      .prepare(
+        "DELETE FROM units WHERE haus_id IN (SELECT id FROM buildings WHERE property_id = ?)"
+      )
+      .bind(propertyId)
+  );
+  stmts.push(db.prepare("DELETE FROM buildings WHERE property_id = ?").bind(propertyId));
+  stmts.push(db.prepare("DELETE FROM properties WHERE id = ?").bind(propertyId));
+
+  // Property
+  const p = erp.property as ErpProperty;
+  stmts.push(
+    db
+      .prepare(
+        "INSERT INTO properties (id, name, strasse, plz, ort, land, baujahr, sanierung, verwalter, weg_bankkonto_iban, weg_bankkonto_bank, ruecklage_iban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      )
+      .bind(
+        propertyId,
+        strOrNull(p.name) ?? propertyId,
+        strOrNull(p.strasse),
+        strOrNull(p.plz),
+        strOrNull(p.ort),
+        strOrNull((p as Record<string, unknown>)["land"]) ?? "DE",
+        intOrNull(p.baujahr),
+        intOrNull(p.sanierung),
+        strOrNull(p.verwalter),
+        strOrNull(p.weg_bankkonto_iban),
+        strOrNull(p.weg_bankkonto_bank),
+        strOrNull(p.ruecklage_iban)
+      )
+  );
+
+  // Buildings
+  for (const b of Object.values(erp.buildings) as ErpBuilding[]) {
+    stmts.push(
+      db
+        .prepare(
+          "INSERT INTO buildings (id, property_id, hausnr, einheiten, etagen, fahrstuhl, baujahr) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(
+          b.id,
+          propertyId,
+          strOrNull(b.hausnr),
+          intOrNull(b.einheiten) ?? 0,
+          intOrNull(b.etagen),
+          b.fahrstuhl ? 1 : 0,
+          intOrNull(b.baujahr)
+        )
+    );
+  }
+
+  // Units
+  for (const u of Object.values(erp.units) as ErpUnit[]) {
+    stmts.push(
+      db
+        .prepare(
+          "INSERT INTO units (id, haus_id, einheit_nr, lage, typ, wohnflaeche_qm, zimmer, miteigentumsanteil) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(
+          u.id,
+          u.haus_id,
+          strOrNull(u.einheit_nr),
+          strOrNull(u.lage),
+          strOrNull(u.typ),
+          numOrNull(u.wohnflaeche_qm),
+          numOrNull(u.zimmer),
+          intOrNull(u.miteigentumsanteil)
+        )
+    );
+  }
+
+  // Owners and owner_units
+  for (const o of Object.values(erp.owners) as ErpOwner[]) {
+    const oRec = o as unknown as Record<string, unknown>;
+    stmts.push(
+      db
+        .prepare(
+          "INSERT INTO owners (id, property_id, anrede, vorname, nachname, firma, strasse, plz, ort, land, email, telefon, iban, bic, selbstnutzer, sev_mandat, beirat, sprache) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(
+          o.id,
+          propertyId,
+          strOrNull(oRec["anrede"]),
+          strOrNull(oRec["vorname"]),
+          strOrNull(oRec["nachname"]),
+          strOrNull(oRec["firma"]),
+          strOrNull(oRec["strasse"]),
+          strOrNull(oRec["plz"]),
+          strOrNull(oRec["ort"]),
+          strOrNull(oRec["land"]),
+          strOrNull(oRec["email"]),
+          strOrNull(oRec["telefon"]),
+          strOrNull(oRec["iban"]),
+          strOrNull(oRec["bic"]),
+          o.selbstnutzer ? 1 : 0,
+          o.sev_mandat ? 1 : 0,
+          o.beirat ? 1 : 0,
+          strOrNull(oRec["sprache"])
+        )
+    );
+    for (const uid of o.einheit_ids) {
+      stmts.push(
+        db
+          .prepare("INSERT INTO owner_units (owner_id, unit_id) VALUES (?, ?)")
+          .bind(o.id, uid)
+      );
+    }
+  }
+
+  // Tenants
+  for (const t of Object.values(erp.tenants) as ErpTenant[]) {
+    const tRec = t as unknown as Record<string, unknown>;
+    stmts.push(
+      db
+        .prepare(
+          "INSERT INTO tenants (id, property_id, anrede, vorname, nachname, email, telefon, einheit_id, eigentuemer_id, mietbeginn, mietende, kaltmiete, nk_vorauszahlung, kaution, iban, bic, sprache) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(
+          t.id,
+          propertyId,
+          strOrNull(tRec["anrede"]),
+          strOrNull(tRec["vorname"]),
+          strOrNull(tRec["nachname"]),
+          strOrNull(tRec["email"]),
+          strOrNull(tRec["telefon"]),
+          strOrNull(tRec["einheit_id"]),
+          strOrNull(tRec["eigentuemer_id"]),
+          strOrNull(tRec["mietbeginn"]),
+          strOrNull(tRec["mietende"]),
+          numOrNull(t.kaltmiete),
+          numOrNull(t.nk_vorauszahlung),
+          numOrNull(t.kaution),
+          strOrNull(tRec["iban"]),
+          strOrNull(tRec["bic"]),
+          strOrNull(tRec["sprache"])
+        )
+    );
+  }
+
+  // Service providers
+  for (const pr of Object.values(erp.service_providers) as ErpProvider[]) {
+    const prRec = pr as unknown as Record<string, unknown>;
+    stmts.push(
+      db
+        .prepare(
+          "INSERT INTO service_providers (id, property_id, firma, branche, ansprechpartner, email, telefon, strasse, plz, ort, land, iban, bic, ust_id, steuernummer, stil, sprache, vertrag_monatlich, stundensatz) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(
+          pr.id,
+          propertyId,
+          strOrNull(pr.firma),
+          strOrNull(pr.branche),
+          strOrNull(prRec["ansprechpartner"]),
+          strOrNull(prRec["email"]),
+          strOrNull(prRec["telefon"]),
+          strOrNull(prRec["strasse"]),
+          strOrNull(prRec["plz"]),
+          strOrNull(prRec["ort"]),
+          strOrNull(prRec["land"]),
+          strOrNull(prRec["iban"]),
+          strOrNull(prRec["bic"]),
+          strOrNull(prRec["ust_id"]),
+          strOrNull(prRec["steuernummer"]),
+          strOrNull(prRec["stil"]),
+          strOrNull(prRec["sprache"]),
+          numOrNull(pr.vertrag_monatlich),
+          numOrNull(pr.stundensatz)
+        )
+    );
+  }
+
+  await db.batch(stmts);
+}
