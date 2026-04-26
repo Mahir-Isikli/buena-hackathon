@@ -3,7 +3,9 @@
  *
  * Priority:
  * 1. Property subaddress on the recipient, e.g. property+LIE-001@kontext.haus
- * 2. Sender / recipient email join against stammdaten-derived EMAIL_HINTS
+ * 2. Sender / recipient email join against stammdaten-derived EMAIL_HINTS.
+ *    Emails found inside the body or in extracted attachment text (forwarded
+ *    .eml inner From, CSV cells, plain-text PDF surfaces) are joined too.
  * 3. Unit alias scan in subject + body, e.g. WE 29 / EH-029 / TG 18
  * 4. Fallback to the demo property LIE-001
  *
@@ -38,8 +40,14 @@ export function resolvePropertyId(to: string): string {
   return resolveRoutingHints({ to }).propertyId;
 }
 
-export function resolveRouting(inputFrom?: string, inputTo?: string, subject?: string, body?: string): RoutingDecision {
-  const hints = resolveRoutingHints({ from: inputFrom, to: inputTo, subject, body });
+export function resolveRouting(
+  inputFrom?: string,
+  inputTo?: string,
+  subject?: string,
+  body?: string,
+  extraEmails?: string[]
+): RoutingDecision {
+  const hints = resolveRoutingHints({ from: inputFrom, to: inputTo, subject, body, extraEmails });
   const hasSub = !!parsePropertySubaddress(inputTo);
   const via: RoutingDecision["via"] = hasSub
     ? "subaddress"
@@ -65,18 +73,31 @@ export function resolveRoutingHints(input: {
   from?: string;
   subject?: string;
   body?: string;
+  extraEmails?: string[];
 }): RoutingHints {
   const propertyId = parsePropertySubaddress(input.to) ?? DEFAULT_PROPERTY;
 
   const seenEmails = new Set<string>();
   const matchedEmails: string[] = [];
+  const matchedFromExtras: string[] = [];
   const matches: EmailHint[] = [];
-  for (const email of [...extractEmails(input.from), ...extractEmails(input.to)]) {
+  const headerPool = [...extractEmails(input.from), ...extractEmails(input.to)];
+  const extraPool = (input.extraEmails ?? []).map((e) => e.toLowerCase());
+  for (const email of headerPool) {
     if (seenEmails.has(email)) continue;
     seenEmails.add(email);
     const hit = EMAIL_HINTS[email];
     if (!hit?.length) continue;
     matchedEmails.push(email);
+    matches.push(...hit);
+  }
+  for (const email of extraPool) {
+    if (seenEmails.has(email)) continue;
+    seenEmails.add(email);
+    const hit = EMAIL_HINTS[email];
+    if (!hit?.length) continue;
+    matchedEmails.push(email);
+    matchedFromExtras.push(email);
     matches.push(...hit);
   }
 
@@ -102,6 +123,9 @@ export function resolveRoutingHints(input: {
   if (sub) hintLines.push(`- Property subaddress: ${sub}`);
   if (matchedEmails.length) {
     hintLines.push(`- Matched participant emails: ${matchedEmails.join(", ")}`);
+    if (matchedFromExtras.length) {
+      hintLines.push(`  - Of those, found in body/attachment text: ${matchedFromExtras.join(", ")}`);
+    }
     for (const match of matches) {
       const unitTxt = match.unitIds.length ? ` | units: ${match.unitIds.join(", ")}` : "";
       hintLines.push(`  - ${match.kind} ${match.id}${unitTxt}`);
@@ -127,6 +151,11 @@ function parsePropertySubaddress(to?: string): string | null {
 function extractEmails(input?: string): string[] {
   const found = (input ?? "").match(EMAIL_RE) ?? [];
   return [...new Set(found.map((e) => e.toLowerCase()))];
+}
+
+/** Public helper: pull all email-shaped tokens out of arbitrary text (body, attachment text, etc). */
+export function scanEmailsFromText(input?: string): string[] {
+  return extractEmails(input);
 }
 
 function detectUnitFromText(text: string): string | undefined {

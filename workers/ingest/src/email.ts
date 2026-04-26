@@ -1,9 +1,18 @@
 import JSZip from "jszip";
 import PostalMime from "postal-mime";
+import { extractText as unpdfExtractText, getDocumentProxy } from "unpdf";
 import { Env, handleHttp } from "./http";
-import { extractBulkCandidates, extractCandidates } from "./gemini";
-import { resolveRouting, routingHintText } from "./route";
+import { extractBulkCandidates, extractCandidates, type CandidateFact } from "./gemini";
+import { resolveRouting, routingHintText, scanEmailsFromText } from "./route";
 import { applyPatchGate } from "./gate";
+import { buildSenderFromEmail } from "./sender";
+import {
+  alreadyEnriched,
+  buildEnrichmentCandidate,
+  enrichContractor,
+  extractContractorName,
+} from "./enrich";
+import { readPropertyMd, type SenderInfo, type SourceMeta } from "./vaults";
 
 interface ForwardableEmailMessage {
   from: string;
@@ -93,19 +102,20 @@ export default {
   },
 
   // Queue consumer: email + bulk extraction.
+  // Serialized within a batch so concurrent extractions don't race on the
+  // read-modify-write of vaults/<id>/property.md. Cross-batch races are
+  // prevented by max_concurrency = 1 in wrangler.toml.
   async queue(batch: QueueBatch<QueueJob>, env: Env): Promise<void> {
     console.log(`[buena-queue] ${batch.messages.length} message(s) on ${batch.queue}`);
-    await Promise.all(
-      batch.messages.map(async (msg) => {
-        try {
-          await processQueueJob(msg.body, env);
-          msg.ack();
-        } catch (err) {
-          console.error("[buena-queue] failed", msg.body, err);
-          msg.retry();
-        }
-      })
-    );
+    for (const msg of batch.messages) {
+      try {
+        await processQueueJob(msg.body, env);
+        msg.ack();
+      } catch (err) {
+        console.error("[buena-queue] failed", msg.body, err);
+        msg.retry();
+      }
+    }
   },
 };
 
@@ -163,20 +173,92 @@ async function processEmailJob(job: EmailJob, env: Env): Promise<void> {
   const parsed = await PostalMime.parse(raw);
   const body = (parsed.text ?? parsed.html ?? "").trim();
 
+  // Pre-scan body + each attachment's text-extractable surface for email
+  // addresses, so the routing layer can match a forwarded .eml's inner From,
+  // CSV cells, or plain-text PDF surfaces against EMAIL_HINTS even when the
+  // outer envelope From/To don't.
+  const attachmentKeys = job.attachmentKeys ?? [];
+  const extraEmailSet = new Set<string>(scanEmailsFromText(body));
+  for (const key of attachmentKeys) {
+    try {
+      const attObj = await env.RAW.get(key);
+      if (!attObj) continue;
+      const attRaw = await attObj.arrayBuffer();
+      const attName = basename(key);
+      const attMime = attObj.httpMetadata?.contentType ?? guessMimeType(attName);
+      const ext = extension(attName);
+      // For nested .eml attachments, body extraction misses the inner From/To/CC
+      // headers, which is precisely where the forwarded sender lives. Scan the
+      // header addresses as well.
+      if (ext === "eml" || attMime === "message/rfc822") {
+        try {
+          const innerParsed = await PostalMime.parse(attRaw);
+          const headerAddrs: string[] = [];
+          if (innerParsed.from?.address) headerAddrs.push(innerParsed.from.address);
+          for (const a of innerParsed.to ?? []) if (a.address) headerAddrs.push(a.address);
+          for (const a of innerParsed.cc ?? []) if (a.address) headerAddrs.push(a.address);
+          for (const a of innerParsed.replyTo ?? []) if (a.address) headerAddrs.push(a.address);
+          for (const e of headerAddrs) extraEmailSet.add(e.toLowerCase());
+        } catch {
+          /* fall through to text scan */
+        }
+      }
+      // PDFs aren't covered by extractTextLike (Gemini handles full extraction
+      // via multimodal), but for routing we just need to surface any email
+      // addresses inside. unpdf is pure JS and runs inside the Worker.
+      if (ext === "pdf" || attMime === "application/pdf") {
+        try {
+          const pdf = await getDocumentProxy(new Uint8Array(attRaw));
+          const { text } = await unpdfExtractText(pdf, { mergePages: true });
+          const flatPdfText = Array.isArray(text) ? text.join("\n") : text;
+          const found = scanEmailsFromText(flatPdfText);
+          for (const e of found) extraEmailSet.add(e);
+          console.log(
+            `[buena-queue] pdf prescan ${attName}: ${flatPdfText.length} chars, ${found.length} email(s)${
+              found.length ? ` (${found.join(", ")})` : ""
+            }`
+          );
+        } catch (err) {
+          console.warn("[buena-queue] pdf prescan failed", attName, err);
+        }
+      }
+      const attText = await extractTextLike(attRaw, attName, attMime);
+      if (!attText) continue;
+      for (const e of scanEmailsFromText(attText)) extraEmailSet.add(e);
+    } catch (err) {
+      console.warn("[buena-queue] failed scanning attachment for routing emails", key, err);
+    }
+  }
+  const extraEmails = [...extraEmailSet];
+  if (extraEmails.length) {
+    console.log(`[buena-queue] route prescan ${job.msgId}: ${extraEmails.length} email(s) in body/attachments`);
+  }
+
   const routing = resolveRouting(
     job.from ?? "",
     job.to ?? "",
     job.subject ?? parsed.subject ?? "",
-    body
+    body,
+    extraEmails
   );
   const propertyId = routing.propertyId;
   const routingHint = routingHintText(routing);
+  const subject = job.subject ?? parsed.subject ?? "";
+  const sender = buildSenderFromEmail(parsed, job.from, routing.matches);
+  const sourceMeta: SourceMeta = {
+    kind: "email",
+    filename: `${job.msgId}.eml`,
+    mimeType: "message/rfc822",
+    subject,
+    receivedAt: job.receivedAt ?? new Date().toISOString(),
+    recipient: job.to,
+  };
 
   let totalCandidates = 0;
 
   if (body) {
     const candidates = await extractCandidates(env.GEMINI_API_KEY!, body, {
-      subject: job.subject ?? parsed.subject ?? "",
+      subject,
       from: job.from ?? "",
       to: job.to ?? "",
       routingHint,
@@ -191,10 +273,19 @@ async function processEmailJob(job: EmailJob, env: Env): Promise<void> {
       candidates: candidatesWithHints,
       receivedAt: job.receivedAt ?? new Date().toISOString(),
       actor: "gemini-3-pro",
+      sender,
+      sourceMeta,
+    });
+    await maybeEnrichServiceProviders(env, {
+      propertyId,
+      patchBaseId: job.msgId,
+      candidates: candidatesWithHints,
+      receivedAt: job.receivedAt ?? new Date().toISOString(),
+      sender,
+      sourceMeta,
     });
   }
 
-  const attachmentKeys = job.attachmentKeys ?? [];
   let attachmentIndex = 0;
   for (const key of attachmentKeys) {
     const attachmentCandidates = await processEmailAttachment(
@@ -204,10 +295,13 @@ async function processEmailJob(job: EmailJob, env: Env): Promise<void> {
         msgId: job.msgId,
         propertyId,
         propertyLabel: propertyId,
-        note: `Attachment from email subject: ${job.subject ?? parsed.subject ?? ""}`,
+        note: `Attachment from email subject: ${subject}`,
         routingHint,
         preferredUnit: routing.preferredUnit,
         receivedAt: job.receivedAt ?? new Date().toISOString(),
+        sender,
+        subject,
+        recipient: job.to,
       },
       attachmentIndex++
     );
@@ -240,6 +334,11 @@ async function processBulkJob(job: BulkJob, env: Env): Promise<void> {
     routingHint: undefined,
     receivedAt: job.uploadedAt ?? new Date().toISOString(),
     patchBaseId: bulkPatchBaseId(job.key),
+    sender: {
+      name: "Bulk import",
+      role: "unknown",
+    },
+    sourceKind: "bulk",
   });
 }
 
@@ -254,6 +353,9 @@ async function processEmailAttachment(
     routingHint?: string;
     preferredUnit?: string;
     receivedAt: string;
+    sender?: SenderInfo;
+    subject?: string;
+    recipient?: string;
   },
   attachmentIndex: number
 ): Promise<number> {
@@ -266,6 +368,10 @@ async function processEmailAttachment(
     preferredUnit: meta.preferredUnit,
     receivedAt: meta.receivedAt,
     patchBaseId: `${meta.msgId}-att-${attachmentIndex}`,
+    sender: meta.sender,
+    subject: meta.subject,
+    recipient: meta.recipient,
+    sourceKind: "email",
   });
 }
 
@@ -281,6 +387,10 @@ async function processStoredDocument(
     preferredUnit?: string;
     receivedAt: string;
     patchBaseId: string;
+    sender?: SenderInfo;
+    subject?: string;
+    recipient?: string;
+    sourceKind?: "email" | "bulk" | "unknown";
   }
 ): Promise<number> {
   const obj = await env.RAW.get(meta.key);
@@ -340,6 +450,16 @@ async function processStoredDocument(
     `[buena-queue] stored doc ${filename} -> property ${meta.propertyId}, mime ${mimeType}, ${candidatesWithHints.length} candidate(s)`
   );
 
+  const sourceMeta: SourceMeta = {
+    kind: meta.sourceKind ?? "bulk",
+    filename,
+    mimeType,
+    subject: meta.subject,
+    receivedAt: meta.receivedAt,
+    recipient: meta.recipient,
+    note: meta.note,
+  };
+
   await applyPatchGate({
     bucket: env.VAULTS,
     propertyId: meta.propertyId,
@@ -348,7 +468,23 @@ async function processStoredDocument(
     candidates: candidatesWithHints,
     receivedAt: meta.receivedAt,
     actor: "gemini-3-pro",
+    sender: meta.sender,
+    sourceMeta,
   });
+  // Skip Tavily for bulk imports. A homeowner archive can carry hundreds
+  // of providers across many docs; firing one external search per mention
+  // would be slow and burn the Tavily quota for no demo win. Email path
+  // still enriches, which is where the live "new contractor" beat lives.
+  if (meta.sourceKind !== "bulk") {
+    await maybeEnrichServiceProviders(env, {
+      propertyId: meta.propertyId,
+      patchBaseId: meta.patchBaseId,
+      candidates: candidatesWithHints,
+      receivedAt: meta.receivedAt,
+      sender: meta.sender,
+      sourceMeta,
+    });
+  }
   return candidatesWithHints.length;
 }
 
@@ -375,6 +511,68 @@ function applyPreferredUnit<T extends { section: string; unit?: string }>(
 
 function prefersUnitContext(section: string): boolean {
   return section === "Units" || section === "Open issues";
+}
+
+async function maybeEnrichServiceProviders(
+  env: Env,
+  ctx: {
+    propertyId: string;
+    patchBaseId: string;
+    candidates: CandidateFact[];
+    receivedAt: string;
+    sender?: SenderInfo;
+    sourceMeta?: SourceMeta;
+  }
+): Promise<number> {
+  const apiKey = env.TAVILY_API_KEY;
+  if (!apiKey) return 0;
+
+  const providerCandidates = ctx.candidates.filter(
+    (c) => c.section === "Service providers" && !!c.fact
+  );
+  if (!providerCandidates.length) return 0;
+
+  // Read once. We re-fetch after each gate write so the "already enriched"
+  // check sees lines we just wrote in this run.
+  let markdown = (await readPropertyMd(env.VAULTS, ctx.propertyId)) ?? "";
+
+  let enriched = 0;
+  const seen = new Set<string>();
+  for (let i = 0; i < providerCandidates.length; i++) {
+    const cand = providerCandidates[i];
+    const name = extractContractorName(cand.fact);
+    if (!name) continue;
+    const dedupKey = name.toLowerCase();
+    if (seen.has(dedupKey)) continue;
+    seen.add(dedupKey);
+
+    if (alreadyEnriched(markdown, name)) {
+      console.log(`[buena-tavily] ${name} already has external context, skipping`);
+      continue;
+    }
+
+    const enrichment = await enrichContractor(apiKey, name);
+    if (!enrichment) {
+      console.log(`[buena-tavily] no enrichment for ${name}`);
+      continue;
+    }
+    const enrichmentCandidate = buildEnrichmentCandidate(name, enrichment);
+    await applyPatchGate({
+      bucket: env.VAULTS,
+      propertyId: ctx.propertyId,
+      patchBaseId: `${ctx.patchBaseId}-tavily-${i}`,
+      source: enrichment.url,
+      candidates: [enrichmentCandidate],
+      receivedAt: ctx.receivedAt,
+      actor: "tavily",
+      sender: ctx.sender,
+      sourceMeta: ctx.sourceMeta,
+    });
+    enriched += 1;
+    console.log(`[buena-tavily] enriched ${name} from ${enrichment.url}`);
+    markdown = (await readPropertyMd(env.VAULTS, ctx.propertyId)) ?? markdown;
+  }
+  return enriched;
 }
 
 async function extractTextLike(
